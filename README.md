@@ -1,3 +1,0 @@
-# SamsJourney
- game
-Gamer
