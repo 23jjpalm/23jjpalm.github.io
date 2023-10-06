@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samuel's Journey</title>
+    <style>
+    body {
+    background-color: #000;
+    color: #fff;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 18px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #ff5733; /* Spooky orange/red color */
+}
+
+p {
+    margin-bottom: 20px;
+}
+
+button {
+    background-color: #ff5733;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #ff4500; /* Darker shade of orange/red on hover */
+}
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Samuel's Journey</h1>
+        <p>In the darkest corner of an isolated, long-forgotten town, where time seemed to have stopped and an eerie silence hung heavy in the air, lived a man named Samuel. His existence was one of solitude and despair, haunted by memories of a tragic past. But one chilling night, as he sat alone in his decaying mansion, he felt an inexplicable urge to confront the horrors that had plagued him for so long.</p>
+        <p>Samuel had always been drawn to the macabre and the unknown, and tonight, he decided to embrace the darkness that had always lurked at the fringes of his consciousness. He needed to venture into the depths of terror to uncover the truth behind the town's gruesome legends.</p>
+        <p>With a trembling hand, Samuel gathered a few essentials, lit a lantern, and stepped out into the moonless night. As he navigated the town's deserted streets, his footsteps echoed ominously. He soon reached the edge of the town, where a fork in the road presented him with a haunting choice:</p>
+        <button onclick="turnBack()">Turn back and remain in the mansion</button>
+        <button onclick="continueAhead()">Continue down the sinister path</button>
+    </div>
+
+    <script>
+        let gameContainer = document.getElementById('game-container');
+
+        function turnBack() {
+            gameContainer.innerHTML = `
+                <h1>Ending 1</h1>
+                <p>Samuel chose to turn back, recognizing the danger that lay ahead. He decided to remain in his mansion, forever haunted by the past.</p>
+                <p>Game Over</p>
+            `;
+        }
+
+        function continueAhead() {
+    gameContainer.innerHTML = `
+        <h1>Samuel's Journey</h1>
+        <p>Samuel decided to once again confront the dark forces that lurked in the town. His determination was unyielding.</p>
+        <p>As he retraced his steps, he faced a choice:</p>
+        <button onclick="enterImpenetrableFog()">Venture into the impenetrable fog</button>
+        <button onclick="searchForClues()">Search for clues in the abandoned town square</button>
+        <button onclick="stayInMansion()">Stay at the mansion</button>
+    `;
+}
+function stayInMansion() {
+    gameContainer.innerHTML = `
+        <h1>Staying at the Mansion</h1>
+        <p>Samuel decided to stay at the mansion, despite the growing unease that enveloped him.</p>
+        <p>As night descended, he explored the decaying rooms, each one more unsettling than the last.</p>
+        <p>Deep within the mansion, he discovered a hidden library filled with cursed tomes and forbidden knowledge.</p>
+        <p>Should Samuel:</p>
+        <button onclick="readCursedTome()">Read one of the cursed tomes</button>
+        <button onclick="exploreFurther()">Explore further into the mansion</button>
+    `;
+}
+function readCursedTome() {
+    gameContainer.innerHTML = `
+        <h1>Reading a Cursed Tome</h1>
+        <p>Samuel couldn't resist the lure of the cursed tomes and decided to read one, hoping to gain forbidden knowledge.</p>
+        <p>As he delved into the dark incantations, he unwittingly unleashed a malevolent spirit that possessed him.</p>
+        <p>Samuel's body became a vessel for the ancient evil, and he became the curse that plagued the town for generations.</p>
+        <p>Game Over</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+
+function exploreFurther() {
+    gameContainer.innerHTML = `
+        <h1>Exploring Further</h1>
+        <p>Samuel chose to explore further into the mansion, driven by morbid curiosity.</p>
+        <p>As he ventured deeper, he stumbled upon a chamber filled with eerie, lifelike mannequins that seemed to watch his every move.</p>
+        <p>Should Samuel:</p>
+        <button onclick="examineMannequins()">Examine the lifelike mannequins</button>
+        <button onclick="investigateHiddenRoom()">Investigate a hidden room</button>
+    `;
+}
+function searchForClues() {
+    gameContainer.innerHTML = `
+        <h1>Searching for Clues</h1>
+        <p>Samuel decided to search for clues in the abandoned town square, hoping to uncover information about the curse.</p>
+        <p>As he explored the eerie square, he stumbled upon an old, weathered book hidden beneath a decayed bench.</p>
+        <p>The book contained cryptic symbols and incantations, hinting at a way to break the curse.</p>
+        <p>Should Samuel:</p>
+        <button onclick="attemptRitual()">Attempt the ritual</button>
+        <button onclick="returnToHisTime()">Return to his own time</button>
+    `;
+}
+
+
+function examineMannequins() {
+    gameContainer.innerHTML = `
+        <h1>Examining the Lifelike Mannequins</h1>
+        <p>Samuel decided to examine the lifelike mannequins, feeling a growing sense of unease.</p>
+        <p>As he touched one of the mannequins, it came to life, revealing itself as a cursed soul trapped in a lifeless form.</p>
+        <p>The cursed soul begged Samuel for release, and he had to decide:</p>
+        <button onclick="releaseCursedSoul()">Release the cursed soul</button>
+        <button onclick="continueMansionInvestigation()">Continue investigating the mansion</button>
+    `;
+}
+function investigateHiddenRoom() {
+    gameContainer.innerHTML = `
+        <h1>Investigating a Hidden Room</h1>
+        <p>Samuel decided to investigate a hidden room he discovered in the mansion. The room was cloaked in darkness, and the air was thick with foreboding.</p>
+        <p>As he explored, he found a dusty bookshelf filled with ancient journals and manuscripts.</p>
+        <p>Should Samuel:</p>
+        <button onclick="readJournalInHiddenRoom()">Read one of the ancient journals</button>
+        <button onclick="searchForExitInHiddenRoom()">Search for an exit</button>
+    `;
+}
+function readJournalInHiddenRoom() {
+    gameContainer.innerHTML = `
+        <h1>Reading an Ancient Journal</h1>
+        <p>Samuel decided to read one of the ancient journals in the hidden room, hoping to find information about the mansion's secrets.</p>
+        <p>The journal contained the tragic story of a previous inhabitant who had fallen victim to the mansion's curse. It hinted at a ritual that could potentially break the curse.</p>
+        <p>Should Samuel:</p>
+        <button onclick="performRitual()">Attempt the ritual</button>
+        <button onclick="searchForExitInHiddenRoom()">Continue searching for an exit</button>
+    `;
+}
+
+function searchForExitInHiddenRoom() {
+    gameContainer.innerHTML = `
+        <h1>Searching for an Exit</h1>
+        <p>Samuel decided to search for an exit within the hidden room, determined to find a way out of the mansion.</p>
+        <p>After a thorough search, he discovered a concealed passage that led to an underground chamber.</p>
+        <p>Should Samuel:</p>
+        <button onclick="exploreUndergroundChamber()">Explore the underground chamber</button>
+        <button onclick="returnToMannequinRoom()">Return to the mannequin room</button>
+        <button onclick="useTimeTravelDevice()">Use a mysterious time-travel device</button>
+    `;
+}
+function useTimeTravelDevice() {
+    gameContainer.innerHTML = `
+        <h1>Using the Time-Travel Device</h1>
+        <p>Samuel decided to use the mysterious time-travel device, which transported him to a different era in the mansion's history.</p>
+        <p>He found himself in a time when the mansion was still inhabited, but cursed by dark rituals.</p>
+        <p>Should Samuel:</p>
+        <button onclick="interactWithPastResidents()">Interact with the past residents</button>
+        <button onclick="searchForTimeTravelClues()">Search for clues in the past</button>
+    `;
+}
+function interactWithPastResidents() {
+    gameContainer.innerHTML = `
+        <h1>Interacting with Past Residents</h1>
+        <p>Samuel chose to interact with the past residents of the mansion, hoping to uncover the secrets of the curse.</p>
+        <p>Through conversations with the residents, he learned about the origins of the curse and a ritual that could break it.</p>
+        <p>With this newfound knowledge, Samuel made a fateful decision:</p>
+        <button onclick="stayInPast()">Stay in the past and end the curse from within</button>
+        <button onclick="returnToHisTime()">Return to his own time</button>
+    `;
+}
+function stayInPast() {
+    gameContainer.innerHTML = `
+        <h1>Staying in the Past</h1>
+        <p>Samuel made the bold choice to stay in the past, determined to end the curse from within the time when it originated.</p>
+        <p>He immersed himself in the rituals and mysteries of the era, seeking to break the curse at its source.</p>
+        <p>Years passed, and Samuel became a legend in the town's history as the one who saved them from eternal torment.</p>
+        <p>Congratulations! You've chosen to stay in the past and break the curse. The town is forever grateful.</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+
+function searchForTimeTravelClues() {
+    gameContainer.innerHTML = `
+        <h1>Searching for Time-Travel Clues</h1>
+        <p>Samuel chose to search for clues in the past, hoping to find information about the time-travel device and the curse.</p>
+        <p>He discovered a journal that contained instructions on how to use the time-travel device to break the curse.</p>
+        <p>Should Samuel:</p>
+        <button onclick="returnToHisTime()">Return to his own time</button>
+        <button onclick="useTimeTravelDevice()">Use the device to gather more information</button>
+    `;
+}
+function returnToHisTime() {
+    gameContainer.innerHTML = `
+        <h1>Returning to His Own Time</h1>
+        <p>Samuel chose to return to his own time, armed with the knowledge he gained from the past.</p>
+        <p>With the curse-breaking ritual in mind, he continued his exploration of the mansion.</p>
+        <p>Should Samuel:</p>
+        <button onclick="performRitual()">Attempt the ritual</button>
+        <button onclick="exploreFurther()">Explore further into the mansion</button>
+    `;
+}
+
+function exploreUndergroundChamber() {
+    gameContainer.innerHTML = `
+        <h1>Exploring the Underground Chamber</h1>
+        <p>Samuel decided to explore the underground chamber, which was filled with strange, mystical artifacts and symbols.</p>
+        <p>Among the artifacts, he found a cursed amulet that seemed to hold the power to break the mansion's curse.</p>
+        <p>With the cursed amulet in hand, Samuel set out to confront the dark forces and end the curse.</p>
+        <p>Congratulations! You've discovered the amulet and saved yourself from the mansion's grasp.</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+
+function returnToMannequinRoom() {
+    gameContainer.innerHTML = `
+        <h1>Returning to the Mannequin Room</h1>
+        <p>Samuel chose to return to the mannequin room, haunted by the lifelike figures that seemed to come alive.</p>
+        <p>As he entered the room, the mannequins surrounded him, and their lifeless eyes turned malevolent.</p>
+        <p>Game Over</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+
+function continueMansionInvestigation() {
+    gameContainer.innerHTML = `
+        <h1>Continuing Mansion Investigation</h1>
+        <p>Samuel chose to continue investigating the mansion, determined to uncover its dark secrets.</p>
+        <p>As he ventured deeper into the mansion's heart, he encountered a sinister presence that lurked in the shadows, waiting to consume his soul.</p>
+        <p>Game Over</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function releaseCursedSoul() {
+    gameContainer.innerHTML = `
+        <h1>Releasing the Cursed Soul</h1>
+        <p>Samuel chose to release the cursed soul from its lifeless form, showing mercy to the tormented spirit.</p>
+        <p>The released soul revealed the tragic tale of the mansion's curse and guided Samuel to a hidden chamber where a powerful artifact lay.</p>
+        <p>With the artifact in hand, Samuel set out to confront the dark forces and end the curse.</p>
+        <p>Congratulations! You've released the cursed soul and acquired the artifact to save yourself.</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+
+function confrontNoises() {
+            gameContainer.innerHTML = `
+                <h1>Confronting the Noises</h1>
+                <p>Samuel bravely confronted the unsettling noises, determined to uncover the truth.</p>
+                <p>As he approached the source of the sounds, he discovered a hidden chamber beneath an ancient, decaying church. Inside, he found a collection of mysterious artifacts and a chilling journal that revealed the town's darkest secrets.</p>
+                <p>Samuel's quest for the truth had come to an end, but it was just the beginning of a new chapter in his life.</p>
+                <p>Congratulations! You've completed Samuel's journey.</p>
+            `;
+        }
+function keepWalking() {
+            gameContainer.innerHTML = `
+                <h1>Keep Walking</h1>
+                <p>Samuel decided to keep walking, ignoring the unsettling noises that echoed around him.</p>
+                <p>As he ventured deeper into the darkness, the world around him began to distort and twist. Reality itself seemed to unravel.</p>
+                <p>With each step, Samuel felt himself slipping further into a nightmarish realm from which there was no escape.</p>
+                <p>Game Over</p>
+            `;
+        }
+function enterCrumblingMansion() {
+    gameContainer.innerHTML = `
+        <h1>Entering the Crumbling Mansion</h1>
+        <p>Samuel chose to take the left path that led to the crumbling, decrepit mansion.</p>
+        <p>As he approached the mansion, he could feel malevolence emanating from its decaying walls. The air was heavy with an unnatural presence, and the atmosphere grew increasingly oppressive.</p>
+        <p>Should Samuel:</p>
+        <button onclick="investigateMansion()">Investigate the mansion</button>
+        <button onclick="leaveMansion()">Leave the mansion</button>
+    `;
+}
+function enterImpenetrableFog() {
+    gameContainer.innerHTML = `
+        <h1>Entering the Impenetrable Fog</h1>
+        <p>Samuel, driven by morbid curiosity, chose the right path, venturing deeper into the oppressive darkness. The fog grew thicker, making it impossible to see more than a few feet ahead. He stumbled upon a dilapidated, overgrown cemetery, its tombstones bearing names long forgotten.</p>
+        <p>Samuel could:</p>
+        <button onclick="investigateCemetery()">Investigate the cemetery</button>
+        <button onclick="returnToMansion()">Retrace his steps toward the sinister mansion</button>
+    `;
+}
+function investigateMansion() {
+    gameContainer.innerHTML = `
+        <h1>Investigating the Crumbling Mansion</h1>
+        <p>Samuel decided to investigate the mansion, driven by a desire to uncover its secrets.</p>
+        <p>As he entered the mansion, he was greeted by a chilling cold and a haunting presence that seemed to watch his every move. The mansion's interior was a labyrinth of decay, filled with echoes of a tragic past.</p>
+        <p>Game Over</p>
+    `;
+}
+function leaveMansion() {
+    gameContainer.innerHTML = `
+        <h1>Leaving the Crumbling Mansion</h1>
+        <p>Samuel wisely chose to leave the mansion behind and return to the dark path outside.</p>
+        <p>As he walked away from the malevolent structure, he couldn't help but wonder about the horrors that lay within.</p>
+        <p>Game Over</p>
+    `;
+}
+function pressOnward() {
+    gameContainer.innerHTML = `
+        <h1>Pressing Onward into the Fog</h1>
+        <p>Samuel decided to press onward into the impenetrable fog, determined to uncover the mysteries hidden within.</p>
+        <p>As he moved deeper into the fog, reality itself seemed to unravel, and he felt as if he were descending into madness.</p>
+        <p>Game Over</p>
+    `;
+}
+function tryToReturn() {
+    gameContainer.innerHTML = `
+        <h1>Trying to Return from the Fog</h1>
+        <p>Samuel attempted to retrace his steps and find his way back through the impenetrable fog.</p>
+        <p>But no matter which direction he turned, the fog remained relentless, and he could not find his way out.</p>
+        <p>Game Over</p>
+    `;
+}
+function investigateCemetery() {
+    gameContainer.innerHTML = `
+        <h1>Investigating the Cemetery</h1>
+        <p>Samuel cautiously entered the eerie cemetery, the lantern's feeble light casting long, unsettling shadows among the crumbling tombstones. He scanned the names, dates, and epitaphs, trying to piece together the town's grim history.</p>
+        <p>As he moved deeper into the graveyard, he noticed a peculiar headstone, weathered and moss-covered. It bore the name "Eleanor Blackwood" and a chilling inscription: "She Who Walks the Night." Samuel shivered as he realized that this was the name mentioned in the town's most dreadful legends.</p>
+        <p>Samuel could:</p>
+        <button onclick="unearthGrave()">Unearth Eleanor Blackwood's grave</button>
+        <button onclick="continueToMansion()">Abandon the cemetery and make his way to the menacing mansion</button>
+    `;
+}
+function returnToMansion() {
+    gameContainer.innerHTML = `
+        <h1>Returning to the Sinister Mansion</h1>
+        <p>Samuel decided to retrace his steps and head towards the sinister mansion, believing that the answers to his torment lay there.</p>
+        <p>As he approached the mansion once more, the malevolent presence seemed to intensify, enveloping him in darkness and despair.</p>
+        <p>Game Over</p>
+    `;
+}
+function unearthGrave() {
+    gameContainer.innerHTML = `
+        <h1>Unearthing Eleanor Blackwood's Grave</h1>
+        <p>Samuel decided to unearth Eleanor Blackwood's grave, hoping to find answers to the town's sinister mysteries.</p>
+        <p>As he dug into the earth, a bone-chilling wind swept through the cemetery. When he finally uncovered the coffin, he hesitated for a moment, then opened it.</p>
+        <p>Game Over</p>
+    `;
+}
+function continueToMansion() {
+    gameContainer.innerHTML = `
+        <h1>Continuing to the Menacing Mansion</h1>
+        <p>Samuel decided to abandon the cemetery and make his way to the menacing mansion, believing that confronting whatever lurked within was the key to ending the town's curse.</p>
+        <p>As he approached the mansion once more, the malevolent presence seemed to intensify, enveloping him in darkness and despair.</p>
+        <p>Game Over</p>
+    `;
+}
+function enterMansion() {
+    gameContainer.innerHTML = `
+        <h1>Entering the Menacing Mansion</h1>
+        <p>With trembling resolve, Samuel entered the mansion, its interior shrouded in impenetrable darkness. He could feel a presence lurking in every corner, and chilling whispers filled his ears.</p>
+        <p>As he ventured deeper into the mansion's eerie depths, the walls seemed to close in on him, and the shadows came to life.</p>
+        <p>Should Samuel:</p>
+        <button onclick="keepExploringMansion()">Keep exploring the mansion</button>
+        <button onclick="hideInMansion()">Hide in the mansion</button>
+    `;
+}
+function runAwayMansion() {
+    gameContainer.innerHTML = `
+        <h1>Running Away from the Mansion</h1>
+        <p>Overwhelmed by fear, Samuel turned and fled from the menacing mansion, the echoes of sinister laughter trailing behind him.</p>
+        <p>As he ran through the night, he couldn't escape the feeling that something malevolent watched his every move.</p>
+        <p>Game Over</p>
+    `;
+}
+function keepExploringMansion() {
+    gameContainer.innerHTML = `
+        <h1>Continuing to Explore the Mansion</h1>
+        <p>Samuel decided to press onward, determined to uncover the truth behind the mansion's horrors.</p>
+        <p>As he delved deeper into the mansion, he encountered a room filled with cursed artifacts, each exuding an aura of pure evil. The walls dripped with blood, and ghostly figures lurked in the shadows.</p>
+        <p>Should Samuel:</p>
+        <button onclick="touchArtifact()">Touch one of the cursed artifacts</button>
+        <button onclick="searchForEscape()">Search for a way to escape</button>
+    `;
+}
+function hideInMansion() {
+    gameContainer.innerHTML = `
+        <h1>Hiding in the Mansion</h1>
+        <p>Samuel chose to hide in the mansion, seeking refuge from the malevolent forces that surrounded him.</p>
+        <p>But the mansion was no sanctuary. The walls closed in on him, and the darkness swallowed him whole, sealing his fate within its haunted halls.</p>
+        <p>Game Over</p>
+    `;
+}
+function touchArtifact() {
+    gameContainer.innerHTML = `
+        <h1>Touching a Cursed Artifact</h1>
+        <p>Against his better judgment, Samuel reached out and touched one of the cursed artifacts. A searing pain shot through his body, and he felt his soul being consumed by darkness.</p>
+        <p>He became one with the malevolent forces that haunted the mansion, forever trapped in its nightmarish embrace.</p>
+        <p>Game Over</p>
+    `;
+}
+function searchForEscape() {
+    gameContainer.innerHTML = `
+        <h1>Searching for a Way to Escape</h1>
+        <p>Samuel realized the danger of the mansion's horrors and decided to search for a way to escape, his heart pounding with terror.</p>
+        <p>He came across a hidden passage that led to a room filled with mirrors that reflected grotesque and nightmarish images of himself.</p>
+        <p>Should Samuel:</p>
+        <button onclick="breakMirror()">Break one of the mirrors</button>
+        <button onclick="exploreMirrorRoom()">Continue exploring the mirror room</button>
+    `;
+}
+function exploreMirrorRoom() {
+    gameContainer.innerHTML = `
+        <h1>Exploring the Mirror Room</h1>
+        <p>Samuel chose to continue exploring the mirror room, his reflection twisting and contorting in the grotesque mirrors.</p>
+        <p>He noticed a peculiar mirror that showed a different scene—a glimpse of the town's dark past and the origin of the curse.</p>
+        <p>Should Samuel:</p>
+        <button onclick="tryToAlterTheVision()">Try to alter the vision in the mirror</button>
+        <button onclick="lookForClues()">Look for clues in the mirror room</button>
+    `;
+}
+function attemptRitual() {
+    gameContainer.innerHTML = `
+        <h1>Attempting the Forbidden Ritual</h1>
+        <p>Driven to madness, Samuel decided to attempt the forbidden ritual in a desperate bid to escape the mansion's horrors.</p>
+        <p>As he performed the ritual, dark forces beyond his comprehension consumed him, and his existence became forever entwined with the mansion's malevolent energy.</p>
+        <p>Game Over</p>
+    `;
+}
+function tryToExit() {
+    gameContainer.innerHTML = `
+        <h1>Trying to Exit the Chamber</h1>
+        <p>Samuel realized the danger of the ritual chamber and decided to try to exit, hoping to find another way out.</p>
+        <p>As he made his way back through the mansion's winding passages, he encountered a ghostly apparition that whispered cryptic warnings and dire prophecies.</p>
+        <p>Should Samuel:</p>
+        <button onclick="listenToApparition()">Listen to the apparition's warnings</button>
+        <button onclick="ignoreApparition()">Ignore the apparition and keep moving</button>
+    `;
+}
+function listenToApparition() {
+    gameContainer.innerHTML = `
+        <h1>Listening to the Apparition's Warnings</h1>
+        <p>Samuel chose to listen to the apparition's warnings and heed its advice.</p>
+        <p>He followed the apparition's guidance through the treacherous maze of the mansion, avoiding certain doom.</p>
+        <p>Finally, he reached the mansion's exit, his heart pounding with terror as he escaped the malevolent clutches of the haunted mansion.</p>
+        <p>Congratulations! You've survived Samuel's ordeal.</p>
+        <p>But the town's curse still lingers, and it may return to haunt another soul...</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function ignoreApparition() {
+    gameContainer.innerHTML = `
+        <h1>Ignoring the Apparition</h1>
+        <p>Samuel decided to ignore the apparition's warnings and pressed on.</p>
+        <p>He encountered unspeakable horrors within the mansion, his sanity slipping away with each step.</p>
+        <p>As he ventured deeper into the mansion's heart, he stumbled upon a hidden library filled with ancient tomes, each bound in human skin and written in a language unknown to the living.</p>
+        <p>Should Samuel:</p>
+        <button onclick="readAncientTome()">Read one of the ancient tomes</button>
+        <button onclick="searchForEscape()">Search for a way to escape</button>
+    `;
+}
+function restartGame() {
+    gameContainer.innerHTML = `
+        <h1>Samuel's Journey</h1>
+        <p>In the darkest corner of an isolated, long-forgotten town, where time seemed to have stopped and an eerie silence hung heavy in the air, lived a man named Samuel...</p>
+        <button onclick="continueAhead()">Begin Samuel's journey</button>
+    `;
+}
+function readAncientTome() {
+    gameContainer.innerHTML = `
+        <h1>Reading the Ancient Tome</h1>
+        <p>Driven by morbid curiosity, Samuel chose to read one of the ancient tomes, hoping to uncover forbidden knowledge.</p>
+        <p>As he deciphered the eldritch text, a surge of malevolent energy coursed through him, twisting his perception of reality.</p>
+        <p>Game Over</p>
+    `;
+}
+function searchForEscape() {
+    gameContainer.innerHTML = `
+        <h1>Searching for a Way to Escape</h1>
+        <p>Samuel realized the danger of the mansion's horrors and decided to search for a way to escape, his heart pounding with terror.</p>
+        <p>He came across a hidden passage that led to a room filled with mirrors that reflected grotesque and nightmarish images of himself.</p>
+        <p>Should Samuel:</p>
+        <button onclick="breakMirror()">Break one of the mirrors</button>
+        <button onclick="continueInMirrorRoom()">Continue exploring the mirror room</button>
+    `;
+}
+function breakMirror() {
+    gameContainer.innerHTML = `
+        <h1>Breaking a Mirror</h1>
+        <p>In a desperate attempt to escape the mirror room's eerie illusions, Samuel decided to break one of the mirrors.</p>
+        <p>As the glass shattered, he was pulled into a twisted dimension of infinite reflections, his existence fractured and lost.</p>
+        <p>Game Over</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function mirrorNotBroken() {
+    gameContainer.innerHTML = `
+        <h1>Mirror Left Unbroken</h1>
+        <p>Samuel hesitated and chose not to break any mirrors, sensing that there might be another way out.</p>
+        <p>As he examined the room more closely, he noticed a hidden switch concealed behind one of the mirrors.</p>
+        <p>Should Samuel:</p>
+        <button onclick="pressSwitch()">Press the hidden switch</button>
+        <button onclick="continueMirrorInvestigation()">Continue investigating the mirror room</button>
+    `;
+}
+function pressSwitch() {
+    gameContainer.innerHTML = `
+        <h1>Pressing the Hidden Switch</h1>
+        <p>Samuel decided to press the hidden switch, and the room trembled as a secret passage opened before him.</p>
+        <p>The passage led him to a chamber where an ancient artifact, capable of dispelling curses, awaited.</p>
+        <p>With the artifact in hand, Samuel set out to break the curse and restore the town to its former glory.</p>
+        <p>Congratulations! You've discovered the artifact and saved the town from its eternal torment.</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function continueMirrorInvestigation() {
+    gameContainer.innerHTML = `
+        <h1>Continuing the Mirror Room Investigation</h1>
+        <p>Samuel chose to continue investigating the mirror room, determined to find a way out without breaking anything.</p>
+        <p>As he carefully examined the room, he noticed an ornate mirror with an intricate frame that seemed different from the others.</p>
+        <p>Should Samuel:</p>
+        <button onclick="examineOrnateMirror()">Examine the ornate mirror</button>
+        <button onclick="leaveMirrorRoom()">Leave the mirror room</button>
+    `;
+}
+function examineOrnateMirror() {
+    gameContainer.innerHTML = `
+        <h1>Examining the Ornate Mirror</h1>
+        <p>Samuel chose to examine the ornate mirror with the intricate frame, believing it held a clue to his escape.</p>
+        <p>As he gazed into the mirror, it transported him to a different dimension where he encountered an ancient guardian who possessed the knowledge to break the curse.</p>
+        <p>With the guardian's guidance, Samuel returned to the town, armed with the means to end its suffering.</p>
+        <p>Congratulations! You've found the guardian and saved the town from its eternal torment.</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function leaveMirrorRoom() {
+    gameContainer.innerHTML = `
+        <h1>Leaving the Mirror Room</h1>
+        <p>Samuel chose to leave the mirror room, haunted by the visions it revealed.</p>
+        <p>As he exited, he was greeted by the malevolent forces of the mansion, which dragged him into an abyss of eternal darkness.</p>
+        <p>Game Over</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function continueInMirrorRoom() {
+    gameContainer.innerHTML = `
+        <h1>Continuing to Explore the Mirror Room</h1>
+        <p>Samuel chose to continue exploring the mirror room, his reflection twisting and contorting in the grotesque mirrors.</p>
+        <p>He noticed a peculiar mirror that showed a different scene—a glimpse of the town's dark past and the origin of the curse.</p>
+        <p>Should Samuel:</p>
+        <button onclick="tryToAlterTheVision()">Try to alter the vision in the mirror</button>
+        <button onclick="leaveMirrorRoom()">Leave the mirror room</button>
+    `;
+}
+function tryToAlterTheVision() {
+    gameContainer.innerHTML = `
+        <h1>Trying to Alter the Vision</h1>
+        <p>Samuel decided to try to alter the vision in the mirror, hoping to change the course of events and break the curse.</p>
+        <p>As he concentrated on the mirror, the vision shifted, revealing a way to confront the ancient evil that plagued the town.</p>
+        <p>With newfound resolve, Samuel followed the mirror's guidance and embarked on a perilous journey.</p>
+        <p>Congratulations! You've uncovered the town's dark secret and set it on a path to redemption.</p>
+        <p>But the evil that once lurked in the mansion still yearns for a host...</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+function leaveMirrorRoom() {
+    gameContainer.innerHTML = `
+        <h1>Leaving the Mirror Room</h1>
+        <p>Samuel chose to leave the mirror room, haunted by the visions it revealed.</p>
+        <p>As he exited, he was greeted by the malevolent forces of the mansion, which dragged him into an abyss of eternal darkness.</p>
+        <p>Game Over</p>
+    `;
+}
+function lookForClues() {
+    gameContainer.innerHTML = `
+        <h1>Looking for Clues</h1>
+        <p>Samuel decided to look for clues in the mirror room, hoping to find information that could help him break the curse.</p>
+        <p>As he examined the mirrors, he noticed a hidden compartment behind one of them. Inside, he found a dusty journal that contained cryptic notes and incantations.</p>
+        <p>Should Samuel:</p>
+        <button onclick="readJournal()">Read the journal</button>
+        <button onclick="continueExploration()">Continue exploring the mirror room</button>
+    `;
+}
+function continueExploration() {
+    gameContainer.innerHTML = `
+        <h1>Continuing Exploration</h1>
+        <p>Samuel chose to continue exploring the mirror room, determined to uncover more about the curse and its origins.</p>
+        <p>As he examined the mirrors further, he saw a fleeting vision of a ghostly figure beckoning him towards a hidden passage.</p>
+        <p>Should Samuel:</p>
+        <button onclick="followGhostlyFigure()">Follow the ghostly figure</button>
+        <button onclick="leaveMirrorRoom()">Leave the mirror room</button>
+    `;
+}
+function followGhostlyFigure() {
+    gameContainer.innerHTML = `
+        <h1>Following the Ghostly Figure</h1>
+        <p>Samuel decided to follow the ghostly figure, his curiosity and determination leading him deeper into the mansion.</p>
+        <p>The figure led him to a chamber shrouded in darkness, where an ancient book lay on a pedestal. The book contained the knowledge needed to break the curse.</p>
+        <p>With the newfound knowledge, Samuel set out on a perilous journey to put an end to the curse.</p>
+        <p>Congratulations! You've uncovered the truth and saved the town from its eternal torment.</p>
+        <p>Would you like to restart the game?</p>
+        <button onclick="restartGame()">Restart the game</button>
+    `;
+}
+
+
+
+    </script>
+</body>
+</html>
