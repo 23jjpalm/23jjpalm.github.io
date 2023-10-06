@@ -1,0 +1,37 @@
+/* styles.css */
+
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 18px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #ff5733; /* Spooky orange/red color */
+}
+
+p {
+    margin-bottom: 20px;
+}
+
+button {
+    background-color: #ff5733;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #ff4500; /* Darker shade of orange/red on hover */
+}
