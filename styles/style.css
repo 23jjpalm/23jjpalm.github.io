@@ -35,3 +35,5 @@ button {
 button:hover {
     background-color: #ff4500; /* Darker shade of orange/red on hover */
 }
+
+audio { display:none;}
