@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #message {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #007BFF;
+        }
+
+        input[type="text"] {
+            font-size: 1em;
+            padding: 5px;
+            width: 80px;
+        }
+
+        button {
+            font-size: 1em;
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #bestTry {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #333;
+
+        #footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+        }
+    </style>
+</head>
+<body>
+    <h1>Guess the Number</h1>
+    <p>Guess a number between 1 and 100:</p>
+    <input type="text" id="userGuess" />
+    <button onclick="checkGuess()">Submit</button>
+    <button onclick="startNewRound()">New Round</button>
+    <p id="message"></p>
+    <p id="bestTry">Best Try: <span id="bestTryValue"></span></p>
+    <div>
+      <p>-----------</p>
+<button id="Home" onclick="Menu()">Main Menu</button>
+    </div>
+
+    <script>
+        const minNumber = 1;
+        const maxNumber = 100;
+        let targetNumber, numberOfTries, bestTry;
+        function Menu(){
+          window.location.href = 'index.html';
+        }
+        function startNewRound() {
+            targetNumber = Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber;
+            numberOfTries = 0;
+            document.getElementById('message').textContent = '';
+            document.getElementById('userGuess').value = '';
+            document.getElementById('userGuess').disabled = false;
+        }
+
+        function checkGuess() {
+            const userGuessElement = document.getElementById('userGuess');
+            const messageElement = document.getElementById('message');
+            const userGuess = parseInt(userGuessElement.value);
+
+            if (isNaN(userGuess) || userGuess < minNumber || userGuess > maxNumber) {
+                messageElement.textContent = 'Please enter a number between 1 and 100.';
+            } else {
+                numberOfTries++;
+
+                if (userGuess === targetNumber) {
+                    messageElement.textContent = `Congratulations! You guessed the number ${targetNumber} in ${numberOfTries} tries.`;
+                    userGuessElement.disabled = true;
+                    updateBestTry(numberOfTries);
+                } else if (userGuess < targetNumber) {
+                    messageElement.textContent = 'Higher.';
+                } else {
+                    messageElement.textContent = 'Lower.';
+                }
+
+                userGuessElement.value = '';
+                userGuessElement.focus();
+            }
+        }
+
+        function updateBestTry(tries) {
+            if (isNaN(bestTry) || tries < bestTry) {
+                bestTry = tries;
+                localStorage.setItem('bestTry', bestTry);
+                document.getElementById('bestTryValue').textContent = bestTry;
+            }
+        }
+
+        // Initialize the game
+        bestTry = parseInt(localStorage.getItem('bestTry')) || Infinity;
+        document.getElementById('bestTryValue').textContent = bestTry === Infinity ? 'N/A' : bestTry;
+        startNewRound();
+    </script>
+    <div id="footer">
+        Produced by PalmGames
+    </div>
+    <div>
+      <img src="images/PG.png" alt="Game Image" width="100" height="100"/>
+    </div>
+</body>
+</html>

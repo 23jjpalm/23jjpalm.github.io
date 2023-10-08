@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Press</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #message {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #007BFF;
+        }
+        #button-container {
+            margin-top: 20px;
+        }
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Press the button</h1>
+    <p>Each press increases chances of failure by 1%</p>
+    <p id="message"></p>
+    <p id="counter">Presses: 0</p>
+    <p id="highScore">High Score: 0</p>
+    <div id="button-container">
+        <button id="gameButton" onclick="playGame()">Press Me (Chance: 1%)</button>
+    </div>
+    <div>
+      <p>-----------</p>
+<button id="Home" onclick="Menu()">Main Menu</button>
+    </div>
+
+
+    <script>
+        let presses = 0;
+        let failures = 0;
+        let failureChance = 1;
+        let highScore = localStorage.getItem('highScore') || 0;
+        function Menu(){
+          window.location.href = 'index.html';
+        }
+        function updateHighScore() {
+            highScore = Math.max(presses, highScore);
+            localStorage.setItem('highScore', highScore);
+            document.getElementById('highScore').textContent = `High Score: ${highScore}`;
+        }
+
+        function playGame() {
+            presses++;
+            document.getElementById('counter').textContent = `Presses: ${presses}`;
+            document.getElementById('gameButton').textContent = `Press Me (Chance: ${failureChance}%)`;
+
+            // Check if a failure occurs based on the current failure chance
+            if (Math.random() < failureChance / 100) {
+                failures++;
+                document.getElementById('gameButton').textContent = 'Try Again (Chance: 1%)';
+
+                failureChance = 1;
+
+                // Update high score if the current click count is higher
+                updateHighScore();
+                presses = 0;
+            }
+
+            if (presses >= 100) {
+                if (failures === 0) {
+                    document.getElementById('message').textContent = 'Congratulations! You win!';
+                }
+                document.getElementById('button-container').innerHTML = ''; // Remove the button
+            }
+
+            // Increase the failure chance by 1% with each click
+            failureChance++;
+        }
+
+        // Initialize the high score on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('highScore').textContent = `High Score: ${highScore}`;
+        });
+    </script>
+    <div id="footer">
+        Produced by PalmGames
+    </div>
+    <div>
+      <img src="images/PG.png" alt="Game Image" width="100" height="100"/>
+    </div>
+</body>
+</html>
