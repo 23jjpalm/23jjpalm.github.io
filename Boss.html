@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boss Fight Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #game-container {
+            width: 400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Boss Fight Game</h1>
+    <div id="game-container">
+        <p>Welcome to the Boss Fight! Defeat the boss to win the game.</p>
+        <button id="start-button">Start</button>
+        <div>
+            <label for="volume-slider">Volume:</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+        </div>
+    </div>
+
+    <audio id="intro-audio" src="Audio/BOSSINTRO.mp3" preload="auto"></audio>
+    <audio id="bgm-audio" src="Audio/BOSSLOOP.mp3" loop preload="auto"></audio>
+
+    <script>
+        let playerHealth = 100;
+        let bossHealth = 100; // Added health for the boss.
+        let isGameStarted = false;
+        let quickTimeEventTimeout;
+
+
+      const introAudio = document.getElementById("intro-audio");
+        const bgmAudio = document.getElementById("bgm-audio");
+        const volumeSlider = document.getElementById("volume-slider");
+
+        volumeSlider.addEventListener("input", () => {
+            introAudio.volume = volumeSlider.value;
+            bgmAudio.volume = volumeSlider.value;
+        });
+
+        document.getElementById("start-button").addEventListener("click", () => {
+            isGameStarted = true;
+            updateGameUI();
+            introAudio.play();
+            startBossFight();
+            bgmAudio.volume = volumeSlider.value;
+
+        });
+        introAudio.addEventListener("ended", () => {
+
+                introPlayed = true;
+                  bgmAudio.play();
+                startQuickTimeEvent();
+
+        });
+
+        function startBossFight() {
+            document.getElementById("game-container").innerHTML = `
+                <p>Press the "Attack" key to hit the boss!</p>
+                <p>Player Health: ${playerHealth}</p>
+                <p>Boss Health: ${bossHealth}</p>
+            `;
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "a" || event.key === "A") {
+                    hitBoss();
+                }
+            });
+        }
+
+        function startQuickTimeEvent() {
+            const keyToPress = generateRandomKey();
+            const gameContainer = document.getElementById("game-container");
+
+            gameContainer.innerHTML = `
+                <p>Quick Time Event! Press "${keyToPress}" within 1 second!</p>
+                <p>Player Health: ${playerHealth}</p>
+                <p>Boss Health: ${bossHealth}</p>
+                    <label for="volume-slider">Volume:</label>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+            `;
+
+            quickTimeEventTimeout = setTimeout(() => {
+                gameContainer.innerHTML = `
+                    <p>Quick Time Event failed!</p>
+                    <p>Player Health: ${playerHealth}</p>
+                    <p>Boss Health: ${bossHealth}</p>
+                    <div>
+                        <label for="volume-slider">Volume:</label>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+                    </div>
+
+                `;
+
+            }, 1000);
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === keyToPress) {
+                    hitBoss();
+                }
+            });
+        }
+
+        function generateRandomKey() {
+            const keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            return keys.charAt(Math.floor(Math.random() * keys.length));
+        }
+
+        function hitBoss() {
+            if (quickTimeEventTimeout) {
+                clearTimeout(quickTimeEventTimeout);
+                const bossDamage = Math.floor(Math.random() * 15);
+                bossHealth -= bossDamage; // Boss takes damage only when the player succeeds.
+            }else{
+              const playerDamage = Math.floor(Math.random() * 20);
+              playerHealth -= playerDamage;
+            }
+
+            updateGameUI();
+            checkGameStatus();
+        }
+
+        function updateGameUI() {
+            const gameContainer = document.getElementById("game-container");
+            gameContainer.innerHTML = `
+                <p>Player Health: ${playerHealth}</p>
+                <p>Boss Health: ${bossHealth}</p>
+            `;
+        }
+
+        function checkGameStatus() {
+            if (playerHealth <= 0) {
+                endGame("You lose! The boss defeated you.");
+            } else if (bossHealth <= 0) {
+                endGame("Congratulations! You defeated the boss!");
+            } else {
+                startQuickTimeEvent();
+            }
+        }
+
+        function endGame(message) {
+            isGameStarted = false;
+            const gameContainer = document.getElementById("game-container");
+            gameContainer.innerHTML = `
+                <p>${message}</p>
+                <button id="restart-button">Restart</button>
+            `;
+            document.getElementById("restart-button").addEventListener("click", () => {
+                playerHealth = 100;
+                bossHealth = 100;
+                isGameStarted = true;
+                updateGameUI();
+                startBossFight();
+            });
+        }
+    </script>
+</body>
+</html>
