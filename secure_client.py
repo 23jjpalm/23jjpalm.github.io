@@ -4,13 +4,6 @@ from cryptography.fernet import Fernet
 import threading
 import platform
 
-def clear_console():
-    # Clear console based on the platform
-    if platform.system() == 'Windows':
-        os.system('cls')
-    else:
-        os.system('clear')
-
 def generate_key():
     return Fernet.generate_key()
 
@@ -62,8 +55,6 @@ def start_client():
     try:
         # Display message input prompt
         while True:
-            clear_console()  # Clear console before displaying options
-
             # Message input prompt
             message = input("Enter your message: ")
             encrypted_message = encrypt_message(message, session_key)
