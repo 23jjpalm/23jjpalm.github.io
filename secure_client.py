@@ -57,7 +57,13 @@ def start_client():
             if message.lower() == 'exit':
                 break
 
-            encrypted_message = encrypt_message(message, session_key)
+            # Check if the message is intended for another user privately
+            if message.startswith("TO:"):
+                to_username, message_content = message.split(":", 1)[1].split(" ", 1)
+                encrypted_message = encrypt_message(f"TO:{to_username} {message_content}", session_key)
+            else:
+                encrypted_message = encrypt_message(message, session_key)
+
             client_socket.send(encrypted_message)
 
     except Exception as e:
