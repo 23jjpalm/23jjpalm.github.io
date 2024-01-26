@@ -1,3 +1,4 @@
+
 import socket
 import os
 from cryptography.fernet import Fernet
@@ -67,8 +68,8 @@ def start_client():
             print("\nCommand Menu:")
             print("1. Broadcast message")
             print("2. Private message")
-            print("3. Exit")
-            print("4. Conversation (View conversation with another user)")
+            print("3. Inbox (Check for incoming messages)")
+            print("4. Exit")
 
             choice = input("Enter your choice (1-4): ")
 
@@ -85,15 +86,13 @@ def start_client():
                 encrypted_message = encrypt_message(message, session_key)
 
             elif choice == "3":
+                # Inbox command
+                encrypted_message = encrypt_message("INBOX", session_key)
+
+            elif choice == "4":
                 # Exit command
                 encrypted_message = encrypt_message("exit", session_key)
                 break
-
-            elif choice == "4":
-                # Conversation command
-                to_username = input("Enter the username to view the conversation: ")
-                encrypted_message = encrypt_message("convo", session_key)
-                client_socket.send(encrypted_message)
 
             else:
                 print("Invalid choice. Please enter a number from 1 to 4.")

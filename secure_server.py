@@ -1,3 +1,4 @@
+
 import socket
 import os
 from cryptography.fernet import Fernet
@@ -84,10 +85,9 @@ def start_server():
                         # Store the message for later delivery
                         save_message(to_username, f"{username} (private): {message_content}")
 
-                elif decrypted_message.lower() == "convo":
-                    # Conversation command
-                    to_username = input("Enter the username to view the conversation: ")
-                    chat_log = load_messages(f"{username}_{to_username}")
+                elif decrypted_message.lower() == "inbox":
+                    # Load and send chat log to the user when 'inbox' is received
+                    chat_log = load_messages(username)
                     for chat_entry in chat_log:
                         encrypted_message = encrypt_message(chat_entry, session_key)
                         conn.send(encrypted_message)
