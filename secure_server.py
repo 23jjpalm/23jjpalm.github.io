@@ -1,5 +1,6 @@
 import socket
 import os
+import base64
 from cryptography.fernet import Fernet
 
 def generate_key():
@@ -10,31 +11,49 @@ def encrypt_message(message, key):
     encrypted_message = cipher_suite.encrypt(message.encode())
     return encrypted_message
 
-def decrypt_message(encrypted_message, key):
-    cipher_suite = Fernet(key)
-    decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
-    return decrypted_message
+def decode_image(encoded_image, image_path):
+    with open(image_path, "wb") as image_file:
+        image_file.write(base64.b64decode(encoded_image))
 
-def load_chat_log(room_name):
-    file_path = f"{room_name}_chat_log.txt"
-    chat_log = []
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
-            chat_log = file.read().splitlines()
-    return chat_log
+def load_images(image_path):
+    encoded_images = []
+    try:
+        with open(image_path, "rb") as image_file:
+            encoded_images.append(base64.b64encode(image_file.read()).decode())
+    except FileNotFoundError:
+        print(f"Image file '{image_path}' not found.")
+    return encoded_images
 
-def save_message(room_name, message):
-    file_path = f"{room_name}_chat_log.txt"
-    with open(file_path, 'a') as file:
-        file.write(message + '\n')
+def send_image(conn, session_key, image_path):
+    try:
+        full_image_path = os.path.join("images", image_path)
+        encoded_images = load_images(full_image_path)
+        for encoded_image in encoded_images:
+            encrypted_message = encrypt_message(encoded_image, session_key)
+            conn.send(encrypted_message)
+    except Exception as e:
+        print(f"Error sending image: {e}")
 
-def send_chat_history(conn, session_key, chat_log):
-    for chat_entry in chat_log:
-        encrypted_message = encrypt_message(chat_entry, session_key)
-        conn.send(encrypted_message)
+def receive_images(client_socket, session_key):
+    try:
+        while True:
+            encrypted_data = client_socket.recv(1024)
+            if not encrypted_data:
+                break
+
+            decoded_image = decrypt_message(encrypted_data, session_key)
+            print("Received an image.")
+            image_path = "received_image.png"  # Set your desired image path
+            decode_image(decoded_image, image_path)
+            print(f"Image saved at {image_path}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client_socket.close()
 
 def start_server():
-    host = '192.168.1.166'
+    host = '127.0.0.1'
     port = 12345
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,57 +67,25 @@ def start_server():
         print(f"Connection from {addr}")
 
         try:
-            # Receive and register the client's room name
-            room_name = conn.recv(1024).decode()
-            print(f"Joined room: {room_name}")
+            username = conn.recv(1024).decode()
+            print(f"Registered username: {username}")
 
-            # Generate a secret key for this session
             session_key = generate_key()
             conn.send(session_key)
 
-            # Load chat log for the room
-            chat_log = load_chat_log(room_name)
+            image_path = "PG.jpg"  # Set your image file name
 
-            # Send chat log to the user
-            send_chat_history(conn, session_key, chat_log)
-
-            # Add the client connection to the room_connections dictionary
-            if room_name not in room_connections:
-                room_connections[room_name] = []
-            room_connections[room_name].append(conn)
-
-            # Receive and broadcast messages from the client
-            while True:
-                encrypted_data = conn.recv(1024)
-                if not encrypted_data:
-                    break
-
-                decrypted_message = decrypt_message(encrypted_data, session_key)
-                print(f"Received from {room_name}: {decrypted_message}")
-
-                # Broadcast the message to all clients in the room
-                for client_conn in room_connections.get(room_name, []):
-                    if client_conn != conn:
-                        client_conn.send(encrypt_message(f"{room_name}: {decrypted_message}", session_key))
-
-                # Save the message to the chat log
-                save_message(room_name, f"{room_name}: {decrypted_message}")
-
-            # After the client leaves, update their chat log
-            chat_log = load_chat_log(room_name)
-            send_chat_history(conn, session_key, chat_log)
+            # Send the image to the client
+            send_image(conn, session_key, image_path)
 
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            # Close the connection when the client disconnects
-            if room_name in room_connections:
-                room_connections[room_name].remove(conn)
-                if not room_connections[room_name]:
-                    del room_connections[room_name]
+            if username in usernames:
+                del usernames[username]
             conn.close()
             print(f"Connection from {addr} closed")
 
 if __name__ == "__main__":
-    room_connections = {}
+    usernames = {}
     start_server()
