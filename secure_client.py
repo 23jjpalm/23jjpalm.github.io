@@ -51,12 +51,8 @@ def start_client():
     receive_thread.start()
 
     try:
-        # Send messages to the server
         # Display command menu
         while True:
-            message = input("Enter your message (type 'exit' to disconnect): ")
-            if message.lower() == 'exit':
-                break
             print("\nCommand Menu:")
             print("1. Broadcast message")
             print("2. Private message")
@@ -77,12 +73,6 @@ def start_client():
                 message = f"TO:{to_username} {message_content}"
                 encrypted_message = encrypt_message(message, session_key)
 
-            # Check if the message is intended for another user privately
-            if message.startswith("TO:"):
-                to_username, message_content = message.split(":", 1)[1].split(" ", 1)
-                encrypted_message = encrypt_message(f"TO:{to_username} {message_content}", session_key)
-            elif message.lower() == 'inbox':
-                # Send an 'inbox' command to check for incoming messages
             elif choice == "3":
                 # Inbox command
                 encrypted_message = encrypt_message("INBOX", session_key)
@@ -93,7 +83,6 @@ def start_client():
                 break
 
             else:
-                encrypted_message = encrypt_message(message, session_key)
                 print("Invalid choice. Please enter a number from 1 to 4.")
                 continue
 
@@ -101,3 +90,10 @@ def start_client():
             client_socket.send(encrypted_message)
 
     except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Close the socket when exiting the loop
+        client_socket.close()
+
+if __name__ == "__main__":
+    start_client()
