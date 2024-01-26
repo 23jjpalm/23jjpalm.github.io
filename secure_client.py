@@ -1,4 +1,5 @@
 import socket
+import os
 from cryptography.fernet import Fernet
 import threading
 import platform
@@ -47,8 +48,8 @@ def start_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
 
-    # Join a room
-    room_name = input("Enter the room name: ")
+    # Register a room name
+    room_name = input("Enter your room name: ")
     client_socket.send(room_name.encode())
 
     # Receive the session key from the server
@@ -59,10 +60,11 @@ def start_client():
     receive_thread.start()
 
     try:
-        # Receive and send messages
+        # Display message input prompt
         while True:
             clear_console()  # Clear console before displaying options
 
+            # Message input prompt
             message = input("Enter your message: ")
             encrypted_message = encrypt_message(message, session_key)
 
