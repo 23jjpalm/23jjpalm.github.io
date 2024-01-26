@@ -56,21 +56,6 @@ def start_client():
             message = input("Enter your message (type 'exit' to disconnect): ")
             if message.lower() == 'exit':
                 break
-
-            # Check if the message is intended for another user privately
-            if message.startswith("TO:"):
-                to_username, message_content = message.split(":", 1)[1].split(" ", 1)
-                encrypted_message = encrypt_message(f"TO:{to_username} {message_content}", session_key)
-            else:
-                encrypted_message = encrypt_message(message, session_key)
-
-            client_socket.send(encrypted_message)
-
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        # Close the socket when exiting the loop
-        client_socket.close()
-
-if __name__ == "__main__":
-    start_client()
+            elif message.lower() == 'inbox':
+                # Request inbox from the server
+                encrypted_message = encrypt_message("
