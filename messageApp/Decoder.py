@@ -38,7 +38,7 @@ def start_decoder(access_code):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect to the server
-    client_socket.connect(('127.0.0.1', 5555))
+    client_socket.connect(('192.168.1.166', 5555))
 
     # Start a thread to handle server responses
     response_thread = threading.Thread(target=handle_server_response, args=(client_socket, access_code))
