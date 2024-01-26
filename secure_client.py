@@ -1,6 +1,4 @@
-
 import socket
-import os
 from cryptography.fernet import Fernet
 import threading
 import platform
@@ -49,9 +47,9 @@ def start_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
 
-    # Register a username
-    username = input("Enter your username: ")
-    client_socket.send(username.encode())
+    # Join a room
+    room_name = input("Enter the room name: ")
+    client_socket.send(room_name.encode())
 
     # Receive the session key from the server
     session_key = client_socket.recv(1024)
@@ -61,44 +59,14 @@ def start_client():
     receive_thread.start()
 
     try:
-        # Display command menu
+        # Receive and send messages
         while True:
             clear_console()  # Clear console before displaying options
 
-            print("\nCommand Menu:")
-            print("1. Broadcast message")
-            print("2. Private message")
-            print("3. Inbox (Check for incoming messages)")
-            print("4. Exit")
+            message = input("Enter your message: ")
+            encrypted_message = encrypt_message(message, session_key)
 
-            choice = input("Enter your choice (1-4): ")
-
-            if choice == "1":
-                # Broadcast message
-                message = input("Enter your broadcast message: ")
-                encrypted_message = encrypt_message(message, session_key)
-
-            elif choice == "2":
-                # Private message
-                to_username = input("Enter the username of the recipient: ")
-                message_content = input("Enter your private message: ")
-                message = f"TO:{to_username} {message_content}"
-                encrypted_message = encrypt_message(message, session_key)
-
-            elif choice == "3":
-                # Inbox command
-                encrypted_message = encrypt_message("INBOX", session_key)
-
-            elif choice == "4":
-                # Exit command
-                encrypted_message = encrypt_message("exit", session_key)
-                break
-
-            else:
-                print("Invalid choice. Please enter a number from 1 to 4.")
-                continue
-
-            # Send the chosen command to the server
+            # Send the message to the server
             client_socket.send(encrypted_message)
 
     except Exception as e:
