@@ -12,7 +12,7 @@ def decrypt_message(encrypted_message, key):
     return decrypted_message
 
 def start_client():
-    host = '127.0.0.1'
+    host = '192.168.1.166'
     port = 12345
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
