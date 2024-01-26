@@ -1,5 +1,4 @@
 import socket
-import os
 from cryptography.fernet import Fernet
 
 def generate_key():
@@ -15,13 +14,6 @@ def decrypt_message(encrypted_message, key):
     decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
     return decrypted_message
 
-def clear_console():
-    # Clear console screen based on the operating system
-    if os.name == 'nt':
-        os.system('cls')
-    else:
-        os.system('clear')
-
 def start_client():
     host = '192.168.1.166'
     port = 12345
@@ -34,7 +26,6 @@ def start_client():
     cipher_suite = Fernet(session_key)
 
     while True:
-        clear_console()
         print("Options:")
         print("1. Send a message")
         print("2. Send a private message")
@@ -67,8 +58,6 @@ def start_client():
         elif choice == "4":
             client_socket.send(encrypt_message("EXIT", session_key))
             break
-
-        input("Press Enter to continue...")
 
     client_socket.close()
 
