@@ -53,8 +53,8 @@ def receive_images(client_socket, session_key):
         client_socket.close()
 
 def start_server():
-    host = '127.0.0.1'
-    port = 12345
+    host = '192.168.1.166'
+    port = 54321
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
