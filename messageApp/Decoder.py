@@ -12,7 +12,7 @@ def caesar_decipher(encoded_text, shift):
     result = ""
     for char in encoded_text:
         if char.isalpha():
-            shifted_char = chr((ord(char) - shift - ord('A' if char.isupper() else 'a')) % 26 + ord('A' if char.isupper() else 'a'))
+            shifted_char = chr((ord(char) - shift - ord('A' if char.isupper() else 'a') + 26) % 26 + ord('A' if char.isupper() else 'a'))
             result += shifted_char
         else:
             result += char
