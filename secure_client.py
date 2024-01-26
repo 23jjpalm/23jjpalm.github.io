@@ -29,26 +29,21 @@ def start_client():
     user_key = input("Enter your key: ")
     client_socket.send(user_key.encode())
 
+    # Store the connection and user key in a dictionary
+    client_info = {'connection': client_socket, 'key': user_key}
+
     # Receive and display messages from the server
-    while True:
-        encrypted_data = client_socket.recv(1024)
-        if not encrypted_data:
-            break
-
-        decrypted_message = decrypt_message(encrypted_data, server_key)
-        print(decrypted_message)
-
-    # Enter and send messages to the server
     try:
         while True:
-            message = input("Enter your message (type 'exit' to disconnect): ")
-
-            if message.lower() == 'exit':
+            encrypted_data = client_socket.recv(1024)
+            if not encrypted_data:
                 break
 
-            encrypted_message = encrypt_message(message, server_key)
-            client_socket.send(encrypted_message)
+            decrypted_message = decrypt_message(encrypted_data, server_key)
+            print(decrypted_message)
 
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
         # Close the socket when exiting the loop
         client_socket.close()

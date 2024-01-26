@@ -25,7 +25,6 @@ def start_server():
     print(f"Server listening on {host}:{port}")
 
     message_dict = {}  # Dictionary to store messages based on key
-    clients = []  # List to store connected clients
 
     while True:
         conn, addr = server_socket.accept()
@@ -45,10 +44,7 @@ def start_server():
         user_key = conn.recv(1024).decode()
 
         # Store the key for the user
-        message_dict[username] = {'key': user_key, 'messages': []}
-
-        # Add the new client to the list
-        clients.append(conn)
+        message_dict[username] = {'key': user_key, 'messages': [], 'connection': conn}
 
         try:
             # Receive and store messages from the client
@@ -64,16 +60,16 @@ def start_server():
                 message_dict[username]['messages'].append(decrypted_message)
 
                 # Send the message to all clients
-                for client in clients:
-                    if client != conn:  # Avoid sending the message back to the sender
-                        encrypted_message = encrypt_message(f"{username}: {decrypted_message}", session_key)
-                        client.send(encrypted_message)
+                for client_username, client_info in message_dict.items():
+                    if client_username != username:
+                        client_key = client_info['key']
+                        client_conn = client_info['connection']
+                        encrypted_message = encrypt_message(f"{username}: {decrypted_message}", client_key)
+                        client_conn.send(encrypted_message)
 
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            # Remove the client from the list when disconnected
-            clients.remove(conn)
             # Close the connection when the client disconnects
             conn.close()
             print(f"Connection from {addr} closed")
