@@ -15,21 +15,16 @@ def decrypt_message(encrypted_message, key):
     decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
     return decrypted_message
 
-def generate_conversation_filename(username1, username2):
-    # Sort usernames to have a consistent filename order
-    sorted_usernames = sorted([username1, username2])
-    return f"{sorted_usernames[0]}_{sorted_usernames[1]}_conversation.txt"
-
-def load_conversation(username1, username2):
-    file_path = generate_conversation_filename(username1, username2)
+def load_messages(username):
+    file_path = f"{username}_chat_log.txt"
     messages = []
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             messages = file.read().splitlines()
     return messages
 
-def save_message(username1, username2, message):
-    file_path = generate_conversation_filename(username1, username2)
+def save_message(username, message):
+    file_path = f"{username}_chat_log.txt"
     with open(file_path, 'a') as file:
         file.write(message + '\n')
 
@@ -56,13 +51,13 @@ def start_server():
             session_key = generate_key()
             conn.send(session_key)
 
-            # Load conversation for the user
-            for other_username in usernames.keys():
-                if other_username != username:
-                    conversation = load_conversation(username, other_username)
-                    for entry in conversation:
-                        encrypted_message = encrypt_message(entry, session_key)
-                        conn.send(encrypted_message)
+            # Load chat log for the user
+            chat_log = load_messages(username)
+
+            # Send chat log to the user
+            for chat_entry in chat_log:
+                encrypted_message = encrypt_message(chat_entry, session_key)
+                conn.send(encrypted_message)
 
             # Receive and broadcast messages from the client
             while True:
@@ -81,27 +76,25 @@ def start_server():
                         to_key = usernames[to_username]['key']
                         encrypted_message = encrypt_message(f"{username} (private): {message_content}", to_key)
                         to_conn.send(encrypted_message)
-                        # Save the message to the conversation log
-                        save_message(username, to_username, f"{username} (private): {message_content}")
                     else:
                         # If the recipient is not online, inform the sender
                         sender_message = f"Server: User {to_username} is not online. Your message was not delivered."
                         sender_encrypted_message = encrypt_message(sender_message, session_key)
                         conn.send(sender_encrypted_message)
                         # Store the message for later delivery
-                        save_message(to_username, username, f"{username} (private): {message_content}")
+                        save_message(to_username, f"{username} (private): {message_content}")
+
+                elif decrypted_message.lower() == "convo":
+                    # Conversation command
+                    to_username = input("Enter the username to view the conversation: ")
+                    chat_log = load_messages(f"{username}_{to_username}")
+                    for chat_entry in chat_log:
+                        encrypted_message = encrypt_message(chat_entry, session_key)
+                        conn.send(encrypted_message)
 
                 elif decrypted_message.lower() == "exit":
                     # Handle 'exit' command
                     break
-
-                elif decrypted_message.lower() == "convo":
-                    # Display conversation
-                    to_username = input("Enter the username to open the conversation: ")
-                    conversation = load_conversation(username, to_username)
-                    for entry in conversation:
-                        encrypted_message = encrypt_message(entry, session_key)
-                        conn.send(encrypted_message)
 
                 else:
                     # Broadcast the message to all clients with the same username
@@ -111,8 +104,9 @@ def start_server():
                             client_key = client_info['key']
                             encrypted_message = encrypt_message(f"{username}: {decrypted_message}", client_key)
                             client_conn.send(encrypted_message)
-                            # Save the message to the conversation log
-                            save_message(username, client_username, f"{username}: {decrypted_message}")
+
+                    # Save the message to the chat log
+                    save_message(username, f"{username}: {decrypted_message}")
 
         except Exception as e:
             print(f"Error: {e}")
