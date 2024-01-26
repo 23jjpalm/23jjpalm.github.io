@@ -42,7 +42,7 @@ def start_client():
     client_socket.connect((host, port))
 
     # Register a room name
-    room_name = input("Enter your room name: ")
+    room_name = input("Enter room code: ")
     client_socket.send(room_name.encode())
 
     # Receive the session key from the server

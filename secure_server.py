@@ -15,13 +15,13 @@ def decrypt_message(encrypted_message, key):
     decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
     return decrypted_message
 
-def load_messages(room_name):
+def load_chat_log(room_name):
     file_path = f"{room_name}_chat_log.txt"
-    messages = []
+    chat_log = []
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
-            messages = file.read().splitlines()
-    return messages
+            chat_log = file.read().splitlines()
+    return chat_log
 
 def save_message(room_name, message):
     file_path = f"{room_name}_chat_log.txt"
@@ -52,14 +52,14 @@ def start_server():
             conn.send(session_key)
 
             # Load chat log for the room
-            chat_log = load_messages(room_name)
+            chat_log = load_chat_log(room_name)
 
             # Send chat log to the user
             for chat_entry in chat_log:
                 encrypted_message = encrypt_message(chat_entry, session_key)
                 conn.send(encrypted_message)
 
-            # Receive and save messages from the client
+            # Receive and broadcast messages from the client
             while True:
                 encrypted_data = conn.recv(1024)
                 if not encrypted_data:
@@ -68,22 +68,25 @@ def start_server():
                 decrypted_message = decrypt_message(encrypted_data, session_key)
                 print(f"Received from {room_name}: {decrypted_message}")
 
+                # Broadcast the message to all clients in the room
+                for client_conn in room_connections.get(room_name, []):
+                    if client_conn != conn:
+                        client_conn.send(encrypt_message(f"{room_name}: {decrypted_message}", session_key))
+
                 # Save the message to the chat log
                 save_message(room_name, f"{room_name}: {decrypted_message}")
-
-                # Broadcast the message to all clients in the same room
-                for client_conn, client_room in client_rooms.items():
-                    if client_room == room_name and client_conn != conn:
-                        encrypted_message = encrypt_message(f"{room_name}: {decrypted_message}", session_key)
-                        client_conn.send(encrypted_message)
 
         except Exception as e:
             print(f"Error: {e}")
         finally:
             # Close the connection when the client disconnects
+            if room_name in room_connections:
+                room_connections[room_name].remove(conn)
+                if not room_connections[room_name]:
+                    del room_connections[room_name]
             conn.close()
             print(f"Connection from {addr} closed")
 
 if __name__ == "__main__":
-    client_rooms = {}
+    room_connections = {}
     start_server()
