@@ -1,4 +1,21 @@
 import socket
+import threading
+
+def receive_messages(client_socket):
+    try:
+        # Receive and display messages from the server
+        while True:
+            message = client_socket.recv(1024).decode()
+            if not message:
+                break
+
+            print(message)
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Close the socket when exiting the loop
+        client_socket.close()
 
 def start_client():
     host = '192.168.1.166'
@@ -11,14 +28,18 @@ def start_client():
     username = input("Enter your username: ")
     client_socket.send(username.encode())
 
+    # Start a thread to receive messages
+    receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
+    receive_thread.start()
+
     try:
-        # Receive and display messages from the server
+        # Send messages to the server
         while True:
-            message = client_socket.recv(1024).decode()
-            if not message:
+            message = input("Enter your message (type 'exit' to disconnect): ")
+            if message.lower() == 'exit':
                 break
 
-            print(message)
+            client_socket.send(message.encode())
 
     except Exception as e:
         print(f"Error: {e}")
