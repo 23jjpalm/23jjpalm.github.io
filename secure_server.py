@@ -1,18 +1,4 @@
 import socket
-from cryptography.fernet import Fernet
-
-def generate_key():
-    return Fernet.generate_key()
-
-def encrypt_message(message, key):
-    cipher_suite = Fernet(key)
-    encrypted_message = cipher_suite.encrypt(message.encode())
-    return encrypted_message
-
-def decrypt_message(encrypted_message, key):
-    cipher_suite = Fernet(key)
-    decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
-    return decrypted_message
 
 def start_server():
     host = '192.168.1.166'
@@ -24,7 +10,7 @@ def start_server():
 
     print(f"Server listening on {host}:{port}")
 
-    message_dict = {}  # Dictionary to store messages based on username
+    clients = []
 
     while True:
         conn, addr = server_socket.accept()
@@ -34,38 +20,27 @@ def start_server():
         username = conn.recv(1024).decode()
         print(f"Registered username: {username}")
 
-        # Add the new client to the dictionary
-        if username not in message_dict:
-            message_dict[username] = {'messages': [], 'connection': conn}
-        else:
-            # If the username already exists, retrieve and send existing messages to the client
-            existing_messages = message_dict[username]['messages']
-            for message in existing_messages:
-                conn.send(encrypt_message(message, generate_key()))
+        clients.append((username, conn))
 
         try:
-            # Receive and store messages from the client
+            # Receive and broadcast messages from the client
             while True:
-                encrypted_data = conn.recv(1024)
-                if not encrypted_data:
+                message = conn.recv(1024).decode()
+                if not message:
                     break
 
-                decrypted_message = decrypt_message(encrypted_data, generate_key())
-                print(f"Received from {username}: {decrypted_message}")
+                print(f"Received from {username}: {message}")
 
-                # Store the message in the dictionary
-                message_dict[username]['messages'].append(decrypted_message)
-
-                # Send the message to all clients with the same username
-                for client_username, client_info in message_dict.items():
+                # Broadcast the message to all clients with the same username
+                for client_username, client_conn in clients:
                     if client_username != username:
-                        client_conn = client_info['connection']
-                        encrypted_message = encrypt_message(f"{username}: {decrypted_message}", generate_key())
-                        client_conn.send(encrypted_message)
+                        client_conn.send(f"{username}: {message}".encode())
 
         except Exception as e:
             print(f"Error: {e}")
         finally:
+            # Remove the client when disconnected
+            clients = [(u, c) for u, c in clients if c != conn]
             # Close the connection when the client disconnects
             conn.close()
             print(f"Connection from {addr} closed")
