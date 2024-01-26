@@ -1,3 +1,9 @@
 cd C:\Users\jo\Desktop\Sams journey\23jjpalm.github.io
 
 python secure_server.py
+
+192.168.1.166
+
+
+Single line to open a server
+python OpenServer.py

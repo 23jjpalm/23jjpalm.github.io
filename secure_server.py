@@ -24,28 +24,70 @@ def start_server():
 
     print(f"Server listening on {host}:{port}")
 
-    conn, addr = server_socket.accept()
-    print(f"Connection from {addr}")
-
-    # Generate a secret key for this session
-    session_key = generate_key()
-
-    # Send the session key to the client
-    conn.send(session_key)
-
-    # Receive and register the client's username
-    username = conn.recv(1024).decode()
-    print(f"Registered username: {username}")
+    message_dict = {}  # Dictionary to store messages based on key
+    clients = []  # List to store connected clients
 
     while True:
-        encrypted_data = conn.recv(1024)
-        if not encrypted_data:
-            break
+        conn, addr = server_socket.accept()
+        print(f"Connection from {addr}")
 
-        decrypted_message = decrypt_message(encrypted_data, session_key)
-        print(f"Received from {username}: {decrypted_message}")
+        # Generate a secret key for this session
+        session_key = generate_key()
 
-    conn.close()
+        # Send the session key to the client
+        conn.send(session_key)
+
+        # Receive and register the client's username
+        username = conn.recv(1024).decode()
+        print(f"Registered username: {username}")
+
+        # Receive the user's key
+        user_key = conn.recv(1024).decode()
+
+        # Check if the key matches
+        if username in message_dict and message_dict[username]['key'] == user_key:
+            # Send saved messages to the client
+            for message in message_dict[username]['messages']:
+                encrypted_message = encrypt_message(message, session_key)
+                conn.send(encrypted_message)
+        else:
+            print(f"User {username} entered an incorrect key. Access denied.")
+            conn.send(encrypt_message("Access denied. Incorrect key.", session_key))
+            conn.close()
+            continue
+
+        # Add the new client to the list
+        clients.append(conn)
+
+        try:
+            # Receive and store messages from the client
+            while True:
+                encrypted_data = conn.recv(1024)
+                if not encrypted_data:
+                    break
+
+                decrypted_message = decrypt_message(encrypted_data, session_key)
+                print(f"Received from {username}: {decrypted_message}")
+
+                # Store the message in the dictionary
+                if username not in message_dict:
+                    message_dict[username] = {'key': user_key, 'messages': []}
+                message_dict[username]['messages'].append(decrypted_message)
+
+                # Send the message to all clients
+                for client in clients:
+                    if client != conn:  # Avoid sending the message back to the sender
+                        encrypted_message = encrypt_message(f"{username}: {decrypted_message}", session_key)
+                        client.send(encrypted_message)
+
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            # Remove the client from the list when disconnected
+            clients.remove(conn)
+            # Close the connection when the client disconnects
+            conn.close()
+            print(f"Connection from {addr} closed")
 
 if __name__ == "__main__":
     start_server()

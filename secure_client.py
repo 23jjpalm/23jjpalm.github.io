@@ -25,6 +25,20 @@ def start_client():
     username = input("Enter your username: ")
     client_socket.send(username.encode())
 
+    # Enter the user's key
+    user_key = input("Enter your key: ")
+    client_socket.send(user_key.encode())
+
+    # Receive and display messages from the server
+    while True:
+        encrypted_data = client_socket.recv(1024)
+        if not encrypted_data:
+            break
+
+        decrypted_message = decrypt_message(encrypted_data, server_key)
+        print(decrypted_message)
+
+    # Enter and send messages to the server
     try:
         while True:
             message = input("Enter your message (type 'exit' to disconnect): ")
