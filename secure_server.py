@@ -1,6 +1,6 @@
 import socket
-from cryptography.fernet import Fernet
 import os
+from cryptography.fernet import Fernet
 
 def generate_key():
     return Fernet.generate_key()
@@ -16,21 +16,17 @@ def decrypt_message(encrypted_message, key):
     return decrypted_message
 
 def load_messages(username):
-    filename = f"{username}_messages.txt"
+    file_path = f"{username}_messages.txt"
     messages = []
-
-    if os.path.exists(filename):
-        with open(filename, "r") as file:
-            messages = [line.strip() for line in file]
-
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            messages = file.read().splitlines()
     return messages
 
-def save_messages(username, messages):
-    filename = f"{username}_messages.txt"
-
-    with open(filename, "w") as file:
-        for message in messages:
-            file.write(f"{message}\n")
+def save_message(username, message):
+    file_path = f"{username}_messages.txt"
+    with open(file_path, 'a') as file:
+        file.write(message + '\n')
 
 def start_server():
     host = '192.168.1.166'
@@ -41,8 +37,6 @@ def start_server():
     server_socket.listen()
 
     print(f"Server listening on {host}:{port}")
-
-    clients = {}
 
     while True:
         conn, addr = server_socket.accept()
@@ -59,9 +53,6 @@ def start_server():
 
             # Load stored messages for the user
             stored_messages = load_messages(username)
-
-            # Store the user's connection, key, and stored messages
-            clients[username] = {'connection': conn, 'key': session_key, 'messages': stored_messages}
 
             # Send stored messages to the user
             for stored_message in stored_messages:
@@ -80,26 +71,36 @@ def start_server():
                 # Check if the message is intended for another user
                 if decrypted_message.startswith("TO:"):
                     to_username, message_content = decrypted_message.split(":", 1)[1].split(" ", 1)
-                    if to_username in clients:
-                        to_conn = clients[to_username]['connection']
-                        to_key = clients[to_username]['key']
+                    if to_username in usernames:
+                        to_conn = usernames[to_username]['connection']
+                        to_key = usernames[to_username]['key']
                         encrypted_message = encrypt_message(f"{username} (private): {message_content}", to_key)
                         to_conn.send(encrypted_message)
                     else:
-                        # If the recipient is not found, store the message for later
-                        clients[to_username]['messages'].append(f"{username} (private): {message_content}")
+                        # If the recipient is not online, inform the sender
+                        sender_message = f"Server: User {to_username} is not online. Your message was not delivered."
+                        sender_encrypted_message = encrypt_message(sender_message, session_key)
+                        conn.send(sender_encrypted_message)
+                        # Store the message for later delivery
+                        save_message(to_username, f"{username} (private): {message_content}")
 
                 elif decrypted_message.lower() == "inbox":
-                    # Send stored messages to the user when 'inbox' is received
-                    for stored_message in clients[username]['messages']:
+                    # Load and send stored messages to the user when 'inbox' is received
+                    stored_messages = load_messages(username)
+                    for stored_message in stored_messages:
                         encrypted_message = encrypt_message(stored_message, session_key)
                         conn.send(encrypted_message)
                     # Clear the stored messages for the user
-                    clients[username]['messages'] = []
+                    with open(f"{username}_messages.txt", 'w') as file:
+                        file.write("")
+
+                elif decrypted_message.lower() == "exit":
+                    # Handle 'exit' command
+                    break
 
                 else:
                     # Broadcast the message to all clients with the same username
-                    for client_username, client_info in clients.items():
+                    for client_username, client_info in usernames.items():
                         if client_username != username:
                             client_conn = client_info['connection']
                             client_key = client_info['key']
@@ -109,15 +110,12 @@ def start_server():
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            # Save stored messages for the user
-            if username in clients:
-                stored_messages = clients[username]['messages']
-                save_messages(username, stored_messages)
-                del clients[username]
-
             # Close the connection when the client disconnects
+            if username in usernames:
+                del usernames[username]
             conn.close()
             print(f"Connection from {addr} closed")
 
 if __name__ == "__main__":
+    usernames = {}
     start_server()
