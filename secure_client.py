@@ -18,19 +18,12 @@ def start_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
 
-    # Receive the session key from the server
-    server_key = client_socket.recv(1024)
-
     # Register a username
     username = input("Enter your username: ")
     client_socket.send(username.encode())
 
-    # Enter the user's key
-    user_key = input("Enter your key: ")
-    client_socket.send(user_key.encode())
-
-    # Store the connection and user key in a dictionary
-    client_info = {'connection': client_socket, 'key': user_key}
+    # Store the connection in a dictionary
+    client_info = {'connection': client_socket}
 
     # Receive and display messages from the server
     try:
@@ -39,7 +32,7 @@ def start_client():
             if not encrypted_data:
                 break
 
-            decrypted_message = decrypt_message(encrypted_data, server_key)
+            decrypted_message = decrypt_message(encrypted_data, generate_key())
             print(decrypted_message)
 
     except Exception as e:

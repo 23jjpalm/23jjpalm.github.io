@@ -24,27 +24,24 @@ def start_server():
 
     print(f"Server listening on {host}:{port}")
 
-    message_dict = {}  # Dictionary to store messages based on key
+    message_dict = {}  # Dictionary to store messages based on username
 
     while True:
         conn, addr = server_socket.accept()
         print(f"Connection from {addr}")
 
-        # Generate a secret key for this session
-        session_key = generate_key()
-
-        # Send the session key to the client
-        conn.send(session_key)
-
         # Receive and register the client's username
         username = conn.recv(1024).decode()
         print(f"Registered username: {username}")
 
-        # Receive the user's key
-        user_key = conn.recv(1024).decode()
-
-        # Store the key for the user
-        message_dict[username] = {'key': user_key, 'messages': [], 'connection': conn}
+        # Add the new client to the dictionary
+        if username not in message_dict:
+            message_dict[username] = {'messages': [], 'connection': conn}
+        else:
+            # If the username already exists, retrieve and send existing messages to the client
+            existing_messages = message_dict[username]['messages']
+            for message in existing_messages:
+                conn.send(encrypt_message(message, generate_key()))
 
         try:
             # Receive and store messages from the client
@@ -53,18 +50,17 @@ def start_server():
                 if not encrypted_data:
                     break
 
-                decrypted_message = decrypt_message(encrypted_data, session_key)
+                decrypted_message = decrypt_message(encrypted_data, generate_key())
                 print(f"Received from {username}: {decrypted_message}")
 
                 # Store the message in the dictionary
                 message_dict[username]['messages'].append(decrypted_message)
 
-                # Send the message to all clients
+                # Send the message to all clients with the same username
                 for client_username, client_info in message_dict.items():
                     if client_username != username:
-                        client_key = client_info['key']
                         client_conn = client_info['connection']
-                        encrypted_message = encrypt_message(f"{username}: {decrypted_message}", client_key)
+                        encrypted_message = encrypt_message(f"{username}: {decrypted_message}", generate_key())
                         client_conn.send(encrypted_message)
 
         except Exception as e:
