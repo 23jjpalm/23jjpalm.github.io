@@ -15,7 +15,7 @@ def decrypt_message(encrypted_message, key):
     return decrypted_message
 
 def start_server():
-    host = '192.168.1.166'
+    host = '127.0.0.1'
     port = 12345
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,17 +44,8 @@ def start_server():
         # Receive the user's key
         user_key = conn.recv(1024).decode()
 
-        # Check if the key matches
-        if username in message_dict and message_dict[username]['key'] == user_key:
-            # Send saved messages to the client
-            for message in message_dict[username]['messages']:
-                encrypted_message = encrypt_message(message, session_key)
-                conn.send(encrypted_message)
-        else:
-            print(f"User {username} entered an incorrect key. Access denied.")
-            conn.send(encrypt_message("Access denied. Incorrect key.", session_key))
-            conn.close()
-            continue
+        # Store the key for the user
+        message_dict[username] = {'key': user_key, 'messages': []}
 
         # Add the new client to the list
         clients.append(conn)
@@ -70,8 +61,6 @@ def start_server():
                 print(f"Received from {username}: {decrypted_message}")
 
                 # Store the message in the dictionary
-                if username not in message_dict:
-                    message_dict[username] = {'key': user_key, 'messages': []}
                 message_dict[username]['messages'].append(decrypted_message)
 
                 # Send the message to all clients
