@@ -1,0 +1,3 @@
+cd C:\Users\jo\Desktop\Sams journey\23jjpalm.github.io
+
+python secure_server.py

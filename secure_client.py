@@ -25,12 +25,19 @@ def start_client():
     username = input("Enter your username: ")
     client_socket.send(username.encode())
 
-    while True:
-        message = input("Enter your message: ")
-        encrypted_message = encrypt_message(message, server_key)
-        client_socket.send(encrypted_message)
+    try:
+        while True:
+            message = input("Enter your message (type 'exit' to disconnect): ")
 
-    client_socket.close()
+            if message.lower() == 'exit':
+                break
+
+            encrypted_message = encrypt_message(message, server_key)
+            client_socket.send(encrypted_message)
+
+    finally:
+        # Close the socket when exiting the loop
+        client_socket.close()
 
 if __name__ == "__main__":
     start_client()
