@@ -28,6 +28,11 @@ def save_message(room_name, message):
     with open(file_path, 'a') as file:
         file.write(message + '\n')
 
+def send_chat_history(conn, session_key, chat_log):
+    for chat_entry in chat_log:
+        encrypted_message = encrypt_message(chat_entry, session_key)
+        conn.send(encrypted_message)
+
 def start_server():
     host = '192.168.1.166'
     port = 12345
@@ -55,9 +60,12 @@ def start_server():
             chat_log = load_chat_log(room_name)
 
             # Send chat log to the user
-            for chat_entry in chat_log:
-                encrypted_message = encrypt_message(chat_entry, session_key)
-                conn.send(encrypted_message)
+            send_chat_history(conn, session_key, chat_log)
+
+            # Add the client connection to the room_connections dictionary
+            if room_name not in room_connections:
+                room_connections[room_name] = []
+            room_connections[room_name].append(conn)
 
             # Receive and broadcast messages from the client
             while True:
