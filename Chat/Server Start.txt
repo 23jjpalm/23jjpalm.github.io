@@ -1,0 +1,245 @@
+cd C:\Users\jo\Desktop\Sams journey\23jjpalm.github.io
+
+python secure_server.py
+
+192.168.1.166
+
+
+Single line to open a server
+python OpenServer.py
+
+import socket
+import os
+from cryptography.fernet import Fernet
+
+def generate_key():
+    return Fernet.generate_key()
+
+def encrypt_message(message, key):
+    cipher_suite = Fernet(key)
+    encrypted_message = cipher_suite.encrypt(message.encode())
+    return encrypted_message
+
+def decrypt_message(encrypted_message, key):
+    cipher_suite = Fernet(key)
+    decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
+    return decrypted_message
+
+def load_messages(username):
+    file_path = f"{username}_chat_log.txt"
+    messages = []
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            messages = file.read().splitlines()
+    return messages
+
+def save_message(username, message):
+    file_path = f"{username}_chat_log.txt"
+    with open(file_path, 'a') as file:
+        file.write(message + '\n')
+
+def start_server():
+    host = '192.168.1.166'
+    port = 12345
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((host, port))
+    server_socket.listen()
+
+    print(f"Server listening on {host}:{port}")
+
+    while True:
+        conn, addr = server_socket.accept()
+        print(f"Connection from {addr}")
+
+        try:
+            # Receive and register the client's username
+            username = conn.recv(1024).decode()
+            print(f"Registered username: {username}")
+
+            # Generate a secret key for this session
+            session_key = generate_key()
+            conn.send(session_key)
+
+            # Load chat log for the user
+            chat_log = load_messages(username)
+
+            # Send chat log to the user
+            for chat_entry in chat_log:
+                encrypted_message = encrypt_message(chat_entry, session_key)
+                conn.send(encrypted_message)
+
+            # Receive and broadcast messages from the client
+            while True:
+                encrypted_data = conn.recv(1024)
+                if not encrypted_data:
+                    break
+
+                decrypted_message = decrypt_message(encrypted_data, session_key)
+                print(f"Received from {username}: {decrypted_message}")
+
+                # Check if the message is intended for another user
+                if decrypted_message.startswith("TO:"):
+                    to_username, message_content = decrypted_message.split(":", 1)[1].split(" ", 1)
+                    if to_username in usernames:
+                        to_conn = usernames[to_username]['connection']
+                        to_key = usernames[to_username]['key']
+                        encrypted_message = encrypt_message(f"{username} (private): {message_content}", to_key)
+                        to_conn.send(encrypted_message)
+                    else:
+                        # If the recipient is not online, inform the sender
+                        sender_message = f"Server: User {to_username} is not online. Your message was not delivered."
+                        sender_encrypted_message = encrypt_message(sender_message, session_key)
+                        conn.send(sender_encrypted_message)
+                        # Store the message for later delivery
+                        save_message(to_username, f"{username} (private): {message_content}")
+
+                elif decrypted_message.lower() == "inbox":
+                    # Load and send chat log to the user when 'inbox' is received
+                    chat_log = load_messages(username)
+                    for chat_entry in chat_log:
+                        encrypted_message = encrypt_message(chat_entry, session_key)
+                        conn.send(encrypted_message)
+
+                elif decrypted_message.lower() == "exit":
+                    # Handle 'exit' command
+                    break
+
+                else:
+                    # Broadcast the message to all clients with the same username
+                    for client_username, client_info in usernames.items():
+                        if client_username != username:
+                            client_conn = client_info['connection']
+                            client_key = client_info['key']
+                            encrypted_message = encrypt_message(f"{username}: {decrypted_message}", client_key)
+                            client_conn.send(encrypted_message)
+
+                    # Save the message to the chat log
+                    save_message(username, f"{username}: {decrypted_message}")
+
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            # Close the connection when the client disconnects
+            if username in usernames:
+                del usernames[username]
+            conn.close()
+            print(f"Connection from {addr} closed")
+
+if __name__ == "__main__":
+    usernames = {}
+    start_server()
+
+
+
+
+import socket
+import os
+from cryptography.fernet import Fernet
+import threading
+import platform
+
+def clear_console():
+    # Clear console based on the platform
+    if platform.system() == 'Windows':
+        os.system('cls')
+    else:
+        os.system('clear')
+
+def generate_key():
+    return Fernet.generate_key()
+
+def encrypt_message(message, key):
+    cipher_suite = Fernet(key)
+    encrypted_message = cipher_suite.encrypt(message.encode())
+    return encrypted_message
+
+def decrypt_message(encrypted_message, key):
+    cipher_suite = Fernet(key)
+    decrypted_message = cipher_suite.decrypt(encrypted_message).decode()
+    return decrypted_message
+
+def receive_messages(client_socket, session_key):
+    try:
+        # Receive and display messages from the server
+        while True:
+            encrypted_data = client_socket.recv(1024)
+            if not encrypted_data:
+                break
+
+            decrypted_message = decrypt_message(encrypted_data, session_key)
+            print(decrypted_message)
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Close the socket when exiting the loop
+        client_socket.close()
+
+def start_client():
+    host = '192.168.1.166'
+    port = 12345
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((host, port))
+
+    # Register a username
+    username = input("Enter your username: ")
+    client_socket.send(username.encode())
+
+    # Receive the session key from the server
+    session_key = client_socket.recv(1024)
+
+    # Start a thread to receive messages
+    receive_thread = threading.Thread(target=receive_messages, args=(client_socket, session_key))
+    receive_thread.start()
+
+    try:
+        # Display command menu
+        while True:
+            clear_console()  # Clear console before displaying options
+
+            print("\nCommand Menu:")
+            print("1. Broadcast message")
+            print("2. Private message")
+            print("3. Inbox (Check for incoming messages)")
+            print("4. Exit")
+
+            choice = input("Enter your choice (1-4): ")
+
+            if choice == "1":
+                # Broadcast message
+                message = input("Enter your broadcast message: ")
+                encrypted_message = encrypt_message(message, session_key)
+
+            elif choice == "2":
+                # Private message
+                to_username = input("Enter the username of the recipient: ")
+                message_content = input("Enter your private message: ")
+                message = f"TO:{to_username} {message_content}"
+                encrypted_message = encrypt_message(message, session_key)
+
+            elif choice == "3":
+                # Inbox command
+                encrypted_message = encrypt_message("INBOX", session_key)
+
+            elif choice == "4":
+                # Exit command
+                encrypted_message = encrypt_message("exit", session_key)
+                break
+
+            else:
+                print("Invalid choice. Please enter a number from 1 to 4.")
+                continue
+
+            # Send the chosen command to the server
+            client_socket.send(encrypted_message)
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Close the socket when exiting the loop
+        client_socket.close()
+
+if __name__ == "__main__":
+    start_client()

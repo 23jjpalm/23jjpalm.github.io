@@ -1,0 +1,7 @@
+cd C:\Users\jo\Desktop\Sams journey\23jjpalm.github.io\Chat
+
+
+python OpenServer.py
+
+
+192.168.1.166
