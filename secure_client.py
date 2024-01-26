@@ -51,22 +51,42 @@ def start_client():
     receive_thread.start()
 
     try:
-        # Send messages to the server
+        # Display command menu
         while True:
-            message = input("Enter your message (type 'exit' to disconnect): ")
-            if message.lower() == 'exit':
-                break
+            print("\nCommand Menu:")
+            print("1. Broadcast message")
+            print("2. Private message")
+            print("3. Inbox (Check for incoming messages)")
+            print("4. Exit")
 
-            # Check if the message is intended for another user privately
-            if message.startswith("TO:"):
-                to_username, message_content = message.split(":", 1)[1].split(" ", 1)
-                encrypted_message = encrypt_message(f"TO:{to_username} {message_content}", session_key)
-            elif message.lower() == 'inbox':
-                # Send an 'inbox' command to check for incoming messages
-                encrypted_message = encrypt_message("INBOX", session_key)
-            else:
+            choice = input("Enter your choice (1-4): ")
+
+            if choice == "1":
+                # Broadcast message
+                message = input("Enter your broadcast message: ")
                 encrypted_message = encrypt_message(message, session_key)
 
+            elif choice == "2":
+                # Private message
+                to_username = input("Enter the username of the recipient: ")
+                message_content = input("Enter your private message: ")
+                message = f"TO:{to_username} {message_content}"
+                encrypted_message = encrypt_message(message, session_key)
+
+            elif choice == "3":
+                # Inbox command
+                encrypted_message = encrypt_message("INBOX", session_key)
+
+            elif choice == "4":
+                # Exit command
+                encrypted_message = encrypt_message("exit", session_key)
+                break
+
+            else:
+                print("Invalid choice. Please enter a number from 1 to 4.")
+                continue
+
+            # Send the chosen command to the server
             client_socket.send(encrypted_message)
 
     except Exception as e:
