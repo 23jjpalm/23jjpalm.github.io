@@ -56,7 +56,7 @@ def start_client():
         # Display message input prompt
         while True:
             # Message input prompt
-            message = input("Enter your message: ")
+            message = input("")
             encrypted_message = encrypt_message(message, session_key)
 
             # Send the message to the server
