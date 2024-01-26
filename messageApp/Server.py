@@ -1,37 +1,43 @@
 import socket
 import threading
+import random
 
 def handle_client(client_socket):
-    # This function will handle the communication with a single client
     while True:
-        # Receive data from the client
         data = client_socket.recv(1024)
         if not data:
-            break  # Break the loop if no data is received
+            break
 
-        # Echo the received data back to the client
-        client_socket.send(data)
+        # Encode the received message using a Caesar cipher with a random shift
+        shift = random.randint(1, 25)
+        encoded_data = caesar_cipher(data.decode(), shift)
 
-    # Close the connection with the client
+        # Send back the encoded message
+        client_socket.send(encoded_data.encode())
+
     client_socket.close()
 
+
+def caesar_cipher(text, shift):
+    result = ""
+    for char in text:
+        if char.isalpha():
+            shifted_char = chr((ord(char) + shift - ord('A' if char.isupper() else 'a')) % 26 + ord('A' if char.isupper() else 'a'))
+            result += shifted_char
+        else:
+            result += char
+    return result
+
 def start_server():
-    # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Bind the socket to a specific address and port
     server_socket.bind(('192.168.1.166', 5555))
-
-    # Enable the server to accept connections
     server_socket.listen(5)
     print("[*] Listening on 192.168.1.166:5555")
 
     while True:
-        # Accept a connection from a client
         client_socket, addr = server_socket.accept()
         print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
 
-        # Create a new thread to handle the client
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
         client_handler.start()
 
