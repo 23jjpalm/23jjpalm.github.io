@@ -90,7 +90,7 @@ def start_server():
                         clients[to_username]['messages'].append(f"{username} (private): {message_content}")
 
                 elif decrypted_message.lower() == "inbox":
-                    # Send any stored messages to the user when they request their inbox
+                    # Send stored messages to the user when 'inbox' is received
                     for stored_message in clients[username]['messages']:
                         encrypted_message = encrypt_message(stored_message, session_key)
                         conn.send(encrypted_message)
