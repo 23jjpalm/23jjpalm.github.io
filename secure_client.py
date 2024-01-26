@@ -26,7 +26,7 @@ def receive_messages(client_socket, session_key):
                 break
 
             decrypted_message = decrypt_message(encrypted_data, session_key)
-            print(decrypted_message)
+            print(f"Received: {decrypted_message}")
 
     except Exception as e:
         print(f"Error: {e}")

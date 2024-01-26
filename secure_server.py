@@ -84,6 +84,10 @@ def start_server():
                 # Save the message to the chat log
                 save_message(room_name, f"{room_name}: {decrypted_message}")
 
+            # After the client leaves, update their chat log
+            chat_log = load_chat_log(room_name)
+            send_chat_history(conn, session_key, chat_log)
+
         except Exception as e:
             print(f"Error: {e}")
         finally:
