@@ -16,7 +16,7 @@ def decrypt_message(encrypted_message, key):
     return decrypted_message
 
 def load_messages(username):
-    file_path = f"{username}_messages.txt"
+    file_path = f"{username}_chat_log.txt"
     messages = []
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
@@ -24,7 +24,7 @@ def load_messages(username):
     return messages
 
 def save_message(username, message):
-    file_path = f"{username}_messages.txt"
+    file_path = f"{username}_chat_log.txt"
     with open(file_path, 'a') as file:
         file.write(message + '\n')
 
@@ -51,12 +51,12 @@ def start_server():
             session_key = generate_key()
             conn.send(session_key)
 
-            # Load stored messages for the user
-            stored_messages = load_messages(username)
+            # Load chat log for the user
+            chat_log = load_messages(username)
 
-            # Send stored messages to the user
-            for stored_message in stored_messages:
-                encrypted_message = encrypt_message(stored_message, session_key)
+            # Send chat log to the user
+            for chat_entry in chat_log:
+                encrypted_message = encrypt_message(chat_entry, session_key)
                 conn.send(encrypted_message)
 
             # Receive and broadcast messages from the client
@@ -85,14 +85,11 @@ def start_server():
                         save_message(to_username, f"{username} (private): {message_content}")
 
                 elif decrypted_message.lower() == "inbox":
-                    # Load and send stored messages to the user when 'inbox' is received
-                    stored_messages = load_messages(username)
-                    for stored_message in stored_messages:
-                        encrypted_message = encrypt_message(stored_message, session_key)
+                    # Load and send chat log to the user when 'inbox' is received
+                    chat_log = load_messages(username)
+                    for chat_entry in chat_log:
+                        encrypted_message = encrypt_message(chat_entry, session_key)
                         conn.send(encrypted_message)
-                    # Clear the stored messages for the user
-                    with open(f"{username}_messages.txt", 'w') as file:
-                        file.write("")
 
                 elif decrypted_message.lower() == "exit":
                     # Handle 'exit' command
@@ -106,6 +103,9 @@ def start_server():
                             client_key = client_info['key']
                             encrypted_message = encrypt_message(f"{username}: {decrypted_message}", client_key)
                             client_conn.send(encrypted_message)
+
+                    # Save the message to the chat log
+                    save_message(username, f"{username}: {decrypted_message}")
 
         except Exception as e:
             print(f"Error: {e}")

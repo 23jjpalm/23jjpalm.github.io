@@ -1,6 +1,15 @@
 import socket
+import os
 from cryptography.fernet import Fernet
 import threading
+import platform
+
+def clear_console():
+    # Clear console based on the platform
+    if platform.system() == 'Windows':
+        os.system('cls')
+    else:
+        os.system('clear')
 
 def generate_key():
     return Fernet.generate_key()
@@ -53,6 +62,8 @@ def start_client():
     try:
         # Display command menu
         while True:
+            clear_console()  # Clear console before displaying options
+
             print("\nCommand Menu:")
             print("1. Broadcast message")
             print("2. Private message")
