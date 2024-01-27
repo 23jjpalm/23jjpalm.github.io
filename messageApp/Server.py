@@ -30,16 +30,16 @@ def handle_client(client_socket):
     client_socket.send("Enter your message: ".encode())
     message = client_socket.recv(1024).decode()
 
-    if choice == 'encode':
-        shift = int(input("Enter the shift for Caesar cipher: "))
-        encoded_message = caesar_cipher(message, shift)
-        shuffled_message = shuffle_cipher(encoded_message)
-        client_socket.send(shuffled_message.encode())
-    elif choice == 'decode':
-        reversed_message = reverse_shuffle(message)
-        shift = int(input("Enter the shift for reversing Caesar cipher: "))
-        decoded_message = caesar_cipher(reversed_message, -shift)
-        client_socket.send(decoded_message.encode())
+    if choice == 'encode' or choice == 'decode':
+        shift = int(client_socket.recv(1024).decode())
+        if choice == 'encode':
+            encoded_message = caesar_cipher(message, shift)
+            shuffled_message = shuffle_cipher(encoded_message)
+            client_socket.send(shuffled_message.encode())
+        elif choice == 'decode':
+            reversed_message = reverse_shuffle(message)
+            decoded_message = caesar_cipher(reversed_message, -shift)
+            client_socket.send(decoded_message.encode())
     else:
         client_socket.send("Invalid choice. Closing connection.".encode())
 

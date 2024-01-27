@@ -14,11 +14,16 @@ def main():
 
     print(client_socket.recv(1024).decode())
 
-    message = input()
+    message = input("Enter your message: ")
     client_socket.send(message.encode())
 
-    response = client_socket.recv(1024).decode()
-    print(f"Server response: {response}")
+    if choice == 'encode' or choice == 'decode':
+        shift = int(input("Enter the cipher shift: "))
+        client_socket.send(str(shift).encode())
+        response = client_socket.recv(1024).decode()
+        print(f"Server response: {response}")
+    else:
+        print("Invalid choice. Closing connection.")
 
     client_socket.close()
 
