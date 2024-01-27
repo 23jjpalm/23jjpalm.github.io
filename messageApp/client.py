@@ -27,8 +27,8 @@ def start_client():
             client_socket.send('decode'.encode())
 
             # Input cypher seed, shuffle seed, and encoded message
-            cypher_seed = int(input("Enter cypher seed: "))
-            shuffle_seed = int(input("Enter shuffle seed: "))
+            cypher_seed = int(encoded_data.split('Cypher Seed: ')[1].split(' ')[0])
+            shuffle_seed = int(encoded_data.split('Shuffle Seed: ')[1])
             encoded_message = input("Enter the encoded message: ")
 
             # Send cypher seed, shuffle seed, and encoded message to the server

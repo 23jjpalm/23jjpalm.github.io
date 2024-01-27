@@ -42,7 +42,8 @@ def handle_client(client_socket):
             encoded_message = caesar_cipher(shuffled_message, cypher_seed)
 
             # Send back the encoded message and the cypher and shuffle seed within quotes
-            client_socket.send(f'Encoded Message: "{encoded_message}" Cypher Seed: {cypher_seed} Shuffle Seed: {shuffle_seed}'.encode())
+            response = f'Encoded Message: "{encoded_message}" Cypher Seed: {cypher_seed} Shuffle Seed: {shuffle_seed}'
+            client_socket.send(response.encode())
         elif option == 'decode':
             # Receive cypher seed, shuffle seed, and encoded message from the client
             cypher_seed = int(client_socket.recv(1024).decode())
