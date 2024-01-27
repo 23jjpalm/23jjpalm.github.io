@@ -1,34 +1,26 @@
 import socket
 
-def start_client():
-    # Create a socket object
+def main():
+    host = "192.168.1.166"
+    port = 12345
+
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((host, port))
 
-    # Connect to the server
-    client_socket.connect(('192.168.1.166', 5555))
+    print(client_socket.recv(1024).decode())
 
-    while True:
-        print("Options:")
-        print("1. Encode")
-        print("2. Exit")
+    choice = input().lower()
+    client_socket.send(choice.encode())
 
-        choice = input("Enter your choice (1/2): ")
+    print(client_socket.recv(1024).decode())
 
-        if choice == '1':
-            # Option to encode
-            client_socket.send('encode'.encode())
+    message = input()
+    client_socket.send(message.encode())
 
-            # Receive the encoded message and cypher and shuffle seed
-            encoded_data = client_socket.recv(1024).decode()
-            print(encoded_data)
-        elif choice == '2':
-            # Option to exit
-            break
-        else:
-            print("Invalid choice. Try again.")
+    response = client_socket.recv(1024).decode()
+    print(f"Server response: {response}")
 
-    # Close the connection with the server
     client_socket.close()
 
 if __name__ == "__main__":
-    start_client()
+    main()
