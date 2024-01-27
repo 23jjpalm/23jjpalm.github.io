@@ -19,33 +19,21 @@ def start_client():
             # Option to encode
             client_socket.send('encode'.encode())
 
-            # Receive cypher and shuffle seed from the user
-            cypher = input("Enter the cypher: ")
-            client_socket.send(cypher.encode())
-
-            shuffle_seed = input("Enter the shuffle seed: ")
-            client_socket.send(shuffle_seed.encode())
-
-            # Send the message to be encoded
-            message = input("Enter the message to encode: ")
-            client_socket.send(message.encode())
-
-            # Receive and print the encoded message
-            encoded_message = client_socket.recv(1024).decode()
-            print(f"Encoded Message: {encoded_message}")
+            # Receive the encoded message and cypher and shuffle seed
+            encoded_data = client_socket.recv(1024).decode()
+            print(encoded_data)
         elif choice == '2':
             # Option to decode
             client_socket.send('decode'.encode())
 
-            # Receive cypher and shuffle seed from the user
-            cypher = input("Enter the cypher: ")
-            client_socket.send(cypher.encode())
+            # Input cypher seed, shuffle seed, and encoded message
+            cypher_seed = int(input("Enter cypher seed: "))
+            shuffle_seed = int(input("Enter shuffle seed: "))
+            encoded_message = input("Enter the encoded message: ")
 
-            shuffle_seed = input("Enter the shuffle seed: ")
-            client_socket.send(shuffle_seed.encode())
-
-            # Send the encoded message to be decoded
-            encoded_message = input("Enter the message to decode: ")
+            # Send cypher seed, shuffle seed, and encoded message to the server
+            client_socket.send(str(cypher_seed).encode())
+            client_socket.send(str(shuffle_seed).encode())
             client_socket.send(encoded_message.encode())
 
             # Receive and print the decoded message
