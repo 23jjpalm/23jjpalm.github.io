@@ -19,13 +19,6 @@ def caesar_cipher(text, shift):
 
     return result
 
-def reverse_shuffle_string(s, seed):
-    # Reverse the shuffling operation to reconstruct the original string
-    original_list = list(s)
-    random.seed(seed)
-    reversed_list = [original_list.pop(random.randint(0, i)) for i in range(len(original_list)-1, -1, -1)]
-    return ''.join(reversed_list)
-
 def handle_client(client_socket):
     while True:
         # Receive option from the client
@@ -44,18 +37,6 @@ def handle_client(client_socket):
             # Send back the encoded message and the cypher and shuffle seed within quotes
             response = f'Encoded Message: "{encoded_message}" Cypher Seed: {cypher_seed} Shuffle Seed: {shuffle_seed}'
             client_socket.send(response.encode())
-        elif option == 'decode':
-            # Receive cypher seed, shuffle seed, and encoded message from the client
-            cypher_seed = int(client_socket.recv(1024).decode())
-            shuffle_seed = int(client_socket.recv(1024).decode())
-            encoded_message = client_socket.recv(1024).decode()
-
-            # Reverse the shuffling and then decode the message
-            shuffled_message = reverse_shuffle_string(encoded_message, shuffle_seed)
-            decoded_message = caesar_cipher(shuffled_message, cypher_seed)
-
-            # Send back the decoded message within quotes
-            client_socket.send(f'Decoded Message: "{decoded_message}"'.encode())
         elif option == 'exit':
             print("Client disconnected.")
             break

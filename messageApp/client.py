@@ -10,10 +10,9 @@ def start_client():
     while True:
         print("Options:")
         print("1. Encode")
-        print("2. Decode")
-        print("3. Exit")
+        print("2. Exit")
 
-        choice = input("Enter your choice (1/2/3): ")
+        choice = input("Enter your choice (1/2): ")
 
         if choice == '1':
             # Option to encode
@@ -23,23 +22,6 @@ def start_client():
             encoded_data = client_socket.recv(1024).decode()
             print(encoded_data)
         elif choice == '2':
-            # Option to decode
-            client_socket.send('decode'.encode())
-
-            # Input cypher seed, shuffle seed, and encoded message
-            cypher_seed = int(encoded_data.split('Cypher Seed: ')[1].split(' ')[0])
-            shuffle_seed = int(encoded_data.split('Shuffle Seed: ')[1])
-            encoded_message = input("Enter the encoded message: ")
-
-            # Send cypher seed, shuffle seed, and encoded message to the server
-            client_socket.send(str(cypher_seed).encode())
-            client_socket.send(str(shuffle_seed).encode())
-            client_socket.send(encoded_message.encode())
-
-            # Receive and print the decoded message
-            decoded_message = client_socket.recv(1024).decode()
-            print(f"Decoded Message: {decoded_message}")
-        elif choice == '3':
             # Option to exit
             break
         else:
