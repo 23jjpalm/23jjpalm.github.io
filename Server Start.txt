@@ -1,4 +1,4 @@
-cd C:\Users\jo\Desktop\Sams journey\23jjpalm.github.io
+cd C:\Users\jo\Desktop\Sams journey\23jjpalm.github.io\Chat
 
 python secure_server.py
 
