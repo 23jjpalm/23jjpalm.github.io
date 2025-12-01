@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Astroneer Resource Calculator</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #1a1a1a;
+        color: white;
+        margin: 0;
+        padding-top: 120px; /* space for fixed header + progress bar */
+        transition: background 0.3s, color 0.3s;
+    }
+
+    .light-theme {
+        background: #e6e6e6;
+        color: black;
+    }
+
+    /* ===== FIXED TOP BAR ===== */
+    #topBar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: #222;
+        padding: 12px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        z-index: 20;
+        border-bottom: 2px solid #444;
+    }
+
+    .light-theme #topBar {
+        background: #ccc;
+        border-bottom: 2px solid #999;
+    }
+
+    button {
+        padding: 10px 20px;
+        background: #4caf50;
+        border: none;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    #resetBtn { background: #d9534f; }
+    #darkToggle { background: #2196F3; }
+
+    /* ===== PROGRESS BAR CONTAINER ===== */
+    #progressContainer {
+        position: fixed;
+        top: 56px; /* below #topBar */
+        left: 0;
+        width: 100%;
+        background: #333;
+        height: 20px;
+        z-index: 15;
+    }
+
+    #progressBar {
+        background: #4caf50;
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .section {
+        padding: 15px;
+        background: rgba(0,0,0,0.4);
+        border-radius: 12px;
+        margin: 20px;
+    }
+
+    .light-theme .section {
+        background: rgba(255,255,255,0.7);
+    }
+
+    h2, h3 {
+        text-align: center;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+
+    .resource-box {
+        background: rgba(255,255,255,0.12);
+        padding: 10px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .light-theme .resource-box {
+        background: rgba(0,0,0,0.1);
+    }
+
+    .resource-box img {
+        width: 40px;
+        height: 40px;
+    }
+
+    input[type="number"] {
+        width: 60px;
+        padding: 4px;
+        border-radius: 6px;
+        border: none;
+    }
+
+    /* Results styles - make smaller */
+    #resultsList img {
+        width: 25px;
+        height: 25px;
+        vertical-align: middle;
+    }
+
+    .result-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font-size: 14px;
+    }
+
+    .result-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- ===== FIXED TOP BUTTON BAR ===== -->
+<div id="topBar">
+    <button onclick="calculate()">Calculate</button>
+    <button id="resetBtn" onclick="resetAll()">Reset</button>
+    <button id="darkToggle">Toggle Theme</button>
+</div>
+
+<!-- ===== PROGRESS BAR ===== -->
+<div id="progressContainer" title="Progress of collected base resources">
+    <div id="progressBar"></div>
+</div>
+
+<h2>Astroneer Resource Calculator</h2>
+
+<!-- ===== SECTIONS ===== -->
+<div class="section">
+    <h3>Natural Resources</h3>
+    <div class="grid" id="naturalList"></div>
+</div>
+
+<div class="section">
+    <h3>Refined Resources</h3>
+    <div class="grid" id="refinedList"></div>
+</div>
+
+<div class="section">
+    <h3>Composite Resources</h3>
+    <div class="grid" id="compositeList"></div>
+</div>
+
+<div class="section">
+    <h3>Atmospheric Resources</h3>
+    <div class="grid" id="atmoList"></div>
+</div>
+
+<div class="section">
+    <h3>Total Base Resources Needed</h3>
+    <div id="resultsList"></div>
+</div>
+
+<script>
+// =============================
+// RESOURCE DEFINITIONS
+// =============================
+const resources = {
+    // NATURAL
+    "Ammonium": {},
+    "Hematite": {},
+    "Quartz": {},
+    "Astronium": {},
+    "Laterite": {},
+    "Resin": {},
+    "Clay": {},
+    "Lithium": {},
+    "Sphalerite": {},
+    "Compound": {},
+    "Malachite": {},
+    "Titanite": {},
+    "Graphite": {},
+    "Organic": {},
+    "Wolframite": {},
+
+    // REFINED
+    "Aluminum": { recipe: { "Laterite": 1 }},
+    "Copper": { recipe: { "Malachite": 1 }},
+    "Zinc": { recipe: { "Sphalerite": 1 }},
+    "Glass": { recipe: { "Quartz": 1 }},
+    "Ceramic": { recipe: { "Clay": 1 }},
+    "Carbon": { recipe: { "Organic": 1 }},
+    "Iron": { recipe: { "Hematite": 1 }},
+    "Titanium": { recipe: { "Titanite": 1 }},
+    "Tungsten": { recipe: { "Wolframite": 1 }},
+
+    // ATMOSPHERIC
+    "Nitrogen": {},
+    "Hydrogen": {},
+    "Methane": {},
+    "Sulfur": {},
+    "Argon": {},
+    "Helium": {},
+
+    // COMPOSITE
+    "Rubber": { recipe: { "Organic": 1, "Resin": 1 }},
+    "Plastic": { recipe: { "Carbon": 1, "Compound": 1 }},
+    "Aluminum Alloy": { recipe: { "Aluminum": 1, "Copper": 1 }},
+    "Tungsten Carbide": { recipe: { "Tungsten": 1, "Carbon": 1 }},
+    "Steel": { recipe: { "Iron": 1, "Carbon": 1, "Argon": 1 }},
+    "Titanium Alloy": { recipe: { "Titanium": 1, "Graphene": 1, "Nitrogen": 1 }},
+    "Graphene": { recipe: { "Graphite": 1, "Hydrogen": 1 }},
+    "Diamond": { recipe: { "Graphene": 2 }},
+    "Hydrazine": { recipe: { "Ammonium": 2, "Hydrogen": 1 }},
+    "Explosive Powder": { recipe: { "Carbon": 2, "Sulfur": 1 }},
+    "Silicone": { recipe: { "Resin": 1, "Quartz": 1, "Methane": 1 }},
+    "Nanocarbon Alloy": { recipe: { "Titanium Alloy": 1, "Steel": 1, "Helium": 1 }}
+};
+
+// =============================
+// UI CREATION
+// =============================
+function createUI() {
+    build("naturalList", [
+        "Ammonium","Hematite","Quartz","Astronium","Laterite",
+        "Resin","Clay","Lithium","Sphalerite","Compound",
+        "Malachite","Titanite","Graphite","Organic","Wolframite"
+    ]);
+
+    build("refinedList", [
+        "Aluminum","Copper","Zinc","Glass","Ceramic",
+        "Carbon","Iron","Titanium","Tungsten"
+    ]);
+
+    build("compositeList", [
+        "Rubber","Plastic","Aluminum Alloy","Tungsten Carbide",
+        "Steel","Titanium Alloy","Graphene","Diamond","Hydrazine",
+        "Explosive Powder","Silicone","Nanocarbon Alloy"
+    ]);
+
+    build("atmoList", [
+        "Nitrogen","Hydrogen","Methane","Sulfur","Argon","Helium"
+    ]);
+}
+
+function build(id, list) {
+    const box = document.getElementById(id);
+    list.forEach(r => {
+        const fileName = r.replaceAll(" ", "_");
+        box.innerHTML += `
+            <div class="resource-box">
+                <img src="Resources/Nugget_${fileName}.png" alt="${r}">
+                <span>${r}</span>
+                <input type="number" id="amt_${r}" min="0" value="0" oninput="saveState()">
+            </div>
+        `;
+    });
+}
+
+// =============================
+// CALCULATION LOGIC
+// =============================
+function calculate() {
+    const totals = {};
+
+    for (const name in resources) {
+        const amt = parseInt(document.getElementById("amt_" + name)?.value || 0);
+        if (amt > 0) addBaseResources(name, amt, totals);
+    }
+
+    saveState();
+    displayTotals(totals);
+    updateProgressBar(totals);
+}
+
+function addBaseResources(name, amt, totals) {
+    const data = resources[name];
+    if (!data.recipe) {
+        totals[name] = (totals[name] || 0) + amt;
+        return;
+    }
+
+    for (const ingredient in data.recipe) {
+        addBaseResources(ingredient, amt * data.recipe[ingredient], totals);
+    }
+}
+
+function displayTotals(totals) {
+    const box = document.getElementById("resultsList");
+    box.innerHTML = "";
+
+    for (const name in totals) {
+        const fileName = name.replaceAll(" ", "_");
+        const checkboxId = "chk_" + name.replaceAll(" ", "_");
+
+        box.innerHTML += `
+            <div class="result-item">
+                <img src="Resources/Nugget_${fileName}.png" alt="${name}">
+                <strong>${name}</strong>: ${totals[name]}
+                <input type="checkbox" id="${checkboxId}" onchange="onCheckboxChange()">
+            </div>
+        `;
+    }
+
+    loadCheckboxes();
+}
+
+// =============================
+// RESET
+// =============================
+function resetAll() {
+    for (const name in resources) {
+        document.getElementById("amt_" + name).value = 0;
+    }
+    document.getElementById("resultsList").innerHTML = "";
+    localStorage.clear();
+    updateProgressBar({});
+}
+
+// =============================
+// AUTO SAVE
+// =============================
+function saveState() {
+    const saved = {};
+
+    for (const name in resources) {
+        saved[name] = {
+            amount: document.getElementById("amt_" + name)?.value,
+            checked: document.getElementById("chk_" + name.replaceAll(" ", "_"))?.checked || false
+        };
+    }
+
+    localStorage.setItem("astroCalc", JSON.stringify(saved));
+}
+
+function loadState() {
+    const data = JSON.parse(localStorage.getItem("astroCalc") || "{}");
+
+    for (const name in data) {
+        const item = data[name];
+
+        if (document.getElementById("amt_" + name))
+            document.getElementById("amt_" + name).value = item.amount;
+
+        const chk = document.getElementById("chk_" + name.replaceAll(" ", "_"));
+        if (chk) chk.checked = item.checked;
+    }
+}
+
+// load checkboxes separately in totals (needed after totals are rebuilt)
+function loadCheckboxes() {
+    const data = JSON.parse(localStorage.getItem("astroCalc") || "{}");
+
+    for (const name in data) {
+        const chk = document.getElementById("chk_" + name.replaceAll(" ", "_"));
+        if (chk) chk.checked = data[name].checked;
+    }
+
+    updateProgressBar(getCurrentTotalsFromDisplay());
+}
+
+// Called whenever a checkbox changes
+function onCheckboxChange() {
+    saveState();
+    updateProgressBar(getCurrentTotalsFromDisplay());
+}
+
+// Helper to get totals from displayed results, used for progress bar calc
+function getCurrentTotalsFromDisplay() {
+    const totals = {};
+    const items = document.querySelectorAll("#resultsList .result-item");
+    items.forEach(div => {
+        const label = div.querySelector("strong").textContent;
+        const text = div.textContent;
+        // Extract number after colon ": "
+        const match = text.match(/:\s*(\d+)/);
+        const amount = match ? parseInt(match[1]) : 0;
+        totals[label] = amount;
+    });
+    return totals;
+}
+
+// =============================
+// PROGRESS BAR UPDATE
+// =============================
+function updateProgressBar(totals) {
+    const progressBar = document.getElementById("progressBar");
+
+    // Sum total resources required
+    const totalNeeded = Object.values(totals).reduce((a,b) => a + b, 0);
+    if (totalNeeded === 0) {
+        progressBar.style.width = "0%";
+        return;
+    }
+
+    // Sum collected (checked)
+    let collected = 0;
+    for (const name in totals) {
+        const checkbox = document.getElementById("chk_" + name.replaceAll(" ", "_"));
+        if (checkbox && checkbox.checked) {
+            collected += totals[name];
+        }
+    }
+
+    const percent = Math.min(100, (collected / totalNeeded) * 100);
+    progressBar.style.width = percent + "%";
+}
+
+// =============================
+// DARK MODE
+// =============================
+document.getElementById("darkToggle").onclick = () => {
+    document.body.classList.toggle("light-theme");
+};
+
+// INIT
+createUI();
+loadState();
+
+</script>
+
+</body>
+</html>
