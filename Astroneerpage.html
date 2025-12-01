@@ -135,6 +135,13 @@
         height: 18px;
         cursor: pointer;
     }
+
+    .scrap-info {
+        margin-left: auto;
+        font-weight: 600;
+        font-size: 13px;
+        color: #ccc;
+    }
 </style>
 </head>
 
@@ -228,12 +235,40 @@ const resources = {
     "Tungsten Carbide": { recipe: { "Tungsten": 1, "Carbon": 1 }},
     "Steel": { recipe: { "Iron": 1, "Carbon": 1, "Argon": 1 }},
     "Titanium Alloy": { recipe: { "Titanium": 1, "Graphene": 1, "Nitrogen": 1 }},
-    "Graphene": { recipe: { "Graphite": 1, "Hydrogen": 1 }},
+    "Graphene": { recipe: { "Graphite": 1, "Hydrazine": 1 }},
     "Diamond": { recipe: { "Graphene": 2 }},
     "Hydrazine": { recipe: { "Ammonium": 2, "Hydrogen": 1 }},
     "Explosive Powder": { recipe: { "Carbon": 2, "Sulfur": 1 }},
     "Silicone": { recipe: { "Resin": 1, "Quartz": 1, "Methane": 1 }},
-    "Nanocarbon Alloy": { recipe: { "Titanium Alloy": 1, "Steel": 1, "Helium": 1 }}
+    "Nanocarbon Alloy": { recipe: {
+        "Ammonium": 2,
+        "Graphite": 1,
+        "Titanite": 1,
+        "Hematite": 1,
+        "Organic": 1,
+        "Hydrogen": 1,
+        "Nitrogen": 1,
+        "Argon": 1,
+        "Helium": 1
+    }}
+};
+
+// Scrap conversion rates
+const scrapRates = {
+    "Compound": { scrap: 1, units: 2 },
+    "Resin": { scrap: 1, units: 2 },
+    "Organic": { scrap: 1, units: 2 },
+    "Clay": { scrap: 1, units: 2 },
+    "Quartz": { scrap: 1, units: 2 },
+    "Graphite": { scrap: 1, units: 2 },
+    "Sphalerite": { scrap: 1, units: 2 },
+    "Ammonium": { scrap: 1, units: 1 },
+    "Laterite": { scrap: 1, units: 1 },
+    "Malachite": { scrap: 1, units: 1 },
+    "Wolframite": { scrap: 3, units: 2 },
+    "Hematite": { scrap: 3, units: 2 },
+    "Titanite": { scrap: 2, units: 1 },
+    "Lithium": { scrap: 4, units: 1 }
 };
 
 // =============================
@@ -308,17 +343,37 @@ function displayTotals(totals) {
     const box = document.getElementById("resultsList");
     box.innerHTML = "";
 
+    let totalScrap = 0;
+
     for (const name in totals) {
         const fileName = name.replaceAll(" ", "_");
         const checkboxId = "chk_" + name.replaceAll(" ", "_");
+
+        // Calculate scrap needed
+        let scrapText = "";
+        if(scrapRates[name]){
+            const {scrap, units} = scrapRates[name];
+            // Calculate bundles rounded up
+            const bundles = Math.ceil(totals[name] / units);
+            const scrapNeeded = bundles * scrap;
+            totalScrap += scrapNeeded;
+            scrapText = `Scrap: ${scrapNeeded}`;
+        }
 
         box.innerHTML += `
             <div class="result-item">
                 <img src="Resources/Nugget_${fileName}.png" alt="${name}">
                 <strong>${name}</strong>: ${totals[name]}
                 <input type="checkbox" id="${checkboxId}" onchange="onCheckboxChange()">
+                <span class="scrap-info">${scrapText}</span>
             </div>
         `;
+    }
+
+    if(totalScrap > 0){
+        box.innerHTML += `<hr><div style="text-align:right; font-weight:bold; font-size:16px; margin-top:8px; color:#ccc;">
+            Total Scrap Needed: ${totalScrap}
+        </div>`;
     }
 
     loadCheckboxes();
@@ -329,10 +384,11 @@ function displayTotals(totals) {
 // =============================
 function resetAll() {
     for (const name in resources) {
-        document.getElementById("amt_" + name).value = 0;
+        const input = document.getElementById("amt_" + name);
+        if(input) input.value = 0;
     }
     document.getElementById("resultsList").innerHTML = "";
-    localStorage.clear();
+    localStorage.removeItem("astroCalc");
     updateProgressBar({});
 }
 
