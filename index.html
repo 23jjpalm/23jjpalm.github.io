@@ -11,21 +11,38 @@
     .cat-MVFR { color: blue; font-weight: bold; }
     .cat-IFR { color: hotpink; font-weight: bold; }
     .cat-LIFR { color: red; font-weight: bold; }
+
+    /* Style the minimize buttons */
+    .toggle-btn {
+      margin-left: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
   </style>
 </head>
 
 <body>
 
-<h1>Jordans Website</h1>
+<h1>Aviation and Astroneer assistant</h1>
 
 <button onclick="location.href='Astroneerpage.html'">
   Astroneer Resource Calculator
 </button>
 
+<div>
+  <label for="customStation">Enter Station ID:</label>
+  <input type="text" id="customStation" maxlength="4" style="text-transform: uppercase;" />
+  <button onclick="updateCustomStation()">Get Weather</button>
+</div>
+
 <div id="weatherTables">
 
   <table id="tableKGHG">
-    <caption>Marshfield (KGHG)</caption>
+    <caption>
+      Marshfield (KGHG)
+      <button class="toggle-btn" onclick="toggleTable('tableKGHG')">Minimize</button>
+    </caption>
     <thead>
       <tr>
         <th>Wind</th>
@@ -49,7 +66,10 @@
   </table>
 
   <table id="tableKEWB">
-    <caption>New Bedford (KEWB)</caption>
+    <caption>
+      New Bedford (KEWB)
+      <button class="toggle-btn" onclick="toggleTable('tableKEWB')">Minimize</button>
+    </caption>
     <thead>
       <tr>
         <th>Wind</th>
@@ -68,6 +88,33 @@
         <td id="tempdewKEWB">Loading...</td>
         <td id="altKEWB">Loading...</td>
         <td id="catKEWB">Loading...</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table id="tableCustom" style="margin-top:20px; display:none;">
+    <caption>
+      <span id="captionCustom"></span>
+      <button class="toggle-btn" onclick="toggleTable('tableCustom')">Minimize</button>
+    </caption>
+    <thead>
+      <tr>
+        <th>Wind</th>
+        <th>Visibility</th>
+        <th>Cloud Coverage</th>
+        <th>Temp / Dewpoint (°C)</th>
+        <th>Altimeter (inHg)</th>
+        <th>Flight Category</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="windCustom">N/A</td>
+        <td id="visCustom">N/A</td>
+        <td id="cloudsCustom">N/A</td>
+        <td id="tempdewCustom">N/A</td>
+        <td id="altCustom">N/A</td>
+        <td id="catCustom">N/A</td>
       </tr>
     </tbody>
   </table>
@@ -176,21 +223,23 @@ function getFlightCategory(metar) {
 async function updateMetar(station, suffix) {
   let rawMetar = await fetchRawMetar(station);
 
+  const metarElem = document.getElementById(`metar${suffix}`);
+
   if (!rawMetar && station === "KGHG") {
     rawMetar = await fetchRawMetar("KEWB");
     if (rawMetar) {
-      document.getElementById(`metar${suffix}`).textContent = rawMetar + " (Fallback from KEWB)";
+      if (metarElem) metarElem.textContent = rawMetar + " (Fallback from KEWB)";
     } else {
-      document.getElementById(`metar${suffix}`).textContent = "No METAR available";
+      if (metarElem) metarElem.textContent = "No METAR available";
       clearTableFields(suffix);
       return;
     }
   } else if (!rawMetar) {
-    document.getElementById(`metar${suffix}`).textContent = "No METAR available";
+    if (metarElem) metarElem.textContent = "No METAR available";
     clearTableFields(suffix);
     return;
   } else {
-    document.getElementById(`metar${suffix}`).textContent = rawMetar;
+    if (metarElem) metarElem.textContent = rawMetar;
   }
 
   document.getElementById(`wind${suffix}`).textContent = parseWind(rawMetar);
@@ -216,14 +265,56 @@ function clearTableFields(suffix) {
   catCell.className = "";
 }
 
+// Wrapper function to update the custom station
+async function updateCustomStation() {
+  const input = document.getElementById("customStation");
+  let station = input.value.trim().toUpperCase();
+
+  if (!station || station.length !== 4) {
+    alert("Please enter a valid 4-letter station code.");
+    return;
+  }
+
+  const tableCustom = document.getElementById("tableCustom");
+  const captionCustom = document.getElementById("captionCustom");
+  tableCustom.style.display = "table";
+  captionCustom.textContent = `Custom Station (${station})`;
+
+  await updateMetar(station, "Custom");
+}
+
+// Toggle minimize/restore the table body of the given table id
+function toggleTable(tableId) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+
+  const tbody = table.querySelector('tbody');
+  const button = table.querySelector('caption button.toggle-btn');
+
+  if (!tbody || !button) return;
+
+  if (tbody.style.display === 'none') {
+    tbody.style.display = '';
+    button.textContent = 'Minimize';
+  } else {
+    tbody.style.display = 'none';
+    button.textContent = 'Restore';
+  }
+}
+
+// Initial load for default stations
 updateMetar("KGHG", "KGHG");
 updateMetar("KEWB", "KEWB");
 
+// Auto-refresh every 10 minutes
 setInterval(() => {
   updateMetar("KGHG", "KGHG");
   updateMetar("KEWB", "KEWB");
 }, 600000);
 </script>
-
-    </body>
+<footer style="margin-top: 40px; text-align: center; font-family: Arial, sans-serif; color: #555;">
+    <p>Website developed by PalmGames</p>
+    <img src="images/PG.png" alt="PalmGames Logo" style="height: 60px; margin-top: 10px;" />
+  </footer>
+</body>
 </html>
