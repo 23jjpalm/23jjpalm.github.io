@@ -1,0 +1,72 @@
+/* styles.css */
+
+body {
+  font-family: Arial, sans-serif;
+  background: #1a1a1a;
+  color: white;
+  margin: 0;
+  padding: 40px;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+button {
+  background: #4caf50;
+  border: none;
+  color: white;
+  font-weight: bold;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background: #45a049;
+}
+
+#metarDisplay {
+  margin-top: 40px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+table {
+  width: 100%;
+  max-width: 800px;
+  margin: 30px auto 10px auto;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+th, td {
+  border: 1px solid #444;
+  padding: 8px;
+}
+
+th {
+  background-color: #333;
+}
+
+caption {
+  caption-side: top;
+  font-weight: bold;
+  font-size: 1.3em;
+  margin-bottom: 10px;
+}
+
+.station-name {
+  margin-top: 50px;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.raw-metar {
+  margin-top: 5px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: #ccc;
+}

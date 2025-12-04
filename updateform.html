@@ -1,19 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jordans Website</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>METAR Weather with Flight Category</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #1a1a1a;
+    color: white;
+    margin: 0;
+    padding: 40px;
+    text-align: center;
+  }
+  h1 {
+    margin-bottom: 30px;
+  }
+  table {
+    width: 100%;
+    max-width: 900px;
+    margin: 30px auto 10px auto;
+    border-collapse: collapse;
+    text-align: center;
+  }
+  th, td {
+    border: 1px solid #444;
+    padding: 8px;
+  }
+  th {
+    background-color: #333;
+  }
+  caption {
+    caption-side: top;
+    font-weight: bold;
+    font-size: 1.3em;
+    margin-bottom: 10px;
+  }
+  .station-name {
+    margin-top: 50px;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  .raw-metar {
+    margin-top: 5px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #ccc;
+  }
+  .category {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+</style>
 </head>
-
 <body>
 
-<h1>Jordans Website</h1>
-
-<button onclick="location.href='Astroneerpage.html'">
-  Astroneer Resource Calculator
-</button>
+<h1>METAR Weather with Flight Category</h1>
 
 <div id="weatherTables">
 
@@ -77,23 +119,23 @@
 <script>
 // Helper to fetch raw METAR via proxy (to avoid CORS)
 async function fetchRawMetar(station) {
+  // aviationweather.gov no longer supports CORS so we use allorigins proxy
   const url = `https://aviationweather.gov/api/data/metar?ids=${station}&format=raw&hoursBeforeNow=1&mostRecent=true`;
   const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
   try {
     const response = await fetch(proxy);
     const json = await response.json();
+    // Extract raw METAR from returned contents
     const text = json.contents;
+    // Find raw METAR line (usually contains the station code)
     const metarLine = text.split('\n').find(line => line.includes(station));
-    if (metarLine) return metarLine;
-    // If no METAR found for station
-    return null;
+    return metarLine || "No METAR found";
   } catch (e) {
-    return null;
+    return "Error loading METAR";
   }
 }
 
-
-// Parsing functions
+// Parsing functions adapted from toldcard.com repo and FAA criteria
 
 function parseWind(metar) {
   const windRegex = /(\d{3}|VRB)(\d{2})(G(\d{2}))?KT/;
@@ -106,6 +148,7 @@ function parseWind(metar) {
 }
 
 function parseVisibility(metar) {
+  // Look for visibility in statute miles or meters
   let m = metar.match(/ (\d{1,2})SM /);
   if (m) return `${m[1]} SM`;
   m = metar.match(/ (\d{4}) /);
@@ -145,6 +188,7 @@ function parseAltimeter(metar) {
   }
   m = metar.match(/ Q(\d{4}) /);
   if (m) {
+    // convert hPa to inHg
     let hPa = parseInt(m[1], 10);
     let inHg = (hPa * 0.02953).toFixed(2);
     return `${inHg} inHg`;
@@ -152,51 +196,46 @@ function parseAltimeter(metar) {
   return "N/A";
 }
 
+// Flight Category calculation per FAA definitions (simplified):
+// VFR: Visibility > 5 SM and Ceiling > 3000 ft AGL (no BKN/OVC below 3000)
+// MVFR: Visibility 3-5 SM or Ceiling 1000-3000 ft AGL
+// IFR: Visibility 1-3 SM or Ceiling 500-1000 ft AGL
+// LIFR: Visibility < 1 SM or Ceiling < 500 ft AGL
+
+// To get ceiling: lowest BKN or OVC cloud layer height in feet AGL (hundreds of feet * 100)
+
 function getFlightCategory(metar) {
+  // Parse visibility in SM (float)
   let visMatch = metar.match(/ (\d{1,2})SM /);
   let vis = visMatch ? parseFloat(visMatch[1]) : null;
   if (!vis) {
+    // try meters fallback
     let m = metar.match(/ (\d{4}) /);
     if (m) vis = parseInt(m[1], 10) * 0.000621371;
   }
-  if (!vis) vis = 10;
+  if (!vis) vis = 10; // default assume good visibility
 
+  // Parse ceiling (lowest BKN or OVC)
   let cloudLayers = [...metar.matchAll(/(BKN|OVC)(\d{3})/g)];
   let ceilingFeet = null;
   if (cloudLayers.length) {
     ceilingFeet = Math.min(...cloudLayers.map(cloud => parseInt(cloud[2], 10) * 100));
   } else {
-    ceilingFeet = 99999;
+    ceilingFeet = 99999; // No ceiling reported, assume sky clear
   }
 
+  // Flight category logic
   if (vis >= 5 && ceilingFeet > 3000) return "VFR";
   if ((vis >= 3 && vis < 5) || (ceilingFeet >= 1000 && ceilingFeet <= 3000)) return "MVFR";
   if ((vis >= 1 && vis < 3) || (ceilingFeet >= 500 && ceilingFeet < 1000)) return "IFR";
   if (vis < 1 || ceilingFeet < 500) return "LIFR";
 
-  return "VFR";
+  return "VFR"; // default safe fallback
 }
 
 async function updateMetar(station, suffix) {
-  let rawMetar = await fetchRawMetar(station);
-
-  if (!rawMetar && station === "KGHG") {
-    // fallback to KEWB if no METAR for KGHG
-    rawMetar = await fetchRawMetar("KEWB");
-    if (rawMetar) {
-      document.getElementById(`metar${suffix}`).textContent = rawMetar + " (Fallback from KEWB)";
-    } else {
-      document.getElementById(`metar${suffix}`).textContent = "No METAR available";
-      clearTableFields(suffix);
-      return;
-    }
-  } else if (!rawMetar) {
-    document.getElementById(`metar${suffix}`).textContent = "No METAR available";
-    clearTableFields(suffix);
-    return;
-  } else {
-    document.getElementById(`metar${suffix}`).textContent = rawMetar;
-  }
+  const rawMetar = await fetchRawMetar(station);
+  document.getElementById(`metar${suffix}`).textContent = rawMetar;
 
   document.getElementById(`wind${suffix}`).textContent = parseWind(rawMetar);
   document.getElementById(`vis${suffix}`).textContent = parseVisibility(rawMetar);
@@ -206,26 +245,8 @@ async function updateMetar(station, suffix) {
   document.getElementById(`cat${suffix}`).textContent = getFlightCategory(rawMetar);
 }
 
-function clearTableFields(suffix) {
-  document.getElementById(`wind${suffix}`).textContent = "N/A";
-  document.getElementById(`vis${suffix}`).textContent = "N/A";
-  document.getElementById(`clouds${suffix}`).textContent = "N/A";
-  document.getElementById(`tempdew${suffix}`).textContent = "N/A";
-  document.getElementById(`alt${suffix}`).textContent = "N/A";
-  document.getElementById(`cat${suffix}`).textContent = "N/A";
-}
-
-
-// Initial load
 updateMetar("KGHG", "KGHG");
 updateMetar("KEWB", "KEWB");
-
-// Optional: refresh every 10 minutes
-setInterval(() => {
-  updateMetar("KGHG", "KGHG");
-  updateMetar("KEWB", "KEWB");
-}, 600000);
-
 </script>
 
 </body>

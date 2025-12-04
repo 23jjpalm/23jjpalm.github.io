@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hangman Game</title>
+</head>
+<body>
+    <h1>Hangman Game</h1>
+    <p>Guess the word by entering one letter at a time.</p>
+
+    <div id="word-display"></div>
+    <div id="word-info">Total Letters: <span id="total-letters"></span></div>
+    <div id="guesses-left">Guesses Left: <span id="remaining-guesses">6</span></div>
+    <div id="guessed-letters">Guessed Letters: <span id="letters-guessed"></span></div>
+    <input type="text" id="letter-input">
+    <button onclick="guessLetter()">Guess</button>
+    <div id="message"></div>
+    <div id="hangman">
+        <img src="" alt="Hangman Stage" id="hangman-image">
+    </div>
+
+    <script>
+        const words = ["adventure", "celebrate", "elephant", "fantastic", "happiness", "knowledge", "pineapple", "butterfly", "crocodile", "dangerous", "excellent", "strawberry", "watermelon", "fascination", "mysterious", "meditation", "fascinating", "zucchini", "friendship", "chocolate", "happiness", "universe", "waterfall", "mountains", "butterfly", "pineapple", "beautiful", "adventure", "discovery", "innovation", "imagination", "happiness", "successful", "technology", "excitement", "celebrate", "treasure", "wonderful", "brilliant", "knowledge", "surprise", "passionate", "delicious", "rainbow", "inspiration", "creativity", "happiness", "adventure", "peaceful", "friendship", "laughter", "challenge", "universe", "discovery", "happiness", "experience", "celebrate", "serendipity", "magnificent", "beautiful", "butterfly", "watermelon", "gratitude", "fascination", "meditation", "mystery", "adventure", "curiosity", "determination", "happiness", "achievement", "celebration", "excitement", "innovation", "transformation", "serenity", "motivation", "exploration", "inspiration", "imagination", "satisfaction", "satisfaction", "creativity", "imagination", "perseverance", "resilience", "satisfaction", "fulfillment", "joyfulness", "fascination", "innovation", "serendipity", "friendship", "beautiful", "happiness", "celebration", "adventure", "happiness", "discovery", "serenity"
+];
+        let randomWord = words[Math.floor(Math.random() * words.length)];
+        let displayWord = "_".repeat(randomWord.length);
+
+        let remainingGuesses = 6;
+        let guessedLetters = [];
+
+        const wordDisplay = document.getElementById("word-display");
+        const remainingGuessesDisplay = document.getElementById("remaining-guesses");
+        const guessedLettersDisplay = document.getElementById("letters-guessed");
+        const letterInput = document.getElementById("letter-input");
+        const message = document.getElementById("message");
+        const hangmanImage = document.getElementById("hangman-image");
+        const totalLettersDisplay = document.getElementById("total-letters");
+
+        wordDisplay.textContent = displayWord;
+        remainingGuessesDisplay.textContent = remainingGuesses;
+        totalLettersDisplay.textContent = randomWord.length;
+
+        function guessLetter() {
+            const letter = letterInput.value.toLowerCase();
+
+            if (letter.length !== 1 || !/^[a-z]$/.test(letter)) {
+                message.textContent = "Please enter a single letter.";
+                return;
+            }
+
+            if (guessedLetters.includes(letter)) {
+                message.textContent = "You already guessed that letter.";
+                return;
+            }
+            if (randomWord.includes(letter)) {
+        // Update the total letters count when a correct guess is made
+        totalLettersDisplay.textContent = randomWord.length - displayWord.split("_").length;
+    }
+
+            guessedLetters.push(letter);
+
+            if (randomWord.includes(letter)) {
+                for (let i = 0; i < randomWord.length; i++) {
+                    if (randomWord[i] === letter) {
+                        displayWord = displayWord.substring(0, i) + letter + displayWord.substring(i + 1);
+                    }
+                }
+                wordDisplay.textContent = displayWord;
+                if (displayWord === randomWord) {
+                    message.textContent = "Congratulations, you won!";
+                    letterInput.disabled = true;
+                }
+            } else {
+                remainingGuesses--;
+                remainingGuessesDisplay.textContent = remainingGuesses;
+                if (remainingGuesses === 0) {
+                    message.textContent = "Game over. The word was: " + randomWord;
+                    letterInput.disabled = true;
+                } else {
+                    message.textContent = "Incorrect guess. Try again.";
+                    updateHangman();
+                }
+            }
+
+            guessedLettersDisplay.textContent = guessedLetters.join(" ");
+            letterInput.value = '';
+        }
+
+        function updateHangman() {
+            // Replace the image file paths with the actual file paths to your hangman images.
+            const hangmanImages = [
+                "image1.jpg",
+                "image2.jpg",
+                "image3.jpg",
+                "image4.jpg",
+                "image5.jpg",
+                "image6.jpg",
+                "image7.jpg"
+            ];
+
+            hangmanImage.src = hangmanImages[6 - remainingGuesses];
+        }
+    </script>
+</body>
+</html>

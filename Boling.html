@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cookie Clicker Game</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        #cookie {
+            width: 200px;
+            height: 200px;
+            background: url('images/PG.png');
+            background-size: cover;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        #counter {
+            font-size: 36px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cookie Clicker</h1>
+    <p>Click the cookie to get cookies!</p>
+    <div id="cookie"></div>
+    <p id="counter">Cookies: 0</p>
+
+    <h2>Upgrades</h2>
+    <button id="autoClickUpgrade">Auto-Clicker (Cost: 10 Cookies)</button>
+    <button id="megaClickUpgrade">Mega Clicker (Cost: 50 Cookies)</button>
+    <button id="cookieFarmUpgrade">Cookie Farm (Cost: 100 Cookies)</button>
+    <button id="grandmaUpgrade">Grandma (Cost: 500 Cookies)</button>
+
+    <p id="autoClickRate">Auto-Clickers: 0</p>
+    <p id="megaClickRate">Mega Clickers: 0</p>
+    <p id="cookieFarmRate">Cookie Farms: 0</p>
+    <p id="grandmaRate">Grandmas: 0</p>
+
+    <script>
+        let cookies = 0;
+        let autoClickers = 0;
+        let megaClickers = 0;
+        let cookieFarms = 0;
+        let grandmas = 0;
+        let autoClickerCost = 10;
+        let megaClickerCost = 50;
+        let cookieFarmCost = 100;
+        let grandmaCost = 500;
+
+        const cookie = document.getElementById('cookie');
+        const counter = document.getElementById('counter');
+        const autoClickUpgrade = document.getElementById('autoClickUpgrade');
+        const megaClickUpgrade = document.getElementById('megaClickUpgrade');
+        const cookieFarmUpgrade = document.getElementById('cookieFarmUpgrade');
+        const grandmaUpgrade = document.getElementById('grandmaUpgrade');
+        const autoClickRate = document.getElementById('autoClickRate');
+        const megaClickRate = document.getElementById('megaClickRate');
+        const cookieFarmRate = document.getElementById('cookieFarmRate');
+        const grandmaRate = document.getElementById('grandmaRate');
+
+        cookie.addEventListener('click', () => {
+            cookies++;
+            updateCounter();
+        });
+
+        autoClickUpgrade.addEventListener('click', () => {
+            purchaseUpgrade("Auto-Clicker", autoClickerCost, autoClickers, autoClickerCost, updateAutoClickRate);
+        });
+
+        megaClickUpgrade.addEventListener('click', () => {
+            purchaseUpgrade("Mega Clicker", megaClickerCost, megaClickers, megaClickerCost, updateMegaClickRate);
+        });
+
+        cookieFarmUpgrade.addEventListener('click', () => {
+            purchaseUpgrade("Cookie Farm", cookieFarmCost, cookieFarms, cookieFarmCost, updateCookieFarmRate);
+        });
+
+        grandmaUpgrade.addEventListener('click', () => {
+            purchaseUpgrade("Grandma", grandmaCost, grandmas, grandmaCost, updateGrandmaRate);
+        });
+
+        function purchaseUpgrade(upgradeName, cost, owned, increaseCost, updateRate) {
+            if (cookies >= cost) {
+                cookies -= cost;
+                owned++;
+                increaseCost *= 2; // Exponential cost increase
+                updateCounter();
+                updateRate();
+                updateUpgradePrices();
+            }
+        }
+
+        function updateCounter() {
+            counter.textContent = `Cookies: ${cookies}`;
+        }
+
+        function updateAutoClickRate() {
+            autoClickRate.textContent = `Auto-Clickers: ${autoClickers}`;
+        }
+
+        function updateMegaClickRate() {
+            megaClickRate.textContent = `Mega Clickers: ${megaClickers}`;
+        }
+
+        function updateCookieFarmRate() {
+            cookieFarmRate.textContent = `Cookie Farms: ${cookieFarms}`;
+        }
+
+        function updateGrandmaRate() {
+            grandmaRate.textContent = `Grandmas: ${grandmas}`;
+        }
+
+        function updateUpgradePrices() {
+            autoClickUpgrade.textContent = `Auto-Clicker (Cost: ${autoClickerCost} Cookies)`;
+            megaClickUpgrade.textContent = `Mega Clicker (Cost: ${megaClickerCost} Cookies)`;
+            cookieFarmUpgrade.textContent = `Cookie Farm (Cost: ${cookieFarmCost} Cookies)`;
+            grandmaUpgrade.textContent = `Grandma (Cost: ${grandmaCost} Cookies)`;
+        }
+
+        // CPS update logic
+        setInterval(() => {
+            cookies += autoClickers;
+            cookies += megaClickers * 10; // Mega Clickers generate 10 cookies per second
+            cookies += cookieFarms * 20; // Cookie Farms generate 20 cookies per second
+            cookies += grandmas * 50; // Grandmas generate 50 cookies per second
+            updateCounter();
+        }, 1000);
+    </script>
+</body>
+</html>

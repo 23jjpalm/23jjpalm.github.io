@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool Webpage</title>
+    <style>
+    #footer {
+background-color: #333;
+color: white;
+text-align: center;
+padding: 10px;
+position: absolute;
+bottom: 0;
+width: 100%;
+left: 0; /* Center the footer horizontally */
+}
+
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            text-align: center;
+            background-color: #3498db;
+            color: #fff;
+            padding: 20px;
+        }
+        .logo {
+            width: 100px;
+            height: 100px;
+            display: block;
+            margin: 0 auto;
+        }
+        .code-input {
+            text-align: center;
+            margin: 20px auto;
+        }
+        .description {
+            text-align: center;
+            margin: 20px auto;
+        }
+        .game-selection {
+            text-align: center;
+            margin: 20px auto;
+            display: none; /* Hide initially */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PalmGames</h1>
+        <p>Created by: Jordan Palmieri</p>
+    </div>
+    <div class="code-input">
+        <label for="code">Please enter access key to continue:</label>
+        <input type="text" id="code" placeholder="Enter Key">
+        <button onclick="checkCode()">Submit</button>
+    </div>
+    <div class="description">
+        <h2>Access Key</h2>
+        <p>8464</p>
+    </div>
+    <div class="game-selection" id="gameSelectionDiv">
+        <h2>Game Selection</h2>
+        <select id="gameSelection">
+            <option value="game1">Haunted Mansion.</option>
+            <option value="game2">Number Guess.</option>
+            <option value="game3">Button.</option>
+            <option value="game4">Pong.</option>
+            <option value="game5">Boss Fight.</option>
+            <option value="game6">Mine Sweeper.</option>
+            <option value="game7">Astoneer Resource Guide</option>
+        </select>
+        <button onclick="playGame()">Play</button>
+    </div>
+
+
+    <script>
+        function checkCode() {
+            const enteredCode = document.getElementById('code').value;
+            const correctCode = '8464'; // Replace with your correct code
+
+            if (enteredCode === correctCode) {
+                // Show the game selection when the correct code is entered
+                document.getElementById('gameSelectionDiv').style.display = 'block';
+                document.getElementById('code').disabled = true;
+            } else {
+                alert('Incorrect code. Please try again.');
+            }
+        }
+
+        function playGame() {
+            const selectedGame = document.getElementById('gameSelection').value;
+
+            if (selectedGame === 'game1') {
+                window.location.href = 'mansion.html'; // Replace with the URL of Game 1
+            } else if (selectedGame === 'game2') {
+                window.location.href = 'Number.html'; // Replace with the URL of Game 2
+            } else if (selectedGame === 'game3') {
+                window.location.href = 'button.html'; // Replace with the URL of Game 3
+            }else if (selectedGame === 'game4') {
+                window.location.href = 'Pong.html'; // Replace with the URL of Game 3
+            }else if (selectedGame === 'game5') {
+                window.location.href = 'Boss.html'; // Replace with the URL of Game 3
+            }else if (selectedGame === 'game6') {
+                window.location.href = 'Minesweeper.html'; // Replace with the URL of Game 3
+            }else if (selectedGame === 'game7') {
+                window.location.href = 'Astroneerpage.html'; // Replace with the URL of Game 3
+            }
+        }
+    </script>
+    <div id="footer">
+        Produced by PalmGames
+        <img src="images/PG.png" alt="Game Image" width="50" height="50"/>
+    </div>
+
+</body>
+</html>

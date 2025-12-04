@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2D Airplane Game</title>
+    <style>
+        #gameCanvas {
+            background: #87CEEB;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const airplane = {
+            x: 50,
+            y: canvas.height - 20, // Start on the ground
+            width: 50,
+            height: 20,
+            speed: 2, // Initial speed
+            maxSpeed: 3, // Maximum speed
+            acceleration: 0.1 // Acceleration rate
+        };
+
+        function drawAirplane() {
+            ctx.fillStyle = "red";
+            ctx.fillRect(airplane.x, airplane.y, airplane.width, airplane.height);
+        }
+
+        function update() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Accelerate the airplane when the right arrow key is held
+            if (keys.ArrowRight && airplane.speed < airplane.maxSpeed) {
+                airplane.speed += airplane.acceleration;
+            }
+
+            // Move the airplane forward
+            airplane.x += airplane.speed;
+
+            // Make sure the airplane doesn't move beyond the right edge of the canvas
+            if (airplane.x + airplane.width > canvas.width) {
+                airplane.x = canvas.width - airplane.width;
+            }
+
+            drawAirplane();
+        }
+
+        const keys = {};
+
+        document.addEventListener("keydown", function (event) {
+            keys[event.key] = true;
+        });
+
+        document.addEventListener("keyup", function (event) {
+            keys[event.key] = false;
+        });
+
+        function gameLoop() {
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>

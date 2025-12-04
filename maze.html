@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        #mazeCanvas {
+            display: none;
+            border: 1px solid blue;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="mazeCanvas" width="300" height="300"></canvas>
+    <a id="downloadLink" href="#" download="maze.png">Download Maze</a>
+
+    <script>
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = 150;  // Width of the maze canvas
+        const height = 150; // Height of the maze canvas
+        const cellSize = 2;
+
+        // Initialize the maze with walls
+        const maze = Array.from({ length: width }, () => Array(height).fill(1));
+
+        // Recursive Backtracking algorithm to generate the maze
+        function generateMaze(x, y) {
+            const directions = [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }];
+            shuffle(directions);
+
+            for (const direction of directions) {
+                const nx = x + direction.x * 2;
+                const ny = y + direction.y * 2;
+
+                if (nx > 1 && nx < width - 1 && ny > 1 && ny < height - 1 && maze[nx][ny] === 1) {
+                    maze[nx][ny] = 0;
+                    maze[x + direction.x][y + direction.y] = 0;
+                    generateMaze(nx, ny);
+                }
+            }
+        }
+
+        // Fisher-Yates shuffle algorithm
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Generate the maze
+        generateMaze(2, 2);
+
+        // Mark the start and end points with bright purple pixels
+        maze[2][1] = maze[width - 3][height - 2] = 2;
+
+        // Render the maze on the canvas
+        ctx.fillStyle = 'black';
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                if (maze[x][y] === 1) {
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                } else if (maze[x][y] === 2) {
+                    ctx.fillStyle = 'rgb(255, 0, 255)'; // Bright Purple
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        // Show the canvas element
+        canvas.style.display = 'block';
+
+        // Provide a download link
+        const downloadLink = document.getElementById('downloadLink');
+        downloadLink.addEventListener('click', function () {
+            const dataURL = canvas.toDataURL('image/png');
+            this.href = dataURL;
+        });
+    </script>
+</body>
+</html>
