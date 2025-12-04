@@ -116,7 +116,7 @@
     }
 
     /* Results styles - make smaller */
-    #resultsList img {
+    #resultsList img, #finalProductsList img {
         width: 25px;
         height: 25px;
         vertical-align: middle;
@@ -185,6 +185,12 @@
 <div class="section">
     <h3>Total Base Resources Needed</h3>
     <div id="resultsList"></div>
+</div>
+
+<!-- NEW SECTION: FINAL PRODUCTS -->
+<div class="section">
+    <h3>Final Products</h3>
+    <div id="finalProductsList"></div>
 </div>
 
 <script>
@@ -316,14 +322,22 @@ function build(id, list) {
 // =============================
 function calculate() {
     const totals = {};
+    const finalProducts = {};
 
     for (const name in resources) {
         const amt = parseInt(document.getElementById("amt_" + name)?.value || 0);
-        if (amt > 0) addBaseResources(name, amt, totals);
+        if (amt > 0) {
+            addBaseResources(name, amt, totals);
+            // If it has a recipe, count it as a final product needed
+            if (resources[name].recipe) {
+                finalProducts[name] = (finalProducts[name] || 0) + amt;
+            }
+        }
     }
 
     saveState();
     displayTotals(totals);
+    displayFinalProducts(finalProducts);
     updateProgressBar(totals);
 }
 
@@ -379,6 +393,23 @@ function displayTotals(totals) {
     loadCheckboxes();
 }
 
+// NEW: Show final products count
+function displayFinalProducts(finalProducts) {
+    const box = document.getElementById("finalProductsList");
+    box.innerHTML = "";
+
+    for (const name in finalProducts) {
+        const fileName = name.replaceAll(" ", "_");
+
+        box.innerHTML += `
+            <div class="result-item">
+                <img src="Resources/Nugget_${fileName}.png" alt="${name}">
+                <strong>${name}</strong>: ${finalProducts[name]}
+            </div>
+        `;
+    }
+}
+
 // =============================
 // RESET
 // =============================
@@ -388,6 +419,7 @@ function resetAll() {
         if(input) input.value = 0;
     }
     document.getElementById("resultsList").innerHTML = "";
+    document.getElementById("finalProductsList").innerHTML = "";
     localStorage.removeItem("astroCalc");
     updateProgressBar({});
 }

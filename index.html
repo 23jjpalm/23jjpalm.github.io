@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Jordans Website</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Temporary styles for flight category colors until styles.css is updated */
+    .cat-VFR { color: green; font-weight: bold; }
+    .cat-MVFR { color: blue; font-weight: bold; }
+    .cat-IFR { color: hotpink; font-weight: bold; }
+    .cat-LIFR { color: red; font-weight: bold; }
+  </style>
 </head>
 
 <body>
@@ -75,7 +82,6 @@
 </div>
 
 <script>
-// Helper to fetch raw METAR via proxy (to avoid CORS)
 async function fetchRawMetar(station) {
   const url = `https://aviationweather.gov/api/data/metar?ids=${station}&format=raw&hoursBeforeNow=1&mostRecent=true`;
   const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
@@ -85,15 +91,11 @@ async function fetchRawMetar(station) {
     const text = json.contents;
     const metarLine = text.split('\n').find(line => line.includes(station));
     if (metarLine) return metarLine;
-    // If no METAR found for station
     return null;
   } catch (e) {
     return null;
   }
 }
-
-
-// Parsing functions
 
 function parseWind(metar) {
   const windRegex = /(\d{3}|VRB)(\d{2})(G(\d{2}))?KT/;
@@ -139,8 +141,7 @@ function parseTempDew(metar) {
 function parseAltimeter(metar) {
   let m = metar.match(/ A(\d{4}) /);
   if (m) {
-    let inHgHundredths = parseInt(m[1], 10);
-    let inHg = (inHgHundredths / 100).toFixed(2);
+    let inHg = (parseInt(m[1], 10) / 100).toFixed(2);
     return `${inHg} inHg`;
   }
   m = metar.match(/ Q(\d{4}) /);
@@ -162,12 +163,7 @@ function getFlightCategory(metar) {
   if (!vis) vis = 10;
 
   let cloudLayers = [...metar.matchAll(/(BKN|OVC)(\d{3})/g)];
-  let ceilingFeet = null;
-  if (cloudLayers.length) {
-    ceilingFeet = Math.min(...cloudLayers.map(cloud => parseInt(cloud[2], 10) * 100));
-  } else {
-    ceilingFeet = 99999;
-  }
+  let ceilingFeet = cloudLayers.length ? Math.min(...cloudLayers.map(cloud => parseInt(cloud[2]) * 100)) : 99999;
 
   if (vis >= 5 && ceilingFeet > 3000) return "VFR";
   if ((vis >= 3 && vis < 5) || (ceilingFeet >= 1000 && ceilingFeet <= 3000)) return "MVFR";
@@ -181,7 +177,6 @@ async function updateMetar(station, suffix) {
   let rawMetar = await fetchRawMetar(station);
 
   if (!rawMetar && station === "KGHG") {
-    // fallback to KEWB if no METAR for KGHG
     rawMetar = await fetchRawMetar("KEWB");
     if (rawMetar) {
       document.getElementById(`metar${suffix}`).textContent = rawMetar + " (Fallback from KEWB)";
@@ -203,7 +198,11 @@ async function updateMetar(station, suffix) {
   document.getElementById(`clouds${suffix}`).textContent = parseClouds(rawMetar);
   document.getElementById(`tempdew${suffix}`).textContent = parseTempDew(rawMetar);
   document.getElementById(`alt${suffix}`).textContent = parseAltimeter(rawMetar);
-  document.getElementById(`cat${suffix}`).textContent = getFlightCategory(rawMetar);
+
+  const cat = getFlightCategory(rawMetar);
+  const catCell = document.getElementById(`cat${suffix}`);
+  catCell.textContent = cat;
+  catCell.className = `cat-${cat}`;
 }
 
 function clearTableFields(suffix) {
@@ -212,21 +211,19 @@ function clearTableFields(suffix) {
   document.getElementById(`clouds${suffix}`).textContent = "N/A";
   document.getElementById(`tempdew${suffix}`).textContent = "N/A";
   document.getElementById(`alt${suffix}`).textContent = "N/A";
-  document.getElementById(`cat${suffix}`).textContent = "N/A";
+  const catCell = document.getElementById(`cat${suffix}`);
+  catCell.textContent = "N/A";
+  catCell.className = "";
 }
 
-
-// Initial load
 updateMetar("KGHG", "KGHG");
 updateMetar("KEWB", "KEWB");
 
-// Optional: refresh every 10 minutes
 setInterval(() => {
   updateMetar("KGHG", "KGHG");
   updateMetar("KEWB", "KEWB");
 }, 600000);
-
 </script>
 
-</body>
+    </body>
 </html>
