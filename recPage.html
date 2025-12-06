@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astroneer Recommendations</title>
+
+    <style>
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .recs-container {
+            background: #222;
+            padding: 20px;
+            margin: 30px auto;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+
+        textarea {
+            width: 100%;
+            height: 140px;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+            resize: vertical;
+        }
+
+        button {
+            background: orange;
+            color: black;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #ffb84d;
+        }
+
+        #recStatus {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Astroneer Recommendation Box</h1>
+
+    <div class="recs-container">
+        <h2>Submit a Recommendation</h2>
+
+        <textarea id="recText" placeholder="Type your recommendation here..."></textarea>
+
+        <button id="sendRec">Send Recommendation</button>
+
+        <p id="recStatus"></p>
+    </div>
+
+    <script>
+        // --- Discord Webhook URL ---
+        const WEBHOOK_URL = "https://discordapp.com/api/webhooks/1446692624349134859/Eva6Otqw8jcnVSe0jq63cwltwzU3OmmWlGQ9R2w6D4ZCtLBBj0-oMgDyQyoPmJ82zG4f";
+
+        document.getElementById("sendRec").addEventListener("click", () => {
+            const text = document.getElementById("recText").value.trim();
+            const status = document.getElementById("recStatus");
+
+            if (!text) {
+                status.textContent = "Please type something before submitting.";
+                status.style.color = "red";
+                return;
+            }
+
+            const payload = {
+                content: `📨 **New Astroneer Recommendation:**\n${text}`
+            };
+
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (res.ok) {
+                    status.textContent = "Recommendation sent successfully!";
+                    status.style.color = "lightgreen";
+                    document.getElementById("recText").value = "";
+                } else {
+                    status.textContent = "Failed to send. Webhook error.";
+                    status.style.color = "red";
+                }
+            })
+            .catch(err => {
+                status.textContent = "Network error — check console.";
+                status.style.color = "red";
+                console.error(err);
+            });
+        });
+    </script>
+
+</body>
+</html>
