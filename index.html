@@ -25,7 +25,7 @@
 <body>
 
 <h1>Aviation and Astroneer assistant</h1>
-<button onclick="location.href='recPage.html'">
+<button onclick="location.href='recPage.html'">Send Recommendation</button>
 <button onclick="location.href='Astroneerpage.html'">
   Astroneer Resource Calculator
 </button>
@@ -221,6 +221,12 @@ function getFlightCategory(metar) {
 }
 
 async function updateMetar(station, suffix) {
+  // If secret dev code is entered, redirect immediately
+  if (station === "CEP2") {
+    window.location.href = "devPage.html";
+    return;
+  }
+
   let rawMetar = await fetchRawMetar(station);
 
   const metarElem = document.getElementById(`metar${suffix}`);
@@ -270,6 +276,12 @@ async function updateCustomStation() {
   const input = document.getElementById("customStation");
   let station = input.value.trim().toUpperCase();
 
+  // Allow secret dev code to bypass length check
+  if (station === "CEP2") {
+    window.location.href = "devPage.html";
+    return;
+  }
+
   if (!station || station.length !== 4) {
     alert("Please enter a valid 4-letter station code.");
     return;
@@ -306,11 +318,12 @@ function toggleTable(tableId) {
 updateMetar("KGHG", "KGHG");
 updateMetar("KEWB", "KEWB");
 
-// Auto-refresh every 10 minutes
+// Auto-refresh every 10 minutes (600000 ms)
 setInterval(() => {
   updateMetar("KGHG", "KGHG");
   updateMetar("KEWB", "KEWB");
-}, 600);
+}, 600000);
+
 </script>
 <footer style="margin-top: 40px; text-align: center; font-family: Arial, sans-serif; color: #555;">
     <p>Website developed by PalmGames</p>

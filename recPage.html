@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Astroneer Recommendations</title>
 
     <style>
@@ -40,7 +40,7 @@
         }
 
         button {
-            background: orange;
+            background: #ed82d4;
             color: black;
             padding: 10px 20px;
             font-size: 16px;
@@ -51,32 +51,91 @@
         }
 
         button:hover {
-            background: #ffb84d;
+            background: #e85fc8;
         }
 
         #recStatus {
             margin-top: 12px;
             font-size: 14px;
         }
+
+        /* Developer panel styles */
+        .dev-panel {
+            background: #111;
+            margin: 40px auto 20px auto;
+            padding: 20px;
+            max-width: 600px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        #returnMainBtn {
+            background: #555;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        #logOutput {
+            background: #111;
+            padding: 15px;
+            min-height: 150px;
+            white-space: pre-wrap;
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 300px;
+            margin-top: 10px;
+            color: #ccc;
+        }
+
+        #refreshLogs {
+            margin-top: 10px;
+            background: #444;
+            color: #eee;
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #refreshLogs:hover {
+            background: #666;
+        }
+
     </style>
 </head>
 <body>
+  <!-- Add this where you want the button -->
+<button onclick="window.location.href='index.html'">Return to Home page</button>
 
-    <h1>Astroneer Recommendation Box</h1>
 
-    <div class="recs-container">
-        <h2>Submit a Recommendation</h2>
+    <h1>Send the PalmGames developer a message</h1>
+
+    <div class="recs-container" id="recFormContainer">
+        <h2>Communicate with the Godly Developer of PalmGames</h2>
 
         <textarea id="recText" placeholder="Type your recommendation here..."></textarea>
 
-        <button id="sendRec">Send Recommendation</button>
+        <button id="sendRec">Send</button>
 
         <p id="recStatus"></p>
+    </div>
+
+    <div class="dev-panel" id="devPanel" style="display:none;">
+        <h2>Developer Message Log</h2>
+        <button id="returnMainBtn">Return to Main Page</button>
+        <p>This displays messages sent to your Discord webhook.</p>
+
+        <button id="refreshLogs">Refresh Log</button>
+
+        <pre id="logOutput"></pre>
     </div>
 
     <script>
         // --- Discord Webhook URL ---
         const WEBHOOK_URL = "https://discordapp.com/api/webhooks/1446692624349134859/Eva6Otqw8jcnVSe0jq63cwltwzU3OmmWlGQ9R2w6D4ZCtLBBj0-oMgDyQyoPmJ82zG4f";
+
+        const recFormContainer = document.getElementById("recFormContainer");
+        const devPanel = document.getElementById("devPanel");
 
         document.getElementById("sendRec").addEventListener("click", () => {
             const text = document.getElementById("recText").value.trim();
@@ -112,6 +171,18 @@
                 status.style.color = "red";
                 console.error(err);
             });
+        });
+
+        // Button to return to main page
+        document.getElementById("returnMainBtn").addEventListener("click", () => {
+            window.location.href = "index.html";  // Change if your main page URL is different
+        });
+
+        // The developer panel is hidden by default.
+        // You can add logic later to show this for authorized users only.
+        // For now, refreshLogs button does nothing or you can implement log fetch if you want.
+        document.getElementById("refreshLogs").addEventListener("click", () => {
+            alert("Developer log refresh feature not implemented yet.");
         });
     </script>
 
