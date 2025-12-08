@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aviation Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Temporary styles for flight category colors until styles.css is updated */
+    .cat-VFR { color: green; font-weight: bold; }
+    .cat-MVFR { color: blue; font-weight: bold; }
+    .cat-IFR { color: hotpink; font-weight: bold; }
+    .cat-LIFR { color: red; font-weight: bold; }
+
+    /* Style the minimize buttons */
+    .toggle-btn {
+      margin-left: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Aviation Helper</h1>
+  <div>
+    <button onclick="location.href='index.html'">
+        Home Page
+    </button>
+  </div>
+  <div id="zuluClock" style="font-size: 20px; margin-top: 10px; color: #4dd0ff;">
+      Zulu Time: --:--:--
+  </div>
+  <div>
+    <label for="customStation">Enter Station ID:</label>
+    <input type="text" id="customStation" maxlength="4" style="text-transform: uppercase;" />
+    <button onclick="updateCustomStation()">Get Weather</button>
+  </div>
+
+  <div id="weatherTables">
+
+    <table id="tableKGHG">
+      <caption>
+        Marshfield (KGHG)
+        <button class="toggle-btn" onclick="toggleTable('tableKGHG')">Minimize</button>
+      </caption>
+      <thead>
+        <tr>
+          <th>Wind</th>
+          <th>Visibility</th>
+          <th>Cloud Coverage</th>
+          <th>Temp / Dewpoint (°C)</th>
+          <th>Altimeter (inHg)</th>
+          <th>Flight Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="windKGHG">Loading...</td>
+          <td id="visKGHG">Loading...</td>
+          <td id="cloudsKGHG">Loading...</td>
+          <td id="tempdewKGHG">Loading...</td>
+          <td id="altKGHG">Loading...</td>
+          <td id="catKGHG">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table id="tableKEWB">
+      <caption>
+        New Bedford (KEWB)
+        <button class="toggle-btn" onclick="toggleTable('tableKEWB')">Minimize</button>
+      </caption>
+      <thead>
+        <tr>
+          <th>Wind</th>
+          <th>Visibility</th>
+          <th>Cloud Coverage</th>
+          <th>Temp / Dewpoint (°C)</th>
+          <th>Altimeter (inHg)</th>
+          <th>Flight Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="windKEWB">Loading...</td>
+          <td id="visKEWB">Loading...</td>
+          <td id="cloudsKEWB">Loading...</td>
+          <td id="tempdewKEWB">Loading...</td>
+          <td id="altKEWB">Loading...</td>
+          <td id="catKEWB">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table id="tableCustom" style="margin-top:20px; display:none;">
+      <caption>
+        <span id="captionCustom"></span>
+        <button class="toggle-btn" onclick="toggleTable('tableCustom')">Minimize</button>
+      </caption>
+      <thead>
+        <tr>
+          <th>Wind</th>
+          <th>Visibility</th>
+          <th>Cloud Coverage</th>
+          <th>Temp / Dewpoint (°C)</th>
+          <th>Altimeter (inHg)</th>
+          <th>Flight Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="windCustom">N/A</td>
+          <td id="visCustom">N/A</td>
+          <td id="cloudsCustom">N/A</td>
+          <td id="tempdewCustom">N/A</td>
+          <td id="altCustom">N/A</td>
+          <td id="catCustom">N/A</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div id="metarDisplay">
+    <p class="station-name">Marshfield Raw METAR:</p>
+    <p class="raw-metar" id="metarKGHG">Loading...</p>
+    <p class="station-name">New Bedford Raw METAR:</p>
+    <p class="raw-metar" id="metarKEWB">Loading...</p>
+  </div>
+  <script>
+  async function fetchRawMetar(station) {
+    const url = `https://aviationweather.gov/api/data/metar?ids=${station}&format=raw&hoursBeforeNow=1&mostRecent=true`;
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    try {
+      const response = await fetch(proxy);
+      const json = await response.json();
+      const text = json.contents;
+      const metarLine = text.split('\n').find(line => line.includes(station));
+      if (metarLine) return metarLine;
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function parseWind(metar) {
+    const windRegex = /(\d{3}|VRB)(\d{2})(G(\d{2}))?KT/;
+    const m = metar.match(windRegex);
+    if (!m) return "N/A";
+    const dir = m[1] === "VRB" ? "Variable" : m[1] + "°";
+    const speed = m[2];
+    const gust = m[4] ? ` gust ${m[4]}` : "";
+    return `${dir} at ${speed} kt${gust}`;
+  }
+
+  function parseVisibility(metar) {
+    let m = metar.match(/ (\d{1,2})SM /);
+    if (m) return `${m[1]} SM`;
+    m = metar.match(/ (\d{4}) /);
+    if (m) {
+      let meters = parseInt(m[1], 10);
+      let miles = (meters * 0.000621371).toFixed(1);
+      return `${miles} SM`;
+    }
+    return "N/A";
+  }
+
+  function parseClouds(metar) {
+    const cloudRegex = /(FEW|SCT|BKN|OVC|VV)\d{3}/g;
+    const matches = metar.match(cloudRegex);
+    if (!matches) {
+      if (metar.includes("SKC") || metar.includes("CLR") || metar.includes("NCD")) return "Clear";
+      return "N/A";
+    }
+    return matches.join(", ");
+  }
+
+  function parseTempDew(metar) {
+    const tempDewRegex = / (M?\d{2})\/(M?\d{2}) /;
+    const m = metar.match(tempDewRegex);
+    if (!m) return "N/A";
+    const temp = m[1].replace("M", "-");
+    const dew = m[2].replace("M", "-");
+    return `${temp} / ${dew}`;
+  }
+
+  function parseAltimeter(metar) {
+    let m = metar.match(/ A(\d{4}) /);
+    if (m) {
+      let inHg = (parseInt(m[1], 10) / 100).toFixed(2);
+      return `${inHg} inHg`;
+    }
+    m = metar.match(/ Q(\d{4}) /);
+    if (m) {
+      let hPa = parseInt(m[1], 10);
+      let inHg = (hPa * 0.02953).toFixed(2);
+      return `${inHg} inHg`;
+    }
+    return "N/A";
+  }
+
+  function getFlightCategory(metar) {
+    let visMatch = metar.match(/ (\d{1,2})SM /);
+    let vis = visMatch ? parseFloat(visMatch[1]) : null;
+    if (!vis) {
+      let m = metar.match(/ (\d{4}) /);
+      if (m) vis = parseInt(m[1], 10) * 0.000621371;
+    }
+    if (!vis) vis = 10;
+
+    let cloudLayers = [...metar.matchAll(/(BKN|OVC)(\d{3})/g)];
+    let ceilingFeet = cloudLayers.length ? Math.min(...cloudLayers.map(cloud => parseInt(cloud[2]) * 100)) : 99999;
+
+    if (vis >= 5 && ceilingFeet > 3000) return "VFR";
+    if ((vis >= 3 && vis < 5) || (ceilingFeet >= 1000 && ceilingFeet <= 3000)) return "MVFR";
+    if ((vis >= 1 && vis < 3) || (ceilingFeet >= 500 && ceilingFeet < 1000)) return "IFR";
+    if (vis < 1 || ceilingFeet < 500) return "LIFR";
+
+    return "VFR";
+  }
+
+  async function updateMetar(station, suffix) {
+    // If secret dev code is entered, redirect immediately
+    if (station === "CEP2") {
+      window.location.href = "devPage.html";
+      return;
+    }
+
+    let rawMetar = await fetchRawMetar(station);
+
+    const metarElem = document.getElementById(`metar${suffix}`);
+
+    if (!rawMetar && station === "KGHG") {
+      rawMetar = await fetchRawMetar("KEWB");
+      if (rawMetar) {
+        if (metarElem) metarElem.textContent = rawMetar + " (Fallback from KEWB)";
+      } else {
+        if (metarElem) metarElem.textContent = "No METAR available";
+        clearTableFields(suffix);
+        return;
+      }
+    } else if (!rawMetar) {
+      if (metarElem) metarElem.textContent = "No METAR available";
+      clearTableFields(suffix);
+      return;
+    } else {
+      if (metarElem) metarElem.textContent = rawMetar;
+    }
+
+    document.getElementById(`wind${suffix}`).textContent = parseWind(rawMetar);
+    document.getElementById(`vis${suffix}`).textContent = parseVisibility(rawMetar);
+    document.getElementById(`clouds${suffix}`).textContent = parseClouds(rawMetar);
+    document.getElementById(`tempdew${suffix}`).textContent = parseTempDew(rawMetar);
+    document.getElementById(`alt${suffix}`).textContent = parseAltimeter(rawMetar);
+
+    const cat = getFlightCategory(rawMetar);
+    const catCell = document.getElementById(`cat${suffix}`);
+    catCell.textContent = cat;
+    catCell.className = `cat-${cat}`;
+  }
+
+  function clearTableFields(suffix) {
+    document.getElementById(`wind${suffix}`).textContent = "N/A";
+    document.getElementById(`vis${suffix}`).textContent = "N/A";
+    document.getElementById(`clouds${suffix}`).textContent = "N/A";
+    document.getElementById(`tempdew${suffix}`).textContent = "N/A";
+    document.getElementById(`alt${suffix}`).textContent = "N/A";
+    const catCell = document.getElementById(`cat${suffix}`);
+    catCell.textContent = "N/A";
+    catCell.className = "";
+  }
+
+  // Wrapper function to update the custom station
+  async function updateCustomStation() {
+    const input = document.getElementById("customStation");
+    let station = input.value.trim().toUpperCase();
+
+    // Allow secret dev code to bypass length check
+    if (station === "CEP2") {
+      window.location.href = "devPage.html";
+      return;
+    }
+
+    if (!station || station.length !== 4) {
+      alert("Please enter a valid 4-letter station code.");
+      return;
+    }
+
+    const tableCustom = document.getElementById("tableCustom");
+    const captionCustom = document.getElementById("captionCustom");
+    tableCustom.style.display = "table";
+    captionCustom.textContent = `Custom Station (${station})`;
+
+    await updateMetar(station, "Custom");
+  }
+
+  // Toggle minimize/restore the table body of the given table id
+  function toggleTable(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const tbody = table.querySelector('tbody');
+    const button = table.querySelector('caption button.toggle-btn');
+
+    if (!tbody || !button) return;
+
+    if (tbody.style.display === 'none') {
+      tbody.style.display = '';
+      button.textContent = 'Minimize';
+    } else {
+      tbody.style.display = 'none';
+      button.textContent = 'Restore';
+    }
+  }
+
+  // Initial load for default stations
+  updateMetar("KGHG", "KGHG");
+  updateMetar("KEWB", "KEWB");
+
+  // Auto-refresh every 10 minutes (600000 ms)
+  setInterval(() => {
+    updateMetar("KGHG", "KGHG");
+    updateMetar("KEWB", "KEWB");
+  }, 600000);
+
+  </script>
+  <script>
+  function updateZuluClock() {
+      const now = new Date();
+      const z = now.toLocaleTimeString("en-GB", {
+          timeZone: "UTC",
+          hour12: false
+      });
+
+      document.getElementById("zuluClock").textContent = "Zulu Time: " + z;
+  }
+
+  setInterval(updateZuluClock, 1000);
+  updateZuluClock(); // initial call
+  </script>
+
+  <footer style="margin-top: 40px; text-align: center; font-family: Arial, sans-serif; color: #555;">
+      <p>Website developed by PalmGames</p>
+      <img src="images/PG.png" alt="PalmGames Logo" style="height: 60px; margin-top: 10px;" />
+    </footer>
+  </body>
+  </html>
