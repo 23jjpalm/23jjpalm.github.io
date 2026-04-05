@@ -3,36 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oval Track Puzzle - Popup Solver</title>
+  <title>Oval Track Puzzle Solver</title>
   <style>
     :root{
       --bg:#0b1020;
+      --bg2:#15204a;
       --panel:#141b34;
       --panel2:#1a2344;
-      --text:#ecf2ff;
-      --muted:#9fb0df;
-      --accent:#7cc7ff;
+      --text:#eef4ff;
+      --muted:#a7b6df;
+      --accent:#82d0ff;
       --good:#6ee7a8;
-      --warn:#ffcf6e;
-      --bad:#ff8fa3;
-      --track:#2e3b6d;
-      --slot:#202b52;
-      --piece:#f4f8ff;
-      --pieceText:#0c1738;
-      --shadow:0 12px 28px rgba(0,0,0,.28);
+      --warn:#ffd36f;
+      --bad:#ff95a6;
+      --track:#2f3d74;
+      --lane:#202b52;
+      --piece:#f6f9ff;
+      --pieceText:#0d173a;
+      --shadow:0 14px 32px rgba(0,0,0,.28);
     }
 
     *{box-sizing:border-box}
     body{
       margin:0;
       font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      background:radial-gradient(circle at top,#16214a 0%,var(--bg) 45%);
       color:var(--text);
+      background:radial-gradient(circle at top, var(--bg2) 0%, var(--bg) 50%);
       min-height:100vh;
     }
 
     .wrap{
-      max-width:1280px;
+      max-width:1320px;
       margin:0 auto;
       padding:24px;
       display:grid;
@@ -41,7 +42,7 @@
     }
 
     .card{
-      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       border:1px solid rgba(255,255,255,.08);
       border-radius:24px;
       box-shadow:var(--shadow);
@@ -53,14 +54,14 @@
 
     h1{
       margin:0 0 8px;
-      font-size:clamp(1.6rem,2.2vw,2.4rem);
+      font-size:clamp(1.6rem, 2.3vw, 2.5rem);
       line-height:1.1;
     }
 
     .sub{
       color:var(--muted);
-      margin-bottom:16px;
-      line-height:1.45;
+      line-height:1.5;
+      margin-bottom:14px;
     }
 
     .toolbar{
@@ -70,7 +71,9 @@
       margin-bottom:14px;
     }
 
-    button, textarea{font:inherit}
+    button, textarea{
+      font:inherit;
+    }
 
     button{
       background:linear-gradient(180deg,#2a3870,#1f2a52);
@@ -85,66 +88,77 @@
     button:active{transform:translateY(0)}
     button.secondary{background:linear-gradient(180deg,#26305d,#192140)}
     button.good{background:linear-gradient(180deg,#25614b,#1b4837)}
-    button.warn{background:linear-gradient(180deg,#705c21,#564618)}
-    button.bad{background:linear-gradient(180deg,#6c2438,#4c1827)}
-    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    button.warn{background:linear-gradient(180deg,#756021,#584715)}
+    button.bad{background:linear-gradient(180deg,#6f2238,#521726)}
+    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
     .status{
       display:inline-flex;
       align-items:center;
       gap:10px;
+      flex-wrap:wrap;
       background:rgba(255,255,255,.04);
       border:1px solid rgba(255,255,255,.08);
       border-radius:999px;
       padding:8px 12px;
       color:var(--muted);
       margin-bottom:12px;
-      flex-wrap:wrap;
     }
 
     .dot{
       width:10px;height:10px;border-radius:999px;
       background:var(--warn);
-      box-shadow:0 0 0 4px rgba(255,207,110,.12);
+      box-shadow:0 0 0 4px rgba(255,211,111,.12);
     }
     .dot.solved{
       background:var(--good);
-      box-shadow:0 0 0 4px rgba(110,231,168,.12);
+      box-shadow:0 0 0 4px rgba(110,231,168,.14);
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:rgba(130,208,255,.08);
+      color:var(--accent);
+      border:1px solid rgba(130,208,255,.18);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:.84rem;
+      font-weight:700;
     }
 
     svg{
       width:100%;
       height:auto;
       display:block;
-      background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.03),rgba(255,255,255,0));
       border-radius:20px;
+      background:radial-gradient(circle at 50% 28%, rgba(255,255,255,.03), rgba(255,255,255,0));
     }
 
     .panel-title{
       font-size:1.02rem;
-      font-weight:700;
+      font-weight:800;
       margin-bottom:10px;
     }
 
-    .sequence,.moves-log,.errors{
+    .sequence,.moves-log,.errors,.solution-box{
       background:var(--panel2);
       border:1px solid rgba(255,255,255,.08);
       border-radius:16px;
       padding:12px;
       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-      line-height:1.55;
       white-space:pre-wrap;
       word-break:break-word;
+      line-height:1.5;
     }
 
-    .moves-log{max-height:180px;overflow:auto}
+    .moves-log,.errors{max-height:180px;overflow:auto}
     .errors{
-      max-height:180px;
-      overflow:auto;
-      border-color:rgba(255,143,163,.22);
-      background:rgba(255,143,163,.06);
-      color:#ffdbe3;
       min-height:72px;
+      border-color:rgba(255,149,166,.2);
+      background:rgba(255,149,166,.06);
+      color:#ffe1e7;
     }
 
     .stat-grid{
@@ -159,10 +173,16 @@
       border-radius:16px;
       padding:12px;
     }
-    .label{color:var(--muted);font-size:.85rem;margin-bottom:6px}
-    .value{font-size:1.25rem;font-weight:800}
+    .label{font-size:.84rem;color:var(--muted);margin-bottom:6px}
+    .value{font-size:1.24rem;font-weight:800}
 
-    .input-block{display:grid;gap:8px}
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
     textarea{
       width:100%;
       min-height:92px;
@@ -180,20 +200,7 @@
       line-height:1.45;
     }
 
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      background:rgba(124,199,255,.08);
-      color:var(--accent);
-      border:1px solid rgba(124,199,255,.18);
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:.84rem;
-      font-weight:700;
-    }
-
-    @media (max-width:960px){
+    @media (max-width:980px){
       .wrap{grid-template-columns:1fr}
     }
   </style>
@@ -204,7 +211,7 @@
       <h1>Oval Track Puzzle Simulator</h1>
       <div class="sub">
         20 numbered pieces sit on an oval track. They cannot pass each other. A legal move flips exactly 4 consecutive pieces.
-        Move names use the number immediately clockwise of the flipped group. Example: flipping 1,2,3,4 is move <b>5</b>.
+        Move labels use the piece immediately clockwise of the flipped group. Example: flipping <b>1, 2, 3, 4</b> is move <b>5</b>.
       </div>
 
       <div class="toolbar">
@@ -219,10 +226,10 @@
       <div class="status">
         <span id="statusDot" class="dot"></span>
         <span id="statusText">Not solved</span>
-        <span class="pill">Click any highlighted 4-slot segment</span>
+        <span class="pill">Click any 4-slot segment to flip it</span>
       </div>
 
-      <svg id="board" viewBox="0 0 900 580" aria-label="Oval track puzzle board"></svg>
+      <svg id="board" viewBox="0 0 960 620" aria-label="Oval track puzzle board"></svg>
     </section>
 
     <aside class="card side">
@@ -247,19 +254,28 @@
       </div>
 
       <div>
+        <div class="panel-title">Latest Found Solution</div>
+        <div id="solutionBox" class="solution-box">No solution found yet.</div>
+        <div class="row" style="margin-top:10px;">
+          <button id="applySolutionBtn" class="good">Apply Found Solution</button>
+          <button id="copySolutionBtn" class="secondary">Copy Labels</button>
+        </div>
+      </div>
+
+      <div>
         <div class="panel-title">Move Log</div>
         <div id="log" class="moves-log">No moves yet.</div>
       </div>
 
-      <div class="input-block">
+      <div>
         <div class="panel-title">Load Custom State</div>
         <textarea id="customInput" placeholder="Example: 4,3,2,1,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"></textarea>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="row" style="margin-top:10px;">
           <button id="applyCustomBtn" class="good">Apply State</button>
           <button id="normalizeBtn" class="secondary">Normalize Rotation</button>
         </div>
-        <div class="hint">
-          Enter all 20 numbers exactly once. Normalize Rotation rotates the whole display so piece 1 appears first.
+        <div class="hint" style="margin-top:8px;">
+          Enter all 20 numbers exactly once. Normalize Rotation rotates the whole display so piece 1 appears in slot 1.
         </div>
       </div>
 
@@ -269,7 +285,7 @@
       </div>
 
       <div class="footer-note">
-        The solver runs in a background worker and reports to a popup window so the main page stays responsive.
+        The solver runs in a background worker and reports progress to a popup window so the main page stays responsive.
       </div>
     </aside>
   </div>
@@ -287,6 +303,7 @@
     const statusDot = document.getElementById('statusDot');
     const customInput = document.getElementById('customInput');
     const errorsEl = document.getElementById('errors');
+    const solutionBox = document.getElementById('solutionBox');
 
     const shuffleBtn = document.getElementById('shuffleBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -296,6 +313,8 @@
     const stopSolveBtn = document.getElementById('stopSolveBtn');
     const applyCustomBtn = document.getElementById('applyCustomBtn');
     const normalizeBtn = document.getElementById('normalizeBtn');
+    const applySolutionBtn = document.getElementById('applySolutionBtn');
+    const copySolutionBtn = document.getElementById('copySolutionBtn');
 
     let state = solvedState();
     let history = [];
@@ -307,8 +326,10 @@
     let worker = null;
     let popup = null;
     let solverRunning = false;
-    let solveQueue = [];
     let animatingSolution = false;
+
+    let foundSolutionStarts = [];
+    let foundSolutionLabels = [];
 
     function solvedState() {
       return Array.from({ length: TOTAL }, (_, i) => i + 1);
@@ -328,10 +349,10 @@
 
     function reverseSegment(arr, start) {
       const next = clone(arr);
-      const indices = [];
-      for (let i = 0; i < SEGMENT; i++) indices.push((start + i) % TOTAL);
-      const vals = indices.map(i => next[i]).reverse();
-      indices.forEach((idx, k) => next[idx] = vals[k]);
+      const idx = [];
+      for (let i = 0; i < SEGMENT; i++) idx.push((start + i) % TOTAL);
+      const vals = idx.map(i => next[i]).reverse();
+      idx.forEach((pos, k) => next[pos] = vals[k]);
       return next;
     }
 
@@ -340,18 +361,28 @@
     }
 
     function rotateWhole(arr, offset) {
-      const n = arr.length;
       const out = [];
-      for (let i = 0; i < n; i++) out.push(arr[(i + offset) % n]);
+      for (let i = 0; i < arr.length; i++) out.push(arr[(i + offset) % arr.length]);
       return out;
     }
 
+    function formatSolutionBox() {
+      if (!foundSolutionLabels.length) {
+        solutionBox.textContent = 'No solution found yet.';
+        return;
+      }
+      solutionBox.textContent =
+        'Labels:\n' + foundSolutionLabels.join(' -> ') +
+        '\n\nStarts (for simulator):\n' + foundSolutionStarts.map(x => x + 1).join(', ') +
+        '\n\nLength: ' + foundSolutionLabels.length;
+    }
+
     function logError(msg) {
-      const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      const line = '[' + new Date().toLocaleTimeString() + '] ' + msg;
       if (errorsEl.textContent.trim() === 'No errors.') {
         errorsEl.textContent = line;
       } else {
-        errorsEl.textContent += `\n${line}`;
+        errorsEl.textContent += '\n' + line;
       }
       errorsEl.scrollTop = errorsEl.scrollHeight;
     }
@@ -361,7 +392,8 @@
     });
 
     window.addEventListener('unhandledrejection', (e) => {
-      logError((e.reason && e.reason.message) ? e.reason.message : String(e.reason || 'Unhandled promise rejection'));
+      const msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason || 'Unhandled promise rejection');
+      logError(msg);
     });
 
     function normalizeRotation() {
@@ -371,12 +403,12 @@
         state = rotateWhole(state, idx);
         history.push({ type: 'normalize' });
         redoStack = [];
-        moveLog.push('normalize rotation (piece 1 moved to slot 1)');
+        moveLog.push('normalize rotation');
         render();
       }
     }
 
-    function applyMove(start, record = true, tag = null) {
+    function applyMove(start, record = true, tag = '') {
       const before = clone(state);
       const label = rotationMoveLabel(before, start);
       state = reverseSegment(state, start);
@@ -385,25 +417,24 @@
         history.push({ type: 'move', start, before });
         redoStack = [];
         moveCount++;
-        moveLog.push(`${tag ? tag + ': ' : ''}move ${moveCount} -> ${label}`);
+        moveLog.push((tag ? tag + ': ' : '') + 'move ' + moveCount + ' -> ' + label);
       }
 
       render();
     }
 
     async function animateSolutionPath(starts) {
-      if (!starts || !starts.length) return;
+      if (!Array.isArray(starts) || !starts.length) return;
       animatingSolution = true;
       hoveredSegment = null;
       render();
 
-      for (let i = 0; i < starts.length; i++) {
-        const start = starts[i];
+      for (const start of starts) {
         hoveredSegment = start;
         render();
-        await sleep(180);
+        await sleep(160);
         applyMove(start, true, 'auto');
-        await sleep(220);
+        await sleep(210);
       }
 
       hoveredSegment = null;
@@ -414,31 +445,34 @@
     function undo() {
       if (!history.length || solverRunning || animatingSolution) return;
       const entry = history.pop();
+
       if (entry.type === 'move') {
         redoStack.push({ type: 'move', start: entry.start, before: clone(state) });
         state = entry.before;
         moveCount = Math.max(0, moveCount - 1);
         moveLog.push('undo');
       } else {
-        redoStack.push({ type: 'normalize', before: clone(state) });
+        redoStack.push({ type: 'normalize' });
         moveLog.push('undo normalize');
       }
+
       render();
     }
 
     function redo() {
       if (!redoStack.length || solverRunning || animatingSolution) return;
       const entry = redoStack.pop();
+
       if (entry.type === 'move') {
         history.push({ type: 'move', start: entry.start, before: clone(state) });
         state = reverseSegment(state, entry.start);
         moveCount++;
-        moveLog.push(`redo -> ${rotationMoveLabel(history[history.length - 1].before, entry.start)}`);
+        moveLog.push('redo -> ' + rotationMoveLabel(history[history.length - 1].before, entry.start));
       } else {
-        history.push({ type: 'normalize' });
         normalizeRotation();
         return;
       }
+
       render();
     }
 
@@ -449,11 +483,16 @@
       redoStack = [];
       moveLog = [];
       moveCount = 0;
+      foundSolutionStarts = [];
+      foundSolutionLabels = [];
+      formatSolutionBox();
+
       for (let i = 0; i < times; i++) {
         const start = Math.floor(Math.random() * TOTAL);
         state = reverseSegment(state, start);
       }
-      moveLog.push(`shuffled with ${times} random moves`);
+
+      moveLog.push('shuffled with ' + times + ' random moves');
       render();
     }
 
@@ -465,21 +504,19 @@
       moveLog = [];
       moveCount = 0;
       hoveredSegment = null;
+      foundSolutionStarts = [];
+      foundSolutionLabels = [];
+      formatSolutionBox();
       render();
     }
 
     function parseCustomInput(text) {
-      const parts = text
-        .split(/[\s,]+/)
-        .map(x => x.trim())
-        .filter(Boolean)
-        .map(Number);
-
-      if (parts.length !== TOTAL) throw new Error(`Need exactly ${TOTAL} numbers.`);
+      const parts = text.split(/[\s,]+/).map(x => x.trim()).filter(Boolean).map(Number);
+      if (parts.length !== TOTAL) throw new Error('Need exactly 20 numbers.');
       const set = new Set(parts);
       if (set.size !== TOTAL) throw new Error('Numbers must not repeat.');
       for (let i = 1; i <= TOTAL; i++) {
-        if (!set.has(i)) throw new Error(`Missing number ${i}.`);
+        if (!set.has(i)) throw new Error('Missing number ' + i + '.');
       }
       return parts;
     }
@@ -487,13 +524,15 @@
     function applyCustomState() {
       if (solverRunning || animatingSolution) return;
       try {
-        const parsed = parseCustomInput(customInput.value);
-        state = parsed;
+        state = parseCustomInput(customInput.value);
         history = [];
         redoStack = [];
         moveLog = ['custom state loaded'];
         moveCount = 0;
         hoveredSegment = null;
+        foundSolutionStarts = [];
+        foundSolutionLabels = [];
+        formatSolutionBox();
         render();
       } catch (err) {
         logError(err.message);
@@ -506,10 +545,11 @@
     }
 
     function updatePanels() {
-      sequenceEl.textContent = `[ ${stateToString()} ]`;
+      sequenceEl.textContent = '[ ' + stateToString() + ' ]';
       moveCountEl.textContent = String(moveCount);
       correctCountEl.textContent = String(countCorrect());
-      logEl.textContent = moveLog.length ? moveLog.slice(-40).join('\n') : 'No moves yet.';
+
+      logEl.textContent = moveLog.length ? moveLog.slice(-50).join('\n') : 'No moves yet.';
 
       if (isSolved()) {
         statusText.textContent = 'Solved';
@@ -528,12 +568,14 @@
       const locked = solverRunning || animatingSolution;
       undoBtn.disabled = !history.length || locked;
       redoBtn.disabled = !redoStack.length || locked;
-      solveBtn.disabled = locked;
       shuffleBtn.disabled = locked;
       resetBtn.disabled = locked;
+      solveBtn.disabled = locked;
       applyCustomBtn.disabled = locked;
       normalizeBtn.disabled = locked;
       stopSolveBtn.disabled = !solverRunning;
+      applySolutionBtn.disabled = locked || !foundSolutionStarts.length;
+      copySolutionBtn.disabled = !foundSolutionLabels.length;
     }
 
     function createSvg(tag, attrs = {}) {
@@ -549,7 +591,11 @@
     function renderBoard() {
       svg.innerHTML = '';
 
-      const cx = 450, cy = 290, rx = 310, ry = 180, pieceR = 28;
+      const cx = 480;
+      const cy = 310;
+      const rx = 320;
+      const ry = 190;
+      const pieceR = 29;
 
       const defs = createSvg('defs');
       const glow = createSvg('filter', { id: 'softGlow' });
@@ -564,16 +610,24 @@
       svg.appendChild(defs);
 
       svg.appendChild(createSvg('ellipse', {
-        cx, cy, rx: rx + 40, ry: ry + 40,
-        fill: 'none', stroke: 'rgba(255,255,255,0.10)', 'stroke-width': '52'
+        cx, cy, rx: rx + 44, ry: ry + 44,
+        fill: 'none',
+        stroke: 'rgba(255,255,255,0.10)',
+        'stroke-width': '54'
       }));
+
       svg.appendChild(createSvg('ellipse', {
         cx, cy, rx: rx + 6, ry: ry + 6,
-        fill: 'none', stroke: '#2e3b6d', 'stroke-width': '74'
+        fill: 'none',
+        stroke: '#30417b',
+        'stroke-width': '76'
       }));
+
       svg.appendChild(createSvg('ellipse', {
         cx, cy, rx, ry,
-        fill: 'none', stroke: '#202b52', 'stroke-width': '62'
+        fill: 'none',
+        stroke: '#202b52',
+        'stroke-width': '62'
       }));
 
       const points = [];
@@ -584,6 +638,7 @@
 
       for (let start = 0; start < TOTAL; start++) {
         const group = createSvg('g', { cursor: (solverRunning || animatingSolution) ? 'default' : 'pointer' });
+
         const centers = [];
         for (let k = 0; k < SEGMENT; k++) centers.push(points[(start + k) % TOTAL]);
 
@@ -591,28 +646,52 @@
         const maxX = Math.max(...centers.map(p => p.x));
         const minY = Math.min(...centers.map(p => p.y));
         const maxY = Math.max(...centers.map(p => p.y));
+
         const active = hoveredSegment === start;
 
         const box = createSvg('rect', {
-          x: minX - 38,
-          y: minY - 38,
-          width: (maxX - minX) + 76,
-          height: (maxY - minY) + 76,
-          rx: 22,
-          fill: active ? 'rgba(255,207,110,0.18)' : 'rgba(124,199,255,0.06)',
-          stroke: active ? 'rgba(255,207,110,0.90)' : 'rgba(124,199,255,0.18)',
+          x: minX - 39,
+          y: minY - 39,
+          width: (maxX - minX) + 78,
+          height: (maxY - minY) + 78,
+          rx: 24,
+          fill: active ? 'rgba(255,211,111,0.18)' : 'rgba(130,208,255,0.07)',
+          stroke: active ? 'rgba(255,211,111,0.96)' : 'rgba(130,208,255,0.18)',
           'stroke-width': active ? '3' : '2',
           opacity: active ? '1' : '0'
         });
 
+        const avgX = centers.reduce((a, p) => a + p.x, 0) / centers.length;
+        const avgY = centers.reduce((a, p) => a + p.y, 0) / centers.length;
+
+        const labelText = createSvg('text', {
+          x: avgX,
+          y: avgY + 5,
+          'text-anchor': 'middle',
+          'font-size': '12',
+          fill: active ? 'rgba(255,240,200,0.96)' : 'rgba(130,208,255,0.78)',
+          'pointer-events': 'none',
+          opacity: active ? '1' : '0'
+        });
+        labelText.textContent = String(rotationMoveLabel(state, start));
+
         group.appendChild(box);
+        group.appendChild(labelText);
 
         group.addEventListener('mouseenter', () => {
-          if (!solverRunning && !animatingSolution) box.setAttribute('opacity', '1');
+          if (!solverRunning && !animatingSolution) {
+            box.setAttribute('opacity', '1');
+            labelText.setAttribute('opacity', '1');
+          }
         });
+
         group.addEventListener('mouseleave', () => {
-          if (!active) box.setAttribute('opacity', '0');
+          if (!active) {
+            box.setAttribute('opacity', '0');
+            labelText.setAttribute('opacity', '0');
+          }
         });
+
         group.addEventListener('click', () => {
           if (!solverRunning && !animatingSolution) applyMove(start, true);
         });
@@ -624,39 +703,53 @@
         const p = points[i];
 
         svg.appendChild(createSvg('circle', {
-          cx: p.x, cy: p.y, r: pieceR + 7,
-          fill: '#1a2344', stroke: 'rgba(255,255,255,0.08)', 'stroke-width': '2'
+          cx: p.x,
+          cy: p.y,
+          r: pieceR + 8,
+          fill: '#1a2344',
+          stroke: 'rgba(255,255,255,0.09)',
+          'stroke-width': '2'
         }));
 
         svg.appendChild(createSvg('circle', {
-          cx: p.x, cy: p.y, r: pieceR,
-          fill: '#f4f8ff',
-          stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.9)' : 'rgba(12,23,56,0.18)',
+          cx: p.x,
+          cy: p.y,
+          r: pieceR,
+          fill: '#f6f9ff',
+          stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.95)' : 'rgba(12,23,56,0.18)',
           'stroke-width': state[i] === i + 1 ? '4' : '2',
           filter: state[i] === i + 1 ? 'url(#softGlow)' : ''
         }));
 
-        const text = createSvg('text', {
-          x: p.x, y: p.y + 6,
-          'text-anchor': 'middle', 'font-size': '18', 'font-weight': '800',
-          fill: '#0c1738', 'pointer-events': 'none'
+        const t = createSvg('text', {
+          x: p.x,
+          y: p.y + 6,
+          'text-anchor': 'middle',
+          'font-size': '18',
+          'font-weight': '800',
+          fill: '#0d173a',
+          'pointer-events': 'none'
         });
-        text.textContent = String(state[i]);
-        svg.appendChild(text);
+        t.textContent = String(state[i]);
+        svg.appendChild(t);
 
-        const slotNum = createSvg('text', {
-          x: p.x, y: p.y + 50,
-          'text-anchor': 'middle', 'font-size': '12',
-          fill: 'rgba(255,255,255,0.55)', 'pointer-events': 'none'
+        const s = createSvg('text', {
+          x: p.x,
+          y: p.y + 52,
+          'text-anchor': 'middle',
+          'font-size': '12',
+          fill: 'rgba(255,255,255,0.55)',
+          'pointer-events': 'none'
         });
-        slotNum.textContent = `slot ${i + 1}`;
-        svg.appendChild(slotNum);
+        s.textContent = 'slot ' + (i + 1);
+        svg.appendChild(s);
       }
     }
 
     function render() {
       renderBoard();
       updatePanels();
+      formatSolutionBox();
     }
 
     function sleep(ms) {
@@ -664,8 +757,7 @@
     }
 
     function sendToPopup(msg) {
-      if (!popup || popup.closed) return;
-      popup.postMessage(msg, '*');
+      if (popup && !popup.closed) popup.postMessage(msg, '*');
     }
 
     function openSolverPopup() {
@@ -679,16 +771,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Solver Window</title>
+<title>Background Solver</title>
 <style>
   body{
     margin:0;
     font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:#0f1630;
     color:#eef4ff;
+    height:100vh;
     display:flex;
     flex-direction:column;
-    height:100vh;
   }
   .top{
     padding:14px 16px;
@@ -760,20 +852,21 @@
 <body>
   <div class="top">
     <div class="title">Background Solver</div>
-    <div class="sub">Tried moves stream on the left. Final move labels on the right. If the popup is closed, the solver keeps running until stopped.</div>
+    <div class="sub">Sampled tried moves on the left. Best/final solution on the right. Apply sends the move list back to the main board.</div>
   </div>
   <div class="grid">
     <div class="panel">
-      <h3>Tried Moves</h3>
+      <h3>Tried Moves (sampled)</h3>
       <div class="body" id="tries">Waiting for solver...</div>
     </div>
     <div class="panel">
-      <h3>Solution</h3>
+      <h3>Best / Final Solution</h3>
       <div class="body" id="solution">No solution yet.</div>
       <div class="statusbar">
         <span class="badge" id="status">Idle</span>
         <span class="badge" id="expanded">Expanded: 0</span>
         <span class="badge" id="depth">Depth: 0</span>
+        <span class="badge" id="bestLen">Best: -</span>
       </div>
       <div class="btns">
         <button id="applyBtn" disabled>Apply Solution</button>
@@ -787,53 +880,68 @@
   const statusEl = document.getElementById('status');
   const expandedEl = document.getElementById('expanded');
   const depthEl = document.getElementById('depth');
+  const bestLenEl = document.getElementById('bestLen');
   const applyBtn = document.getElementById('applyBtn');
   const closeBtn = document.getElementById('closeBtn');
 
   let latestStarts = null;
+  let latestLabels = null;
+
+  function pushLines(lines){
+    const existing = triesEl.textContent === 'Waiting for solver...' ? '' : triesEl.textContent;
+    const merged = (existing ? existing + '\\n' : '') + lines.join('\\n');
+    triesEl.textContent = merged.split('\\n').slice(-1800).join('\\n');
+    triesEl.scrollTop = triesEl.scrollHeight;
+  }
 
   window.addEventListener('message', (event) => {
     const data = event.data || {};
+
     if (data.type === 'init') {
-      statusEl.textContent = 'Running';
       triesEl.textContent = 'Solver started...';
       solutionEl.textContent = 'No solution yet.';
+      statusEl.textContent = 'Running';
       expandedEl.textContent = 'Expanded: 0';
       depthEl.textContent = 'Depth: 0';
+      bestLenEl.textContent = 'Best: -';
       applyBtn.disabled = true;
       latestStarts = null;
+      latestLabels = null;
       return;
     }
+
     if (data.type === 'progress') {
       statusEl.textContent = data.status || 'Running';
       expandedEl.textContent = 'Expanded: ' + (data.expanded || 0);
       depthEl.textContent = 'Depth: ' + (data.depth || 0);
-      if (Array.isArray(data.tried) && data.tried.length) {
-        const existing = triesEl.textContent === 'Waiting for solver...' ? '' : triesEl.textContent;
-        const lines = data.tried.map((x, i) => String(x));
-        const joined = existing ? existing + '\\n' + lines.join('\\n') : lines.join('\\n');
-        const trimmed = joined.split('\\n').slice(-2500).join('\\n');
-        triesEl.textContent = trimmed;
-        triesEl.scrollTop = triesEl.scrollHeight;
+      bestLenEl.textContent = 'Best: ' + (data.bestLength != null ? data.bestLength : '-');
+      if (Array.isArray(data.sampled) && data.sampled.length) pushLines(data.sampled);
+      if (Array.isArray(data.bestLabels) && data.bestLabels.length) {
+        solutionEl.textContent = 'Best labels so far:\\n' + data.bestLabels.join(' -> ') + '\\n\\nLength: ' + data.bestLabels.length;
       }
       return;
     }
+
     if (data.type === 'solved') {
       statusEl.textContent = 'Solved';
       expandedEl.textContent = 'Expanded: ' + (data.expanded || 0);
       depthEl.textContent = 'Depth: ' + (data.depth || 0);
+      bestLenEl.textContent = 'Best: ' + ((data.labels && data.labels.length) || 0);
       latestStarts = data.starts || null;
+      latestLabels = data.labels || null;
       solutionEl.textContent =
-        'Move labels:\\n' + (data.labels && data.labels.length ? data.labels.join(' -> ') : '(already solved)') +
-        '\\n\\nStarts:\\n' + (data.starts && data.starts.length ? data.starts.map(x => x + 1).join(', ') : '(none)') +
-        '\\n\\nLength: ' + ((data.starts && data.starts.length) || 0);
-      applyBtn.disabled = !latestStarts;
+        'Final labels:\\n' + (latestLabels && latestLabels.length ? latestLabels.join(' -> ') : '(already solved)') +
+        '\\n\\nStarts:\\n' + (latestStarts && latestStarts.length ? latestStarts.map(x => x + 1).join(', ') : '(none)') +
+        '\\n\\nLength: ' + ((latestLabels && latestLabels.length) || 0);
+      applyBtn.disabled = !latestStarts || !latestStarts.length;
       return;
     }
+
     if (data.type === 'stopped') {
       statusEl.textContent = 'Stopped';
       return;
     }
+
     if (data.type === 'error') {
       statusEl.textContent = 'Error';
       solutionEl.textContent = data.message || 'Unknown solver error';
@@ -842,19 +950,19 @@
   });
 
   applyBtn.addEventListener('click', () => {
-    if (window.opener && latestStarts) {
-      window.opener.postMessage({ type: 'apply-solution', starts: latestStarts }, '*');
+    if (window.opener && latestStarts && latestStarts.length) {
+      window.opener.postMessage({ type: 'apply-solution', starts: latestStarts, labels: latestLabels }, '*');
     }
   });
 
   closeBtn.addEventListener('click', () => window.close());
-</script>
+<\/script>
 </body>
 </html>`;
 
-      popup = window.open('', 'ovalPuzzleSolverWindow', 'width=900,height=700,resizable=yes,scrollbars=yes');
+      popup = window.open('', 'ovalPuzzleSolverWindow', 'width=960,height=740,resizable=yes,scrollbars=yes');
       if (!popup) {
-        logError('Popup blocked by browser. Allow popups for this page.');
+        logError('Popup blocked. Allow popups for this page.');
         alert('Popup was blocked. Please allow popups for this page.');
         return null;
       }
@@ -882,186 +990,26 @@ function reverseSegment(arr, start){
   return next;
 }
 
+function moveLabel(arr, start){
+  return arr[(start + SEGMENT) % TOTAL];
+}
+
 function isSolved(arr){
   for(let i=0;i<TOTAL;i++) if(arr[i] !== i+1) return false;
   return true;
 }
 
-function moveLabel(arr, start){
-  return arr[(start + SEGMENT) % TOTAL];
-}
-
-function stateKey(arr){
-  return arr.join(',');
-}
-
 function heuristic(arr){
   let misplaced = 0;
-  let breaks = 0;
+  let adjBreaks = 0;
   for(let i=0;i<TOTAL;i++){
     if(arr[i] !== i+1) misplaced++;
     const a = arr[i];
     const b = arr[(i+1)%TOTAL];
     const expected = a === TOTAL ? 1 : a + 1;
-    if(b !== expected) breaks++;
+    if(b !== expected) adjBreaks++;
   }
-  return Math.ceil(misplaced / 3) + Math.ceil(breaks / 4);
-}
-
-function optimizePath(startState, path){
-  if(!path || !path.length) return path || [];
-  let changed = true;
-  let current = path.slice();
-
-  while(changed){
-    changed = false;
-    const out = [];
-    for(let i=0;i<current.length;i++){
-      if(i < current.length - 1 && current[i] === current[i+1]){
-        changed = true;
-        i++;
-        continue;
-      }
-      out.push(current[i]);
-    }
-    current = out;
-  }
-
-  return current;
-}
-
-async function beamSearch(start){
-  stopFlag = false;
-  if(isSolved(start)){
-    return { starts: [], labels: [], expanded: 0, depth: 0 };
-  }
-
-  const maxDepth = 70;
-  const beamWidth = 900;
-  const keepPerParent = 6;
-  const recentTried = [];
-  let expanded = 0;
-
-  let frontier = [{
-    arr: clone(start),
-    path: [],
-    score: heuristic(start)
-  }];
-
-  let bestScore = Infinity;
-  let bestNode = frontier[0];
-
-  for(let depth=0; depth<maxDepth; depth++){
-    if(stopFlag) return { stopped:true, expanded, depth };
-
-    const nextCandidates = [];
-    const seenThisLayer = new Map();
-
-    for(let n=0; n<frontier.length; n++){
-      const node = frontier[n];
-      const parentArr = node.arr;
-
-      const moves = [];
-      for(let startIdx=0; startIdx<TOTAL; startIdx++){
-        if(node.path.length && startIdx === node.path[node.path.length - 1]) continue;
-
-        const nextArr = reverseSegment(parentArr, startIdx);
-        const h = heuristic(nextArr);
-        const g = node.path.length + 1;
-        const score = g + h * 1.7;
-        moves.push({
-          start: startIdx,
-          label: moveLabel(parentArr, startIdx),
-          nextArr,
-          score,
-          h
-        });
-      }
-
-      moves.sort((a,b)=> a.score - b.score);
-
-      for(let m=0; m<Math.min(keepPerParent, moves.length); m++){
-        const cand = moves[m];
-        expanded++;
-
-        recentTried.push('d' + (depth+1) + ' -> ' + cand.label);
-        if(recentTried.length > 200) recentTried.shift();
-
-        if(isSolved(cand.nextArr)){
-          const starts = optimizePath(start, node.path.concat(cand.start));
-          const labels = replayLabels(start, starts);
-          postMessage({
-            type:'solved',
-            starts,
-            labels,
-            expanded,
-            depth: starts.length
-          });
-          return { solved:true };
-        }
-
-        const key = stateKey(cand.nextArr);
-        const prev = seenThisLayer.get(key);
-        if(prev === undefined || cand.score < prev.score){
-          const entry = {
-            arr: cand.nextArr,
-            path: node.path.concat(cand.start),
-            score: cand.score,
-            h: cand.h
-          };
-          seenThisLayer.set(key, entry);
-        }
-
-        if(cand.score < bestScore){
-          bestScore = cand.score;
-          bestNode = {
-            arr: cand.nextArr,
-            path: node.path.concat(cand.start),
-            score: cand.score
-          };
-        }
-      }
-
-      if(expanded % 500 === 0){
-        postMessage({
-          type:'progress',
-          status:'Searching',
-          expanded,
-          depth: depth + 1,
-          tried: recentTried.slice()
-        });
-        recentTried.length = 0;
-        await new Promise(r => setTimeout(r, 8));
-        if(stopFlag) return { stopped:true, expanded, depth: depth + 1 };
-      }
-    }
-
-    nextCandidates.push(...seenThisLayer.values());
-    nextCandidates.sort((a,b)=> a.score - b.score);
-
-    frontier = nextCandidates.slice(0, beamWidth);
-
-    postMessage({
-      type:'progress',
-      status:'Searching',
-      expanded,
-      depth: depth + 1,
-      tried: recentTried.splice(0)
-    });
-
-    await new Promise(r => setTimeout(r, 8));
-  }
-
-  const fallbackStarts = optimizePath(start, bestNode.path);
-  const fallbackLabels = replayLabels(start, fallbackStarts);
-  postMessage({
-    type:'solved',
-    starts: fallbackStarts,
-    labels: fallbackLabels,
-    expanded,
-    depth: fallbackStarts.length
-  });
-  return { fallback:true };
+  return Math.ceil(misplaced / 3) + Math.ceil(adjBreaks / 4);
 }
 
 function replayLabels(startState, starts){
@@ -1075,11 +1023,279 @@ function replayLabels(startState, starts){
   return labels;
 }
 
+function applyStarts(startState, starts){
+  let arr = clone(startState);
+  for(const s of starts) arr = reverseSegment(arr, s);
+  return arr;
+}
+
+function removeAdjacentDuplicates(path){
+  let changed = true;
+  let cur = path.slice();
+  while(changed){
+    changed = false;
+    const out = [];
+    for(let i=0;i<cur.length;i++){
+      if(i < cur.length - 1 && cur[i] === cur[i+1]){
+        changed = true;
+        i++;
+      } else {
+        out.push(cur[i]);
+      }
+    }
+    cur = out;
+  }
+  return cur;
+}
+
+function compressTriples(path){
+  let cur = path.slice();
+  let changed = true;
+  while(changed){
+    changed = false;
+    const out = [];
+    for(let i=0;i<cur.length;i++){
+      if(i <= cur.length - 3 && cur[i] === cur[i+1] && cur[i+1] === cur[i+2]){
+        out.push(cur[i]);
+        changed = true;
+        i += 2;
+      } else {
+        out.push(cur[i]);
+      }
+    }
+    cur = out;
+  }
+  return cur;
+}
+
+function optimizePath(startState, path){
+  let cur = path.slice();
+  cur = removeAdjacentDuplicates(cur);
+  cur = compressTriples(cur);
+
+  let improved = true;
+  while(improved){
+    improved = false;
+
+    // remove any subsequence that leaves same state
+    outer1:
+    for(let len=4; len>=2; len--){
+      for(let i=0; i+len<=cur.length; i++){
+        const before = applyStarts(startState, cur.slice(0, i));
+        const after1 = applyStarts(before, cur.slice(i, i+len));
+        const after2 = before;
+        let same = true;
+        for(let k=0;k<TOTAL;k++){
+          if(after1[k] !== after2[k]) { same = false; break; }
+        }
+        if(same){
+          cur.splice(i, len);
+          improved = true;
+          break outer1;
+        }
+      }
+    }
+    if(improved) continue;
+
+    // local re-solve windows
+    outer2:
+    for(let win=4; win>=2; win--){
+      for(let i=0; i+win<=cur.length; i++){
+        const prefix = cur.slice(0, i);
+        const block = cur.slice(i, i+win);
+        const suffix = cur.slice(i+win);
+
+        const startBlockState = applyStarts(startState, prefix);
+        const targetBlockState = applyStarts(startBlockState, block);
+
+        const replacement = boundedSolve(startBlockState, targetBlockState, win - 1, 8000);
+        if(replacement && replacement.length < block.length){
+          cur = prefix.concat(replacement, suffix);
+          improved = true;
+          break outer2;
+        }
+      }
+    }
+  }
+
+  return cur;
+}
+
+function stateKey(arr){ return arr.join(','); }
+
+function boundedSolve(startArr, targetArr, maxDepth, nodeCap){
+  const targetKey = stateKey(targetArr);
+  const startKey = stateKey(startArr);
+  if(startKey === targetKey) return [];
+  const q = [{ arr:startArr, path:[] }];
+  const seen = new Set([startKey]);
+  let qi = 0;
+  let nodes = 0;
+
+  while(qi < q.length && nodes < nodeCap){
+    const node = q[qi++];
+    nodes++;
+    if(node.path.length >= maxDepth) continue;
+
+    for(let s=0;s<TOTAL;s++){
+      const next = reverseSegment(node.arr, s);
+      const key = stateKey(next);
+      if(seen.has(key)) continue;
+      seen.add(key);
+
+      const path = node.path.concat(s);
+      if(key === targetKey) return path;
+      q.push({ arr: next, path });
+    }
+  }
+  return null;
+}
+
+async function search(startState){
+  stopFlag = false;
+
+  if(isSolved(startState)){
+    postMessage({ type:'solved', starts:[], labels:[], expanded:0, depth:0 });
+    return;
+  }
+
+  let expanded = 0;
+  let bestStarts = [];
+  let bestScore = Infinity;
+  let bestLabels = [];
+  let sampled = [];
+
+  const beamWidth = 850;
+  const keepPerParent = 6;
+  const maxDepth = 72;
+
+  let frontier = [{
+    arr: clone(startState),
+    path: [],
+    score: heuristic(startState)
+  }];
+
+  bestScore = frontier[0].score;
+
+  for(let depth = 0; depth < maxDepth; depth++){
+    if(stopFlag){
+      postMessage({ type:'stopped' });
+      return;
+    }
+
+    const candidatesMap = new Map();
+
+    for(let n = 0; n < frontier.length; n++){
+      const node = frontier[n];
+      const moves = [];
+
+      for(let s = 0; s < TOTAL; s++){
+        if(node.path.length && s === node.path[node.path.length - 1]) continue;
+
+        const nextArr = reverseSegment(node.arr, s);
+        const h = heuristic(nextArr);
+        const g = node.path.length + 1;
+        const score = g + h * 1.85;
+
+        moves.push({
+          start: s,
+          nextArr,
+          h,
+          score,
+          label: moveLabel(node.arr, s)
+        });
+      }
+
+      moves.sort((a,b)=> a.score - b.score);
+
+      for(let m = 0; m < Math.min(keepPerParent, moves.length); m++){
+        const cand = moves[m];
+        expanded++;
+
+        if(expanded % 12 === 0){
+          sampled.push('d' + (depth + 1) + ' -> ' + cand.label);
+          if(sampled.length > 80) sampled.shift();
+        }
+
+        const newPath = node.path.concat(cand.start);
+
+        if(isSolved(cand.nextArr)){
+          let optimized = optimizePath(startState, newPath);
+          const labels = replayLabels(startState, optimized);
+          postMessage({
+            type:'solved',
+            starts: optimized,
+            labels,
+            expanded,
+            depth: optimized.length
+          });
+          return;
+        }
+
+        if(cand.h < bestScore || (cand.h === bestScore && (!bestStarts.length || newPath.length < bestStarts.length))){
+          bestScore = cand.h;
+          bestStarts = newPath.slice();
+          bestLabels = replayLabels(startState, bestStarts);
+        }
+
+        const key = stateKey(cand.nextArr);
+        const prev = candidatesMap.get(key);
+        if(!prev || cand.score < prev.score){
+          candidatesMap.set(key, {
+            arr: cand.nextArr,
+            path: newPath,
+            score: cand.score,
+            h: cand.h
+          });
+        }
+      }
+
+      if(expanded % 700 === 0){
+        postMessage({
+          type:'progress',
+          status:'Searching',
+          expanded,
+          depth: depth + 1,
+          bestLength: bestStarts.length || 0,
+          bestLabels: bestLabels.slice(0, 120),
+          sampled: sampled.splice(0)
+        });
+        await new Promise(r => setTimeout(r, 8));
+      }
+    }
+
+    frontier = Array.from(candidatesMap.values()).sort((a,b)=> a.score - b.score).slice(0, beamWidth);
+
+    postMessage({
+      type:'progress',
+      status:'Searching',
+      expanded,
+      depth: depth + 1,
+      bestLength: bestStarts.length || 0,
+      bestLabels: bestLabels.slice(0, 120),
+      sampled: sampled.splice(0)
+    });
+
+    await new Promise(r => setTimeout(r, 8));
+  }
+
+  // fallback: return best path found, optimized
+  let optimized = optimizePath(startState, bestStarts);
+  const labels = replayLabels(startState, optimized);
+  postMessage({
+    type:'solved',
+    starts: optimized,
+    labels,
+    expanded,
+    depth: optimized.length
+  });
+}
+
 onmessage = async (e) => {
   const data = e.data || {};
   try{
     if(data.type === 'solve'){
-      await beamSearch(data.state);
+      await search(data.state);
     } else if(data.type === 'stop'){
       stopFlag = true;
       postMessage({ type:'stopped' });
@@ -1117,20 +1333,21 @@ onmessage = async (e) => {
         if (data.type === 'progress') {
           sendToPopup(data);
         } else if (data.type === 'solved') {
-          sendToPopup(data);
           solverRunning = false;
-          solveQueue = Array.isArray(data.starts) ? data.starts.slice() : [];
-          moveLog.push(`solver found ${solveQueue.length} move(s)`);
+          foundSolutionStarts = Array.isArray(data.starts) ? data.starts.slice() : [];
+          foundSolutionLabels = Array.isArray(data.labels) ? data.labels.slice() : [];
+          moveLog.push('solver found ' + foundSolutionLabels.length + ' move(s)');
+          sendToPopup(data);
           render();
         } else if (data.type === 'stopped') {
-          sendToPopup(data);
           solverRunning = false;
           moveLog.push('solver stopped');
+          sendToPopup(data);
           render();
         } else if (data.type === 'error') {
-          sendToPopup(data);
           solverRunning = false;
           logError('Solver error: ' + (data.message || 'unknown'));
+          sendToPopup(data);
           render();
         }
       };
@@ -1145,19 +1362,36 @@ onmessage = async (e) => {
     }
 
     function stopSolver() {
-      if (!solverRunning || !worker) return;
-      worker.postMessage({ type: 'stop' });
+      if (worker && solverRunning) {
+        worker.postMessage({ type: 'stop' });
+      }
+    }
+
+    async function applyFoundSolution() {
+      if (!foundSolutionStarts.length || solverRunning || animatingSolution) return;
+      await animateSolutionPath(foundSolutionStarts);
+    }
+
+    async function copyFoundSolution() {
+      if (!foundSolutionLabels.length) return;
+      const text = foundSolutionLabels.join(' -> ');
+      try {
+        await navigator.clipboard.writeText(text);
+        moveLog.push('copied solution labels');
+        render();
+      } catch (err) {
+        logError('Clipboard copy failed');
+      }
     }
 
     window.addEventListener('message', async (event) => {
       const data = event.data || {};
       if (data.type === 'apply-solution') {
-        if (!Array.isArray(data.starts)) return;
-        if (solverRunning || animatingSolution) return;
-        try {
-          await animateSolutionPath(data.starts);
-        } catch (err) {
-          logError('Apply solution failed: ' + err.message);
+        if (Array.isArray(data.starts) && data.starts.length) {
+          foundSolutionStarts = data.starts.slice();
+          foundSolutionLabels = Array.isArray(data.labels) ? data.labels.slice() : [];
+          render();
+          await applyFoundSolution();
         }
       }
     });
@@ -1170,7 +1404,10 @@ onmessage = async (e) => {
     stopSolveBtn.addEventListener('click', stopSolver);
     applyCustomBtn.addEventListener('click', applyCustomState);
     normalizeBtn.addEventListener('click', normalizeRotation);
+    applySolutionBtn.addEventListener('click', applyFoundSolution);
+    copySolutionBtn.addEventListener('click', copyFoundSolution);
 
+    formatSolutionBox();
     render();
   </script>
 </body>
