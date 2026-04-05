@@ -304,440 +304,450 @@
   </div>
 
   <script>
-    const TOTAL = 20;
-    const SEGMENT = 4;
+  const TOTAL = 20;
+  const SEGMENT = 4;
 
-    const svg = document.getElementById('board');
-    const sequenceEl = document.getElementById('sequence');
-    const moveCountEl = document.getElementById('moveCount');
-    const correctCountEl = document.getElementById('correctCount');
-    const logEl = document.getElementById('log');
-    const statusText = document.getElementById('statusText');
-    const statusDot = document.getElementById('statusDot');
-    const customInput = document.getElementById('customInput');
+  const svg = document.getElementById('board');
+  const sequenceEl = document.getElementById('sequence');
+  const moveCountEl = document.getElementById('moveCount');
+  const correctCountEl = document.getElementById('correctCount');
+  const logEl = document.getElementById('log');
+  const statusText = document.getElementById('statusText');
+  const statusDot = document.getElementById('statusDot');
+  const customInput = document.getElementById('customInput');
 
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const undoBtn = document.getElementById('undoBtn');
-    const redoBtn = document.getElementById('redoBtn');
-    const autoBtn = document.getElementById('autoBtn');
-    const applyCustomBtn = document.getElementById('applyCustomBtn');
-    const normalizeBtn = document.getElementById('normalizeBtn');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const applyCustomBtn = document.getElementById('applyCustomBtn');
+  const normalizeBtn = document.getElementById('normalizeBtn');
 
-    let state = solvedState();
-    let history = [];
-    let redoStack = [];
-    let moveLog = [];
-    let moveCount = 0;
-    let isBusy = false;
+  let state = solvedState();
+  let history = [];
+  let redoStack = [];
+  let moveLog = [];
+  let moveCount = 0;
+  let isBusy = false;
+  let hoveredSegment = null;
 
-    function solvedState() {
-      return Array.from({ length: TOTAL }, (_, i) => i + 1);
+  function solvedState() {
+    return Array.from({ length: TOTAL }, (_, i) => i + 1);
+  }
+
+  function clone(arr) {
+    return arr.slice();
+  }
+
+  function isSolved(arr = state) {
+    return arr.every((v, i) => v === i + 1);
+  }
+
+  function countCorrect(arr = state) {
+    return arr.reduce((acc, v, i) => acc + (v === i + 1 ? 1 : 0), 0);
+  }
+
+  function reverseSegment(arr, start) {
+    const next = clone(arr);
+    const indices = [];
+    for (let i = 0; i < SEGMENT; i++) {
+      indices.push((start + i) % TOTAL);
     }
+    const vals = indices.map(i => next[i]).reverse();
+    indices.forEach((idx, k) => {
+      next[idx] = vals[k];
+    });
+    return next;
+  }
 
-    function clone(arr) {
-      return arr.slice();
+  function rotateWhole(arr, offset) {
+    const n = arr.length;
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(arr[(i + offset) % n]);
+    return out;
+  }
+
+  function normalizeRotation() {
+    if (isBusy) return;
+    const idx = state.indexOf(1);
+    if (idx > 0) {
+      state = rotateWhole(state, idx);
+      history.push({ type: 'normalize' });
+      redoStack = [];
+      moveLog.push('normalize rotation (piece 1 moved to slot 1)');
+      render();
     }
+  }
 
-    function isSolved(arr = state) {
-      return arr.every((v, i) => v === i + 1);
-    }
+  function applyMove(start, record = true) {
+    const before = clone(state);
+    state = reverseSegment(state, start);
 
-    function countCorrect(arr = state) {
-      return arr.reduce((acc, v, i) => acc + (v === i + 1 ? 1 : 0), 0);
-    }
-
-    function reverseSegment(arr, start) {
-      const next = clone(arr);
-      const indices = [];
-      for (let i = 0; i < SEGMENT; i++) {
-        indices.push((start + i) % TOTAL);
-      }
-      const vals = indices.map(i => next[i]).reverse();
-      indices.forEach((idx, k) => {
-        next[idx] = vals[k];
+    if (record) {
+      history.push({
+        type: 'move',
+        start,
+        before
       });
-      return next;
+      redoStack = [];
+      moveCount++;
+      moveLog.push(`move ${moveCount}: reverse 4-piece segment starting at slot ${start + 1}`);
     }
 
-    function rotateWhole(arr, offset) {
-      const n = arr.length;
-      const out = [];
-      for (let i = 0; i < n; i++) {
-        out.push(arr[(i + offset) % n]);
-      }
-      return out;
+    render();
+  }
+
+  async function animateMove(start, duration = 320, record = true) {
+    hoveredSegment = start;
+    render();
+
+    await sleep(duration * 0.35);
+
+    const before = clone(state);
+    state = reverseSegment(state, start);
+
+    if (record) {
+      history.push({
+        type: 'move',
+        start,
+        before
+      });
+      redoStack = [];
+      moveCount++;
+      moveLog.push(`move ${moveCount}: reverse 4-piece segment starting at slot ${start + 1}`);
     }
 
-    function normalizeRotation() {
-      const idx = state.indexOf(1);
-      if (idx > 0) {
-        state = rotateWhole(state, idx);
-        history.push({ type: 'normalize' });
-        redoStack = [];
-        moveLog.push(`normalize rotation (piece 1 moved to slot 1)`);
-        render();
-      }
+    render();
+    await sleep(duration * 0.65);
+
+    hoveredSegment = null;
+    render();
+  }
+
+  function undo() {
+    if (!history.length || isBusy) return;
+    const entry = history.pop();
+
+    if (entry.type === 'move') {
+      redoStack.push({
+        type: 'move',
+        start: entry.start,
+        before: clone(state)
+      });
+      state = entry.before;
+      moveCount = Math.max(0, moveCount - 1);
+      moveLog.push('undo');
+    } else {
+      redoStack.push({ type: 'normalize', before: clone(state) });
+      moveLog.push('undo normalize');
     }
 
-    function applyMove(start, record = true) {
-      const before = clone(state);
+    render();
+  }
+
+  function redo() {
+    if (!redoStack.length || isBusy) return;
+    const entry = redoStack.pop();
+
+    if (entry.type === 'move') {
+      history.push({
+        type: 'move',
+        start: entry.start,
+        before: clone(state)
+      });
+      state = reverseSegment(state, entry.start);
+      moveCount++;
+      moveLog.push(`redo move at slot ${entry.start + 1}`);
+    } else {
+      history.push({ type: 'normalize' });
+      normalizeRotation();
+      return;
+    }
+
+    render();
+  }
+
+  function shuffle(times = 8) {
+    if (isBusy) return;
+    state = solvedState();
+    history = [];
+    redoStack = [];
+    moveLog = [];
+    moveCount = 0;
+
+    for (let i = 0; i < times; i++) {
+      const start = Math.floor(Math.random() * TOTAL);
       state = reverseSegment(state, start);
-
-      if (record) {
-        history.push({
-          type: 'move',
-          start,
-          before
-        });
-        redoStack = [];
-        moveCount++;
-        moveLog.push(`move ${moveCount}: reverse slots ${slotLabel(start)}-${slotLabel((start + 3) % TOTAL)} (start ${start + 1})`);
-      }
-
-      render();
     }
 
-    function undo() {
-      if (!history.length || isBusy) return;
-      const entry = history.pop();
+    moveLog.push(`shuffled with ${times} random moves`);
+    render();
+  }
 
-      if (entry.type === 'move') {
-        redoStack.push({
-          type: 'move',
-          start: entry.start,
-          before: clone(state)
-        });
-        state = entry.before;
-        moveCount = Math.max(0, moveCount - 1);
-        moveLog.push(`undo`);
-      } else {
-        redoStack.push({ type: 'normalize', before: clone(state) });
-        moveLog.push(`undo normalize`);
-      }
+  function resetPuzzle() {
+    if (isBusy) return;
+    state = solvedState();
+    history = [];
+    redoStack = [];
+    moveLog = [];
+    moveCount = 0;
+    hoveredSegment = null;
+    render();
+  }
 
-      render();
+  function parseCustomInput(text) {
+    const parts = text
+      .split(/[\s,]+/)
+      .map(x => x.trim())
+      .filter(Boolean)
+      .map(Number);
+
+    if (parts.length !== TOTAL) {
+      throw new Error(`Need exactly ${TOTAL} numbers.`);
     }
 
-    function redo() {
-      if (!redoStack.length || isBusy) return;
-      const entry = redoStack.pop();
-
-      if (entry.type === 'move') {
-        history.push({
-          type: 'move',
-          start: entry.start,
-          before: clone(state)
-        });
-        state = reverseSegment(state, entry.start);
-        moveCount++;
-        moveLog.push(`redo move at start ${entry.start + 1}`);
-      } else {
-        history.push({ type: 'normalize' });
-        normalizeRotation();
-        return;
-      }
-
-      render();
+    const set = new Set(parts);
+    if (set.size !== TOTAL) {
+      throw new Error('Numbers must not repeat.');
     }
 
-    function shuffle(times = 24) {
-      if (isBusy) return;
-      state = solvedState();
+    for (let i = 1; i <= TOTAL; i++) {
+      if (!set.has(i)) throw new Error(`Missing number ${i}.`);
+    }
+
+    return parts;
+  }
+
+  function applyCustomState() {
+    if (isBusy) return;
+    try {
+      const parsed = parseCustomInput(customInput.value);
+      state = parsed;
       history = [];
       redoStack = [];
-      moveLog = [];
+      moveLog = ['custom state loaded'];
       moveCount = 0;
-
-      for (let i = 0; i < times; i++) {
-        const start = Math.floor(Math.random() * TOTAL);
-        state = reverseSegment(state, start);
-      }
-
-      moveLog.push(`shuffled with ${times} random moves`);
+      hoveredSegment = null;
       render();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  function stateToString(arr = state) {
+    return arr.join(', ');
+  }
+
+  function updatePanels() {
+    sequenceEl.textContent = `[ ${stateToString()} ]`;
+    moveCountEl.textContent = String(moveCount);
+    correctCountEl.textContent = String(countCorrect());
+
+    logEl.textContent = moveLog.length ? moveLog.slice(-40).join('\n') : 'No moves yet.';
+
+    if (isSolved()) {
+      statusText.textContent = 'Solved';
+      statusDot.classList.add('solved');
+    } else if (isBusy) {
+      statusText.textContent = 'Working...';
+      statusDot.classList.remove('solved');
+    } else {
+      statusText.textContent = 'Not solved';
+      statusDot.classList.remove('solved');
     }
 
-    function resetPuzzle() {
-      if (isBusy) return;
-      state = solvedState();
-      history = [];
-      redoStack = [];
-      moveLog = [];
-      moveCount = 0;
-      render();
+    undoBtn.disabled = !history.length || isBusy;
+    redoBtn.disabled = !redoStack.length || isBusy;
+    autoBtn.disabled = isBusy;
+    shuffleBtn.disabled = isBusy;
+    resetBtn.disabled = isBusy;
+    applyCustomBtn.disabled = isBusy;
+    normalizeBtn.disabled = isBusy;
+  }
+
+  function createSvg(tag, attrs = {}) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      el.setAttribute(k, v);
     }
+    return el;
+  }
 
-    function slotLabel(i) {
-      return i + 1;
+  function pointOnOval(t, cx, cy, rx, ry) {
+    return {
+      x: cx + rx * Math.cos(t),
+      y: cy + ry * Math.sin(t)
+    };
+  }
+
+  function getPoints() {
+    const cx = 450;
+    const cy = 290;
+    const rx = 310;
+    const ry = 180;
+    const points = [];
+    for (let i = 0; i < TOTAL; i++) {
+      const theta = (-Math.PI / 2) + (i * 2 * Math.PI / TOTAL);
+      points.push(pointOnOval(theta, cx, cy, rx, ry));
     }
+    return { cx, cy, rx, ry, points };
+  }
 
-    function parseCustomInput(text) {
-      const parts = text
-        .split(/[\s,]+/)
-        .map(x => x.trim())
-        .filter(Boolean)
-        .map(Number);
+  function renderBoard() {
+    svg.innerHTML = '';
 
-      if (parts.length !== TOTAL) {
-        throw new Error(`Need exactly ${TOTAL} numbers.`);
-      }
+    const { cx, cy, rx, ry, points } = getPoints();
+    const pieceR = 28;
 
-      const set = new Set(parts);
-      if (set.size !== TOTAL) {
-        throw new Error(`Numbers must not repeat.`);
-      }
+    const defs = createSvg('defs');
+    const glow = createSvg('filter', { id: 'softGlow' });
+    glow.innerHTML = `
+      <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+      <feMerge>
+        <feMergeNode in="blur"></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    `;
+    defs.appendChild(glow);
+    svg.appendChild(defs);
 
-      for (let i = 1; i <= TOTAL; i++) {
-        if (!set.has(i)) {
-          throw new Error(`Missing number ${i}.`);
-        }
-      }
+    svg.appendChild(createSvg('ellipse', {
+      cx, cy, rx: rx + 40, ry: ry + 40,
+      fill: 'none',
+      stroke: 'rgba(255,255,255,0.10)',
+      'stroke-width': '52'
+    }));
 
-      return parts;
-    }
+    svg.appendChild(createSvg('ellipse', {
+      cx, cy, rx: rx + 6, ry: ry + 6,
+      fill: 'none',
+      stroke: '#2e3b6d',
+      'stroke-width': '74'
+    }));
 
-    function applyCustomState() {
-      if (isBusy) return;
-      try {
-        const parsed = parseCustomInput(customInput.value);
-        state = parsed;
-        history = [];
-        redoStack = [];
-        moveLog = ['custom state loaded'];
-        moveCount = 0;
-        render();
-      } catch (err) {
-        alert(err.message);
-      }
-    }
+    svg.appendChild(createSvg('ellipse', {
+      cx, cy, rx, ry,
+      fill: 'none',
+      stroke: '#202b52',
+      'stroke-width': '62'
+    }));
 
-    function stateToString(arr = state) {
-      return arr.join(', ');
-    }
+    for (let start = 0; start < TOTAL; start++) {
+      const group = createSvg('g', { cursor: isBusy ? 'default' : 'pointer' });
 
-    function updatePanels() {
-      sequenceEl.textContent = `[ ${stateToString()} ]`;
-      moveCountEl.textContent = String(moveCount);
-      correctCountEl.textContent = String(countCorrect());
+      const centers = [];
+      for (let k = 0; k < SEGMENT; k++) centers.push(points[(start + k) % TOTAL]);
 
-      if (!moveLog.length) {
-        logEl.textContent = 'No moves yet.';
-      } else {
-        logEl.textContent = moveLog.slice(-40).join('\n');
-      }
+      const minX = Math.min(...centers.map(p => p.x));
+      const maxX = Math.max(...centers.map(p => p.x));
+      const minY = Math.min(...centers.map(p => p.y));
+      const maxY = Math.max(...centers.map(p => p.y));
 
-      if (isSolved()) {
-        statusText.textContent = 'Solved';
-        statusDot.classList.add('solved');
-      } else {
-        statusText.textContent = 'Not solved';
-        statusDot.classList.remove('solved');
-      }
+      const active = hoveredSegment === start;
 
-      undoBtn.disabled = !history.length || isBusy;
-      redoBtn.disabled = !redoStack.length || isBusy;
-      autoBtn.disabled = isBusy;
-      shuffleBtn.disabled = isBusy;
-      resetBtn.disabled = isBusy;
-      applyCustomBtn.disabled = isBusy;
-      normalizeBtn.disabled = isBusy;
-    }
-
-    function createSvg(tag, attrs = {}) {
-      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-      for (const [k, v] of Object.entries(attrs)) {
-        el.setAttribute(k, v);
-      }
-      return el;
-    }
-
-    function pointOnOval(t, cx, cy, rx, ry) {
-      return {
-        x: cx + rx * Math.cos(t),
-        y: cy + ry * Math.sin(t)
-      };
-    }
-
-    function renderBoard() {
-      svg.innerHTML = '';
-
-      const cx = 450;
-      const cy = 290;
-      const rx = 310;
-      const ry = 180;
-      const pieceR = 28;
-
-      const defs = createSvg('defs');
-      const glow = createSvg('filter', { id: 'softGlow' });
-      glow.innerHTML = `
-        <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
-        <feMerge>
-          <feMergeNode in="blur"></feMergeNode>
-          <feMergeNode in="SourceGraphic"></feMergeNode>
-        </feMerge>
-      `;
-      defs.appendChild(glow);
-      svg.appendChild(defs);
-
-      const trackOuter = createSvg('ellipse', {
-        cx, cy,
-        rx: rx + 40,
-        ry: ry + 40,
-        fill: 'none',
-        stroke: 'rgba(255,255,255,0.10)',
-        'stroke-width': '52'
+      const box = createSvg('rect', {
+        x: minX - 38,
+        y: minY - 38,
+        width: (maxX - minX) + 76,
+        height: (maxY - minY) + 76,
+        rx: 22,
+        fill: active ? 'rgba(255,207,110,0.18)' : 'rgba(124,199,255,0.06)',
+        stroke: active ? 'rgba(255,207,110,0.90)' : 'rgba(124,199,255,0.18)',
+        'stroke-width': active ? '3' : '2',
+        opacity: active ? '1' : '0'
       });
 
-      const trackInner = createSvg('ellipse', {
-        cx, cy,
-        rx: rx + 6,
-        ry: ry + 6,
-        fill: 'none',
-        stroke: '#2e3b6d',
-        'stroke-width': '74'
+      group.appendChild(box);
+
+      group.addEventListener('mouseenter', () => {
+        if (!isBusy) box.setAttribute('opacity', '1');
       });
 
-      const lane = createSvg('ellipse', {
-        cx, cy,
-        rx,
-        ry,
-        fill: 'none',
-        stroke: '#202b52',
-        'stroke-width': '62'
+      group.addEventListener('mouseleave', () => {
+        if (!active) box.setAttribute('opacity', '0');
       });
 
-      svg.appendChild(trackOuter);
-      svg.appendChild(trackInner);
-      svg.appendChild(lane);
+      group.addEventListener('click', () => {
+        if (!isBusy) applyMove(start, true);
+      });
 
-      const points = [];
-      for (let i = 0; i < TOTAL; i++) {
-        const theta = (-Math.PI / 2) + (i * 2 * Math.PI / TOTAL);
-        points.push(pointOnOval(theta, cx, cy, rx, ry));
-      }
-
-      for (let start = 0; start < TOTAL; start++) {
-        const group = createSvg('g', { cursor: isBusy ? 'default' : 'pointer' });
-
-        const centers = [];
-        for (let k = 0; k < SEGMENT; k++) {
-          centers.push(points[(start + k) % TOTAL]);
-        }
-
-        const avgX = centers.reduce((a, p) => a + p.x, 0) / SEGMENT;
-        const avgY = centers.reduce((a, p) => a + p.y, 0) / SEGMENT;
-
-        const minX = Math.min(...centers.map(p => p.x));
-        const maxX = Math.max(...centers.map(p => p.x));
-        const minY = Math.min(...centers.map(p => p.y));
-        const maxY = Math.max(...centers.map(p => p.y));
-
-        const box = createSvg('rect', {
-          x: minX - 38,
-          y: minY - 38,
-          width: (maxX - minX) + 76,
-          height: (maxY - minY) + 76,
-          rx: 22,
-          fill: 'rgba(124,199,255,0.06)',
-          stroke: 'rgba(124,199,255,0.18)',
-          'stroke-width': '2',
-          opacity: '0'
-        });
-
-        group.appendChild(box);
-
-        group.addEventListener('mouseenter', () => {
-          if (!isBusy) box.setAttribute('opacity', '1');
-        });
-
-        group.addEventListener('mouseleave', () => {
-          box.setAttribute('opacity', '0');
-        });
-
-        group.addEventListener('click', () => {
-          if (!isBusy) applyMove(start, true);
-        });
-
-        const label = createSvg('text', {
-          x: avgX,
-          y: avgY + 5,
-          'text-anchor': 'middle',
-          'font-size': '12',
-          fill: 'rgba(124,199,255,0.8)',
-          'pointer-events': 'none'
-        });
-        label.textContent = `${start + 1}`;
-        group.appendChild(label);
-
-        svg.appendChild(group);
-      }
-
-      for (let i = 0; i < TOTAL; i++) {
-        const p = points[i];
-
-        const slot = createSvg('circle', {
-          cx: p.x,
-          cy: p.y,
-          r: pieceR + 7,
-          fill: '#1a2344',
-          stroke: 'rgba(255,255,255,0.08)',
-          'stroke-width': '2'
-        });
-        svg.appendChild(slot);
-
-        const piece = createSvg('circle', {
-          cx: p.x,
-          cy: p.y,
-          r: pieceR,
-          fill: '#f4f8ff',
-          stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.9)' : 'rgba(12,23,56,0.18)',
-          'stroke-width': state[i] === i + 1 ? '4' : '2',
-          filter: state[i] === i + 1 ? 'url(#softGlow)' : ''
-        });
-
-        const text = createSvg('text', {
-          x: p.x,
-          y: p.y + 6,
-          'text-anchor': 'middle',
-          'font-size': '18',
-          'font-weight': '800',
-          fill: '#0c1738',
-          'pointer-events': 'none'
-        });
-        text.textContent = String(state[i]);
-
-        const slotNum = createSvg('text', {
-          x: p.x,
-          y: p.y + 50,
-          'text-anchor': 'middle',
-          'font-size': '12',
-          fill: 'rgba(255,255,255,0.55)',
-          'pointer-events': 'none'
-        });
-        slotNum.textContent = `slot ${i + 1}`;
-
-        svg.appendChild(piece);
-        svg.appendChild(text);
-        svg.appendChild(slotNum);
-      }
+      svg.appendChild(group);
     }
 
-    function render() {
-      renderBoard();
-      updatePanels();
+    for (let i = 0; i < TOTAL; i++) {
+      const p = points[i];
+
+      svg.appendChild(createSvg('circle', {
+        cx: p.x,
+        cy: p.y,
+        r: pieceR + 7,
+        fill: '#1a2344',
+        stroke: 'rgba(255,255,255,0.08)',
+        'stroke-width': '2'
+      }));
+
+      svg.appendChild(createSvg('circle', {
+        cx: p.x,
+        cy: p.y,
+        r: pieceR,
+        fill: '#f4f8ff',
+        stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.9)' : 'rgba(12,23,56,0.18)',
+        'stroke-width': state[i] === i + 1 ? '4' : '2',
+        filter: state[i] === i + 1 ? 'url(#softGlow)' : ''
+      }));
+
+      const text = createSvg('text', {
+        x: p.x,
+        y: p.y + 6,
+        'text-anchor': 'middle',
+        'font-size': '18',
+        'font-weight': '800',
+        fill: '#0c1738',
+        'pointer-events': 'none'
+      });
+      text.textContent = String(state[i]);
+      svg.appendChild(text);
+
+      const slotNum = createSvg('text', {
+        x: p.x,
+        y: p.y + 50,
+        'text-anchor': 'middle',
+        'font-size': '12',
+        fill: 'rgba(255,255,255,0.55)',
+        'pointer-events': 'none'
+      });
+      slotNum.textContent = `slot ${i + 1}`;
+      svg.appendChild(slotNum);
     }
+  }
 
-    function bfsSolve(startArr, maxDepth = 8) {
-      const target = solvedState().join(',');
-      const startKey = startArr.join(',');
-      if (startKey === target) return [];
+  function render() {
+    renderBoard();
+    updatePanels();
+  }
 
-      const queue = [{ arr: startArr, path: [] }];
-      const visited = new Set([startKey]);
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
-      while (queue.length) {
-        const { arr, path } = queue.shift();
+  async function bfsSolveChunked(startArr, maxDepth = 7, chunkSize = 400) {
+    const target = solvedState().join(',');
+    const startKey = startArr.join(',');
+
+    if (startKey === target) return [];
+
+    const queue = [{ arr: startArr, path: [] }];
+    let qIndex = 0;
+    const visited = new Set([startKey]);
+    let expanded = 0;
+
+    while (qIndex < queue.length) {
+      const end = Math.min(qIndex + chunkSize, queue.length);
+
+      for (; qIndex < end; qIndex++) {
+        const { arr, path } = queue[qIndex];
+        expanded++;
 
         if (path.length >= maxDepth) continue;
 
@@ -749,59 +759,77 @@
           visited.add(key);
 
           const nextPath = path.concat(i);
-          if (key === target) return nextPath;
+
+          if (key === target) {
+            moveLog.push(`solver expanded ${expanded} states`);
+            render();
+            return nextPath;
+          }
 
           queue.push({ arr: next, path: nextPath });
         }
       }
 
-      return null;
-    }
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function autoSolve() {
-      if (isBusy) return;
-
-      isBusy = true;
-      render();
-
-      moveLog.push('searching for solution...');
-      render();
-
-      const solution = bfsSolve(clone(state), 8);
-
-      if (!solution) {
-        moveLog.push('no solution found within depth limit 8');
-        isBusy = false;
+      if (expanded % 2000 < chunkSize) {
+        moveLog.push(`searching... expanded ${expanded} states`);
         render();
-        alert('No solution found within the search depth limit.');
-        return;
       }
 
-      moveLog.push(`solution found in ${solution.length} move(s)`);
-      render();
+      await sleep(0);
+    }
 
-      for (const start of solution) {
-        await sleep(260);
-        applyMove(start, true);
-      }
+    moveLog.push(`solver exhausted search after ${expanded} states`);
+    render();
+    return null;
+  }
 
+  async function autoSolve() {
+    if (isBusy) return;
+
+    isBusy = true;
+    hoveredSegment = null;
+    moveLog.push('starting auto-solve...');
+    render();
+
+    const t0 = performance.now();
+
+    const solution = await bfsSolveChunked(clone(state), 7, 500);
+
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+
+    if (!solution) {
+      moveLog.push(`no solution found within depth limit after ${elapsed}s`);
       isBusy = false;
       render();
+      alert(`No solution found within depth 7.\nSearch time: ${elapsed}s`);
+      return;
     }
 
-    shuffleBtn.addEventListener('click', () => shuffle());
-    resetBtn.addEventListener('click', resetPuzzle);
-    undoBtn.addEventListener('click', undo);
-    redoBtn.addEventListener('click', redo);
-    autoBtn.addEventListener('click', autoSolve);
-    applyCustomBtn.addEventListener('click', applyCustomState);
-    normalizeBtn.addEventListener('click', normalizeRotation);
-
+    moveLog.push(`solution found: ${solution.length} move(s) in ${elapsed}s`);
     render();
-  </script>
+
+    await sleep(250);
+
+    for (const start of solution) {
+      await animateMove(start, 380, true);
+      await sleep(120);
+    }
+
+    moveLog.push('auto-solve complete');
+    isBusy = false;
+    hoveredSegment = null;
+    render();
+  }
+
+  shuffleBtn.addEventListener('click', () => shuffle(8));
+  resetBtn.addEventListener('click', resetPuzzle);
+  undoBtn.addEventListener('click', undo);
+  redoBtn.addEventListener('click', redo);
+  autoBtn.addEventListener('click', autoSolve);
+  applyCustomBtn.addEventListener('click', applyCustomState);
+  normalizeBtn.addEventListener('click', normalizeRotation);
+
+  render();
+</script>
 </body>
 </html>
