@@ -3,233 +3,198 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oval Track Puzzle</title>
+  <title>Oval Track Puzzle - Popup Solver</title>
   <style>
-    :root {
-      --bg: #0b1020;
-      --panel: #141b34;
-      --panel-2: #1a2344;
-      --text: #ecf2ff;
-      --muted: #9fb0df;
-      --accent: #7cc7ff;
-      --accent-2: #8ef0c1;
-      --warn: #ffcf6e;
-      --danger: #ff7f96;
-      --track: #2e3b6d;
-      --slot: #202b52;
-      --piece: #f4f8ff;
-      --piece-text: #0c1738;
-      --solved: #6ee7a8;
-      --shadow: 0 12px 28px rgba(0,0,0,.28);
+    :root{
+      --bg:#0b1020;
+      --panel:#141b34;
+      --panel2:#1a2344;
+      --text:#ecf2ff;
+      --muted:#9fb0df;
+      --accent:#7cc7ff;
+      --good:#6ee7a8;
+      --warn:#ffcf6e;
+      --bad:#ff8fa3;
+      --track:#2e3b6d;
+      --slot:#202b52;
+      --piece:#f4f8ff;
+      --pieceText:#0c1738;
+      --shadow:0 12px 28px rgba(0,0,0,.28);
     }
 
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: radial-gradient(circle at top, #16214a 0%, var(--bg) 45%);
-      color: var(--text);
-      min-height: 100vh;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:radial-gradient(circle at top,#16214a 0%,var(--bg) 45%);
+      color:var(--text);
+      min-height:100vh;
     }
 
-    .wrap {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      grid-template-columns: 1.35fr 0.95fr;
-      gap: 20px;
+    .wrap{
+      max-width:1280px;
+      margin:0 auto;
+      padding:24px;
+      display:grid;
+      grid-template-columns:1.35fr .95fr;
+      gap:20px;
     }
 
-    .card {
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
+    .card{
+      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
 
-    .main {
-      padding: 18px;
+    .main,.side{padding:18px}
+    .side{display:flex;flex-direction:column;gap:16px}
+
+    h1{
+      margin:0 0 8px;
+      font-size:clamp(1.6rem,2.2vw,2.4rem);
+      line-height:1.1;
     }
 
-    .side {
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+    .sub{
+      color:var(--muted);
+      margin-bottom:16px;
+      line-height:1.45;
     }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.6rem, 2.2vw, 2.4rem);
-      line-height: 1.1;
+    .toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-bottom:14px;
     }
 
-    .sub {
-      color: var(--muted);
-      margin-bottom: 16px;
-      line-height: 1.45;
+    button, textarea{font:inherit}
+
+    button{
+      background:linear-gradient(180deg,#2a3870,#1f2a52);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:14px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:transform .15s ease, opacity .15s ease;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:active{transform:translateY(0)}
+    button.secondary{background:linear-gradient(180deg,#26305d,#192140)}
+    button.good{background:linear-gradient(180deg,#25614b,#1b4837)}
+    button.warn{background:linear-gradient(180deg,#705c21,#564618)}
+    button.bad{background:linear-gradient(180deg,#6c2438,#4c1827)}
+    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    .status{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      padding:8px 12px;
+      color:var(--muted);
+      margin-bottom:12px;
+      flex-wrap:wrap;
     }
 
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 14px;
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background:var(--warn);
+      box-shadow:0 0 0 4px rgba(255,207,110,.12);
+    }
+    .dot.solved{
+      background:var(--good);
+      box-shadow:0 0 0 4px rgba(110,231,168,.12);
     }
 
-    button, textarea {
-      font: inherit;
+    svg{
+      width:100%;
+      height:auto;
+      display:block;
+      background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.03),rgba(255,255,255,0));
+      border-radius:20px;
     }
 
-    button {
-      background: linear-gradient(180deg, #2a3870, #1f2a52);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 14px;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: transform .15s ease, opacity .15s ease, border-color .15s ease;
+    .panel-title{
+      font-size:1.02rem;
+      font-weight:700;
+      margin-bottom:10px;
     }
 
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
-    button.secondary { background: linear-gradient(180deg, #26305d, #192140); }
-    button.good { background: linear-gradient(180deg, #25614b, #1b4837); }
-    button.warn { background: linear-gradient(180deg, #705c21, #564618); }
-    button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 999px;
-      padding: 8px 12px;
-      color: var(--muted);
-      margin-bottom: 12px;
-      flex-wrap: wrap;
+    .sequence,.moves-log,.errors{
+      background:var(--panel2);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:12px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      line-height:1.55;
+      white-space:pre-wrap;
+      word-break:break-word;
     }
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: var(--warn);
-      box-shadow: 0 0 0 4px rgba(255,207,110,.12);
+    .moves-log{max-height:180px;overflow:auto}
+    .errors{
+      max-height:180px;
+      overflow:auto;
+      border-color:rgba(255,143,163,.22);
+      background:rgba(255,143,163,.06);
+      color:#ffdbe3;
+      min-height:72px;
     }
 
-    .dot.solved {
-      background: var(--solved);
-      box-shadow: 0 0 0 4px rgba(110,231,168,.12);
+    .stat-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
     }
 
-    svg {
-      width: 100%;
-      height: auto;
-      display: block;
-      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.03), rgba(255,255,255,0));
-      border-radius: 20px;
+    .stat{
+      background:var(--panel2);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:12px;
+    }
+    .label{color:var(--muted);font-size:.85rem;margin-bottom:6px}
+    .value{font-size:1.25rem;font-weight:800}
+
+    .input-block{display:grid;gap:8px}
+    textarea{
+      width:100%;
+      min-height:92px;
+      resize:vertical;
+      background:#111831;
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:14px;
+      padding:12px;
     }
 
-    .panel-title {
-      font-size: 1.02rem;
-      font-weight: 700;
-      margin-bottom: 10px;
+    .hint,.footer-note{
+      color:var(--muted);
+      font-size:.88rem;
+      line-height:1.45;
     }
 
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:rgba(124,199,255,.08);
+      color:var(--accent);
+      border:1px solid rgba(124,199,255,.18);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:.84rem;
+      font-weight:700;
     }
 
-    .stat {
-      background: var(--panel-2);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
-      padding: 12px;
-    }
-
-    .stat .label {
-      color: var(--muted);
-      font-size: .85rem;
-      margin-bottom: 6px;
-    }
-
-    .stat .value {
-      font-size: 1.25rem;
-      font-weight: 800;
-    }
-
-    .sequence {
-      background: var(--panel-2);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
-      padding: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      line-height: 1.55;
-      word-break: break-word;
-    }
-
-    .moves-log {
-      max-height: 220px;
-      overflow: auto;
-      background: var(--panel-2);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
-      padding: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      line-height: 1.55;
-      white-space: pre-wrap;
-    }
-
-    .input-block {
-      display: grid;
-      gap: 8px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 92px;
-      resize: vertical;
-      background: #111831;
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 14px;
-      padding: 12px;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: .86rem;
-      line-height: 1.4;
-    }
-
-    .footer-note {
-      color: var(--muted);
-      font-size: .88rem;
-      line-height: 1.45;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(124,199,255,.08);
-      color: var(--accent);
-      border: 1px solid rgba(124,199,255,.18);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: .84rem;
-      font-weight: 700;
-    }
-
-    @media (max-width: 960px) {
-      .wrap { grid-template-columns: 1fr; }
+    @media (max-width:960px){
+      .wrap{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -238,8 +203,8 @@
     <section class="card main">
       <h1>Oval Track Puzzle Simulator</h1>
       <div class="sub">
-        Twenty numbered pieces sit on an oval track. They cannot leave the track or pass each other.
-        The only legal move is rotating a 4-piece segment 180°, which reverses the order of those four consecutive pieces.
+        20 numbered pieces sit on an oval track. They cannot pass each other. A legal move flips exactly 4 consecutive pieces.
+        Move names use the number immediately clockwise of the flipped group. Example: flipping 1,2,3,4 is move <b>5</b>.
       </div>
 
       <div class="toolbar">
@@ -247,7 +212,8 @@
         <button id="resetBtn" class="secondary">Reset</button>
         <button id="undoBtn" class="secondary">Undo</button>
         <button id="redoBtn" class="secondary">Redo</button>
-        <button id="autoBtn" class="warn">Try Auto-Solve</button>
+        <button id="solveBtn" class="warn">Solve In Popup</button>
+        <button id="stopSolveBtn" class="bad">Stop Solver</button>
       </div>
 
       <div class="status">
@@ -287,7 +253,7 @@
 
       <div class="input-block">
         <div class="panel-title">Load Custom State</div>
-        <textarea id="customInput" placeholder="Example: 4, 3, 2, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20"></textarea>
+        <textarea id="customInput" placeholder="Example: 4,3,2,1,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"></textarea>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button id="applyCustomBtn" class="good">Apply State</button>
           <button id="normalizeBtn" class="secondary">Normalize Rotation</button>
@@ -297,539 +263,915 @@
         </div>
       </div>
 
+      <div>
+        <div class="panel-title">Errors</div>
+        <div id="errors" class="errors">No errors.</div>
+      </div>
+
       <div class="footer-note">
-        Auto-Solve uses a bounded breadth-first search, so it works best when the puzzle is already fairly close to solved.
+        The solver runs in a background worker and reports to a popup window so the main page stays responsive.
       </div>
     </aside>
   </div>
 
   <script>
-  const TOTAL = 20;
-  const SEGMENT = 4;
+    const TOTAL = 20;
+    const SEGMENT = 4;
 
-  const svg = document.getElementById('board');
-  const sequenceEl = document.getElementById('sequence');
-  const moveCountEl = document.getElementById('moveCount');
-  const correctCountEl = document.getElementById('correctCount');
-  const logEl = document.getElementById('log');
-  const statusText = document.getElementById('statusText');
-  const statusDot = document.getElementById('statusDot');
-  const customInput = document.getElementById('customInput');
+    const svg = document.getElementById('board');
+    const sequenceEl = document.getElementById('sequence');
+    const moveCountEl = document.getElementById('moveCount');
+    const correctCountEl = document.getElementById('correctCount');
+    const logEl = document.getElementById('log');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+    const customInput = document.getElementById('customInput');
+    const errorsEl = document.getElementById('errors');
 
-  const shuffleBtn = document.getElementById('shuffleBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  const undoBtn = document.getElementById('undoBtn');
-  const redoBtn = document.getElementById('redoBtn');
-  const autoBtn = document.getElementById('autoBtn');
-  const applyCustomBtn = document.getElementById('applyCustomBtn');
-  const normalizeBtn = document.getElementById('normalizeBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const solveBtn = document.getElementById('solveBtn');
+    const stopSolveBtn = document.getElementById('stopSolveBtn');
+    const applyCustomBtn = document.getElementById('applyCustomBtn');
+    const normalizeBtn = document.getElementById('normalizeBtn');
 
-  let state = solvedState();
-  let history = [];
-  let redoStack = [];
-  let moveLog = [];
-  let moveCount = 0;
-  let isBusy = false;
-  let hoveredSegment = null;
+    let state = solvedState();
+    let history = [];
+    let redoStack = [];
+    let moveLog = [];
+    let moveCount = 0;
+    let hoveredSegment = null;
 
-  function solvedState() {
-    return Array.from({ length: TOTAL }, (_, i) => i + 1);
-  }
+    let worker = null;
+    let popup = null;
+    let solverRunning = false;
+    let solveQueue = [];
+    let animatingSolution = false;
 
-  function clone(arr) {
-    return arr.slice();
-  }
-
-  function isSolved(arr = state) {
-    return arr.every((v, i) => v === i + 1);
-  }
-
-  function countCorrect(arr = state) {
-    return arr.reduce((acc, v, i) => acc + (v === i + 1 ? 1 : 0), 0);
-  }
-
-  function reverseSegment(arr, start) {
-    const next = clone(arr);
-    const indices = [];
-    for (let i = 0; i < SEGMENT; i++) {
-      indices.push((start + i) % TOTAL);
+    function solvedState() {
+      return Array.from({ length: TOTAL }, (_, i) => i + 1);
     }
-    const vals = indices.map(i => next[i]).reverse();
-    indices.forEach((idx, k) => {
-      next[idx] = vals[k];
+
+    function clone(arr) {
+      return arr.slice();
+    }
+
+    function isSolved(arr = state) {
+      return arr.every((v, i) => v === i + 1);
+    }
+
+    function countCorrect(arr = state) {
+      return arr.reduce((acc, v, i) => acc + (v === i + 1 ? 1 : 0), 0);
+    }
+
+    function reverseSegment(arr, start) {
+      const next = clone(arr);
+      const indices = [];
+      for (let i = 0; i < SEGMENT; i++) indices.push((start + i) % TOTAL);
+      const vals = indices.map(i => next[i]).reverse();
+      indices.forEach((idx, k) => next[idx] = vals[k]);
+      return next;
+    }
+
+    function rotationMoveLabel(arr, start) {
+      return arr[(start + SEGMENT) % TOTAL];
+    }
+
+    function rotateWhole(arr, offset) {
+      const n = arr.length;
+      const out = [];
+      for (let i = 0; i < n; i++) out.push(arr[(i + offset) % n]);
+      return out;
+    }
+
+    function logError(msg) {
+      const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      if (errorsEl.textContent.trim() === 'No errors.') {
+        errorsEl.textContent = line;
+      } else {
+        errorsEl.textContent += `\n${line}`;
+      }
+      errorsEl.scrollTop = errorsEl.scrollHeight;
+    }
+
+    window.addEventListener('error', (e) => {
+      logError(e.message || 'Unknown page error');
     });
-    return next;
-  }
 
-  function rotateWhole(arr, offset) {
-    const n = arr.length;
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(arr[(i + offset) % n]);
-    return out;
-  }
+    window.addEventListener('unhandledrejection', (e) => {
+      logError((e.reason && e.reason.message) ? e.reason.message : String(e.reason || 'Unhandled promise rejection'));
+    });
 
-  function normalizeRotation() {
-    if (isBusy) return;
-    const idx = state.indexOf(1);
-    if (idx > 0) {
-      state = rotateWhole(state, idx);
-      history.push({ type: 'normalize' });
-      redoStack = [];
-      moveLog.push('normalize rotation (piece 1 moved to slot 1)');
+    function normalizeRotation() {
+      if (solverRunning || animatingSolution) return;
+      const idx = state.indexOf(1);
+      if (idx > 0) {
+        state = rotateWhole(state, idx);
+        history.push({ type: 'normalize' });
+        redoStack = [];
+        moveLog.push('normalize rotation (piece 1 moved to slot 1)');
+        render();
+      }
+    }
+
+    function applyMove(start, record = true, tag = null) {
+      const before = clone(state);
+      const label = rotationMoveLabel(before, start);
+      state = reverseSegment(state, start);
+
+      if (record) {
+        history.push({ type: 'move', start, before });
+        redoStack = [];
+        moveCount++;
+        moveLog.push(`${tag ? tag + ': ' : ''}move ${moveCount} -> ${label}`);
+      }
+
       render();
     }
-  }
 
-  function applyMove(start, record = true) {
-    const before = clone(state);
-    state = reverseSegment(state, start);
+    async function animateSolutionPath(starts) {
+      if (!starts || !starts.length) return;
+      animatingSolution = true;
+      hoveredSegment = null;
+      render();
 
-    if (record) {
-      history.push({
-        type: 'move',
-        start,
-        before
-      });
-      redoStack = [];
-      moveCount++;
-      moveLog.push(`move ${moveCount}: reverse 4-piece segment starting at slot ${start + 1}`);
+      for (let i = 0; i < starts.length; i++) {
+        const start = starts[i];
+        hoveredSegment = start;
+        render();
+        await sleep(180);
+        applyMove(start, true, 'auto');
+        await sleep(220);
+      }
+
+      hoveredSegment = null;
+      animatingSolution = false;
+      render();
     }
 
-    render();
-  }
-
-  async function animateMove(start, duration = 320, record = true) {
-    hoveredSegment = start;
-    render();
-
-    await sleep(duration * 0.35);
-
-    const before = clone(state);
-    state = reverseSegment(state, start);
-
-    if (record) {
-      history.push({
-        type: 'move',
-        start,
-        before
-      });
-      redoStack = [];
-      moveCount++;
-      moveLog.push(`move ${moveCount}: reverse 4-piece segment starting at slot ${start + 1}`);
+    function undo() {
+      if (!history.length || solverRunning || animatingSolution) return;
+      const entry = history.pop();
+      if (entry.type === 'move') {
+        redoStack.push({ type: 'move', start: entry.start, before: clone(state) });
+        state = entry.before;
+        moveCount = Math.max(0, moveCount - 1);
+        moveLog.push('undo');
+      } else {
+        redoStack.push({ type: 'normalize', before: clone(state) });
+        moveLog.push('undo normalize');
+      }
+      render();
     }
 
-    render();
-    await sleep(duration * 0.65);
-
-    hoveredSegment = null;
-    render();
-  }
-
-  function undo() {
-    if (!history.length || isBusy) return;
-    const entry = history.pop();
-
-    if (entry.type === 'move') {
-      redoStack.push({
-        type: 'move',
-        start: entry.start,
-        before: clone(state)
-      });
-      state = entry.before;
-      moveCount = Math.max(0, moveCount - 1);
-      moveLog.push('undo');
-    } else {
-      redoStack.push({ type: 'normalize', before: clone(state) });
-      moveLog.push('undo normalize');
+    function redo() {
+      if (!redoStack.length || solverRunning || animatingSolution) return;
+      const entry = redoStack.pop();
+      if (entry.type === 'move') {
+        history.push({ type: 'move', start: entry.start, before: clone(state) });
+        state = reverseSegment(state, entry.start);
+        moveCount++;
+        moveLog.push(`redo -> ${rotationMoveLabel(history[history.length - 1].before, entry.start)}`);
+      } else {
+        history.push({ type: 'normalize' });
+        normalizeRotation();
+        return;
+      }
+      render();
     }
 
-    render();
-  }
-
-  function redo() {
-    if (!redoStack.length || isBusy) return;
-    const entry = redoStack.pop();
-
-    if (entry.type === 'move') {
-      history.push({
-        type: 'move',
-        start: entry.start,
-        before: clone(state)
-      });
-      state = reverseSegment(state, entry.start);
-      moveCount++;
-      moveLog.push(`redo move at slot ${entry.start + 1}`);
-    } else {
-      history.push({ type: 'normalize' });
-      normalizeRotation();
-      return;
-    }
-
-    render();
-  }
-
-  function shuffle(times = 8) {
-    if (isBusy) return;
-    state = solvedState();
-    history = [];
-    redoStack = [];
-    moveLog = [];
-    moveCount = 0;
-
-    for (let i = 0; i < times; i++) {
-      const start = Math.floor(Math.random() * TOTAL);
-      state = reverseSegment(state, start);
-    }
-
-    moveLog.push(`shuffled with ${times} random moves`);
-    render();
-  }
-
-  function resetPuzzle() {
-    if (isBusy) return;
-    state = solvedState();
-    history = [];
-    redoStack = [];
-    moveLog = [];
-    moveCount = 0;
-    hoveredSegment = null;
-    render();
-  }
-
-  function parseCustomInput(text) {
-    const parts = text
-      .split(/[\s,]+/)
-      .map(x => x.trim())
-      .filter(Boolean)
-      .map(Number);
-
-    if (parts.length !== TOTAL) {
-      throw new Error(`Need exactly ${TOTAL} numbers.`);
-    }
-
-    const set = new Set(parts);
-    if (set.size !== TOTAL) {
-      throw new Error('Numbers must not repeat.');
-    }
-
-    for (let i = 1; i <= TOTAL; i++) {
-      if (!set.has(i)) throw new Error(`Missing number ${i}.`);
-    }
-
-    return parts;
-  }
-
-  function applyCustomState() {
-    if (isBusy) return;
-    try {
-      const parsed = parseCustomInput(customInput.value);
-      state = parsed;
+    function shuffle(times = 10) {
+      if (solverRunning || animatingSolution) return;
+      state = solvedState();
       history = [];
       redoStack = [];
-      moveLog = ['custom state loaded'];
+      moveLog = [];
+      moveCount = 0;
+      for (let i = 0; i < times; i++) {
+        const start = Math.floor(Math.random() * TOTAL);
+        state = reverseSegment(state, start);
+      }
+      moveLog.push(`shuffled with ${times} random moves`);
+      render();
+    }
+
+    function resetPuzzle() {
+      if (solverRunning || animatingSolution) return;
+      state = solvedState();
+      history = [];
+      redoStack = [];
+      moveLog = [];
       moveCount = 0;
       hoveredSegment = null;
       render();
-    } catch (err) {
-      alert(err.message);
-    }
-  }
-
-  function stateToString(arr = state) {
-    return arr.join(', ');
-  }
-
-  function updatePanels() {
-    sequenceEl.textContent = `[ ${stateToString()} ]`;
-    moveCountEl.textContent = String(moveCount);
-    correctCountEl.textContent = String(countCorrect());
-
-    logEl.textContent = moveLog.length ? moveLog.slice(-40).join('\n') : 'No moves yet.';
-
-    if (isSolved()) {
-      statusText.textContent = 'Solved';
-      statusDot.classList.add('solved');
-    } else if (isBusy) {
-      statusText.textContent = 'Working...';
-      statusDot.classList.remove('solved');
-    } else {
-      statusText.textContent = 'Not solved';
-      statusDot.classList.remove('solved');
     }
 
-    undoBtn.disabled = !history.length || isBusy;
-    redoBtn.disabled = !redoStack.length || isBusy;
-    autoBtn.disabled = isBusy;
-    shuffleBtn.disabled = isBusy;
-    resetBtn.disabled = isBusy;
-    applyCustomBtn.disabled = isBusy;
-    normalizeBtn.disabled = isBusy;
-  }
+    function parseCustomInput(text) {
+      const parts = text
+        .split(/[\s,]+/)
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(Number);
 
-  function createSvg(tag, attrs = {}) {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    for (const [k, v] of Object.entries(attrs)) {
-      el.setAttribute(k, v);
-    }
-    return el;
-  }
-
-  function pointOnOval(t, cx, cy, rx, ry) {
-    return {
-      x: cx + rx * Math.cos(t),
-      y: cy + ry * Math.sin(t)
-    };
-  }
-
-  function getPoints() {
-    const cx = 450;
-    const cy = 290;
-    const rx = 310;
-    const ry = 180;
-    const points = [];
-    for (let i = 0; i < TOTAL; i++) {
-      const theta = (-Math.PI / 2) + (i * 2 * Math.PI / TOTAL);
-      points.push(pointOnOval(theta, cx, cy, rx, ry));
-    }
-    return { cx, cy, rx, ry, points };
-  }
-
-  function renderBoard() {
-    svg.innerHTML = '';
-
-    const { cx, cy, rx, ry, points } = getPoints();
-    const pieceR = 28;
-
-    const defs = createSvg('defs');
-    const glow = createSvg('filter', { id: 'softGlow' });
-    glow.innerHTML = `
-      <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
-      <feMerge>
-        <feMergeNode in="blur"></feMergeNode>
-        <feMergeNode in="SourceGraphic"></feMergeNode>
-      </feMerge>
-    `;
-    defs.appendChild(glow);
-    svg.appendChild(defs);
-
-    svg.appendChild(createSvg('ellipse', {
-      cx, cy, rx: rx + 40, ry: ry + 40,
-      fill: 'none',
-      stroke: 'rgba(255,255,255,0.10)',
-      'stroke-width': '52'
-    }));
-
-    svg.appendChild(createSvg('ellipse', {
-      cx, cy, rx: rx + 6, ry: ry + 6,
-      fill: 'none',
-      stroke: '#2e3b6d',
-      'stroke-width': '74'
-    }));
-
-    svg.appendChild(createSvg('ellipse', {
-      cx, cy, rx, ry,
-      fill: 'none',
-      stroke: '#202b52',
-      'stroke-width': '62'
-    }));
-
-    for (let start = 0; start < TOTAL; start++) {
-      const group = createSvg('g', { cursor: isBusy ? 'default' : 'pointer' });
-
-      const centers = [];
-      for (let k = 0; k < SEGMENT; k++) centers.push(points[(start + k) % TOTAL]);
-
-      const minX = Math.min(...centers.map(p => p.x));
-      const maxX = Math.max(...centers.map(p => p.x));
-      const minY = Math.min(...centers.map(p => p.y));
-      const maxY = Math.max(...centers.map(p => p.y));
-
-      const active = hoveredSegment === start;
-
-      const box = createSvg('rect', {
-        x: minX - 38,
-        y: minY - 38,
-        width: (maxX - minX) + 76,
-        height: (maxY - minY) + 76,
-        rx: 22,
-        fill: active ? 'rgba(255,207,110,0.18)' : 'rgba(124,199,255,0.06)',
-        stroke: active ? 'rgba(255,207,110,0.90)' : 'rgba(124,199,255,0.18)',
-        'stroke-width': active ? '3' : '2',
-        opacity: active ? '1' : '0'
-      });
-
-      group.appendChild(box);
-
-      group.addEventListener('mouseenter', () => {
-        if (!isBusy) box.setAttribute('opacity', '1');
-      });
-
-      group.addEventListener('mouseleave', () => {
-        if (!active) box.setAttribute('opacity', '0');
-      });
-
-      group.addEventListener('click', () => {
-        if (!isBusy) applyMove(start, true);
-      });
-
-      svg.appendChild(group);
+      if (parts.length !== TOTAL) throw new Error(`Need exactly ${TOTAL} numbers.`);
+      const set = new Set(parts);
+      if (set.size !== TOTAL) throw new Error('Numbers must not repeat.');
+      for (let i = 1; i <= TOTAL; i++) {
+        if (!set.has(i)) throw new Error(`Missing number ${i}.`);
+      }
+      return parts;
     }
 
-    for (let i = 0; i < TOTAL; i++) {
-      const p = points[i];
+    function applyCustomState() {
+      if (solverRunning || animatingSolution) return;
+      try {
+        const parsed = parseCustomInput(customInput.value);
+        state = parsed;
+        history = [];
+        redoStack = [];
+        moveLog = ['custom state loaded'];
+        moveCount = 0;
+        hoveredSegment = null;
+        render();
+      } catch (err) {
+        logError(err.message);
+        alert(err.message);
+      }
+    }
 
-      svg.appendChild(createSvg('circle', {
-        cx: p.x,
-        cy: p.y,
-        r: pieceR + 7,
-        fill: '#1a2344',
-        stroke: 'rgba(255,255,255,0.08)',
-        'stroke-width': '2'
+    function stateToString(arr = state) {
+      return arr.join(', ');
+    }
+
+    function updatePanels() {
+      sequenceEl.textContent = `[ ${stateToString()} ]`;
+      moveCountEl.textContent = String(moveCount);
+      correctCountEl.textContent = String(countCorrect());
+      logEl.textContent = moveLog.length ? moveLog.slice(-40).join('\n') : 'No moves yet.';
+
+      if (isSolved()) {
+        statusText.textContent = 'Solved';
+        statusDot.classList.add('solved');
+      } else if (solverRunning) {
+        statusText.textContent = 'Solver running in popup...';
+        statusDot.classList.remove('solved');
+      } else if (animatingSolution) {
+        statusText.textContent = 'Applying solution...';
+        statusDot.classList.remove('solved');
+      } else {
+        statusText.textContent = 'Not solved';
+        statusDot.classList.remove('solved');
+      }
+
+      const locked = solverRunning || animatingSolution;
+      undoBtn.disabled = !history.length || locked;
+      redoBtn.disabled = !redoStack.length || locked;
+      solveBtn.disabled = locked;
+      shuffleBtn.disabled = locked;
+      resetBtn.disabled = locked;
+      applyCustomBtn.disabled = locked;
+      normalizeBtn.disabled = locked;
+      stopSolveBtn.disabled = !solverRunning;
+    }
+
+    function createSvg(tag, attrs = {}) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      return el;
+    }
+
+    function pointOnOval(t, cx, cy, rx, ry) {
+      return { x: cx + rx * Math.cos(t), y: cy + ry * Math.sin(t) };
+    }
+
+    function renderBoard() {
+      svg.innerHTML = '';
+
+      const cx = 450, cy = 290, rx = 310, ry = 180, pieceR = 28;
+
+      const defs = createSvg('defs');
+      const glow = createSvg('filter', { id: 'softGlow' });
+      glow.innerHTML = `
+        <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+        <feMerge>
+          <feMergeNode in="blur"></feMergeNode>
+          <feMergeNode in="SourceGraphic"></feMergeNode>
+        </feMerge>
+      `;
+      defs.appendChild(glow);
+      svg.appendChild(defs);
+
+      svg.appendChild(createSvg('ellipse', {
+        cx, cy, rx: rx + 40, ry: ry + 40,
+        fill: 'none', stroke: 'rgba(255,255,255,0.10)', 'stroke-width': '52'
+      }));
+      svg.appendChild(createSvg('ellipse', {
+        cx, cy, rx: rx + 6, ry: ry + 6,
+        fill: 'none', stroke: '#2e3b6d', 'stroke-width': '74'
+      }));
+      svg.appendChild(createSvg('ellipse', {
+        cx, cy, rx, ry,
+        fill: 'none', stroke: '#202b52', 'stroke-width': '62'
       }));
 
-      svg.appendChild(createSvg('circle', {
-        cx: p.x,
-        cy: p.y,
-        r: pieceR,
-        fill: '#f4f8ff',
-        stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.9)' : 'rgba(12,23,56,0.18)',
-        'stroke-width': state[i] === i + 1 ? '4' : '2',
-        filter: state[i] === i + 1 ? 'url(#softGlow)' : ''
-      }));
+      const points = [];
+      for (let i = 0; i < TOTAL; i++) {
+        const theta = (-Math.PI / 2) + (i * 2 * Math.PI / TOTAL);
+        points.push(pointOnOval(theta, cx, cy, rx, ry));
+      }
 
-      const text = createSvg('text', {
-        x: p.x,
-        y: p.y + 6,
-        'text-anchor': 'middle',
-        'font-size': '18',
-        'font-weight': '800',
-        fill: '#0c1738',
-        'pointer-events': 'none'
-      });
-      text.textContent = String(state[i]);
-      svg.appendChild(text);
+      for (let start = 0; start < TOTAL; start++) {
+        const group = createSvg('g', { cursor: (solverRunning || animatingSolution) ? 'default' : 'pointer' });
+        const centers = [];
+        for (let k = 0; k < SEGMENT; k++) centers.push(points[(start + k) % TOTAL]);
 
-      const slotNum = createSvg('text', {
-        x: p.x,
-        y: p.y + 50,
-        'text-anchor': 'middle',
-        'font-size': '12',
-        fill: 'rgba(255,255,255,0.55)',
-        'pointer-events': 'none'
-      });
-      slotNum.textContent = `slot ${i + 1}`;
-      svg.appendChild(slotNum);
+        const minX = Math.min(...centers.map(p => p.x));
+        const maxX = Math.max(...centers.map(p => p.x));
+        const minY = Math.min(...centers.map(p => p.y));
+        const maxY = Math.max(...centers.map(p => p.y));
+        const active = hoveredSegment === start;
+
+        const box = createSvg('rect', {
+          x: minX - 38,
+          y: minY - 38,
+          width: (maxX - minX) + 76,
+          height: (maxY - minY) + 76,
+          rx: 22,
+          fill: active ? 'rgba(255,207,110,0.18)' : 'rgba(124,199,255,0.06)',
+          stroke: active ? 'rgba(255,207,110,0.90)' : 'rgba(124,199,255,0.18)',
+          'stroke-width': active ? '3' : '2',
+          opacity: active ? '1' : '0'
+        });
+
+        group.appendChild(box);
+
+        group.addEventListener('mouseenter', () => {
+          if (!solverRunning && !animatingSolution) box.setAttribute('opacity', '1');
+        });
+        group.addEventListener('mouseleave', () => {
+          if (!active) box.setAttribute('opacity', '0');
+        });
+        group.addEventListener('click', () => {
+          if (!solverRunning && !animatingSolution) applyMove(start, true);
+        });
+
+        svg.appendChild(group);
+      }
+
+      for (let i = 0; i < TOTAL; i++) {
+        const p = points[i];
+
+        svg.appendChild(createSvg('circle', {
+          cx: p.x, cy: p.y, r: pieceR + 7,
+          fill: '#1a2344', stroke: 'rgba(255,255,255,0.08)', 'stroke-width': '2'
+        }));
+
+        svg.appendChild(createSvg('circle', {
+          cx: p.x, cy: p.y, r: pieceR,
+          fill: '#f4f8ff',
+          stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.9)' : 'rgba(12,23,56,0.18)',
+          'stroke-width': state[i] === i + 1 ? '4' : '2',
+          filter: state[i] === i + 1 ? 'url(#softGlow)' : ''
+        }));
+
+        const text = createSvg('text', {
+          x: p.x, y: p.y + 6,
+          'text-anchor': 'middle', 'font-size': '18', 'font-weight': '800',
+          fill: '#0c1738', 'pointer-events': 'none'
+        });
+        text.textContent = String(state[i]);
+        svg.appendChild(text);
+
+        const slotNum = createSvg('text', {
+          x: p.x, y: p.y + 50,
+          'text-anchor': 'middle', 'font-size': '12',
+          fill: 'rgba(255,255,255,0.55)', 'pointer-events': 'none'
+        });
+        slotNum.textContent = `slot ${i + 1}`;
+        svg.appendChild(slotNum);
+      }
     }
+
+    function render() {
+      renderBoard();
+      updatePanels();
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function sendToPopup(msg) {
+      if (!popup || popup.closed) return;
+      popup.postMessage(msg, '*');
+    }
+
+    function openSolverPopup() {
+      if (popup && !popup.closed) {
+        popup.focus();
+        return popup;
+      }
+
+      const popupHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Solver Window</title>
+<style>
+  body{
+    margin:0;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:#0f1630;
+    color:#eef4ff;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+  .top{
+    padding:14px 16px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    background:#151f44;
+  }
+  .title{font-weight:800;font-size:18px;margin-bottom:6px}
+  .sub{color:#a8b7df;font-size:13px;line-height:1.4}
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    padding:12px;
+    flex:1;
+    min-height:0;
+  }
+  .panel{
+    background:#162149;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .panel h3{
+    margin:0;
+    padding:12px 12px 0;
+    font-size:15px;
+  }
+  .body{
+    padding:12px;
+    overflow:auto;
+    white-space:pre-wrap;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    line-height:1.45;
+    flex:1;
+  }
+  .statusbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:0 12px 12px;
+    color:#aac1f4;
+    font-size:13px;
+  }
+  .badge{
+    background:rgba(124,199,255,.08);
+    color:#86d0ff;
+    border:1px solid rgba(124,199,255,.18);
+    border-radius:999px;
+    padding:5px 9px;
+  }
+  .btns{
+    display:flex;
+    gap:10px;
+    padding:0 12px 12px;
+  }
+  button{
+    font:inherit;
+    background:linear-gradient(180deg,#2a3870,#1f2a52);
+    color:#eef4ff;
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;
+    padding:8px 12px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="title">Background Solver</div>
+    <div class="sub">Tried moves stream on the left. Final move labels on the right. If the popup is closed, the solver keeps running until stopped.</div>
+  </div>
+  <div class="grid">
+    <div class="panel">
+      <h3>Tried Moves</h3>
+      <div class="body" id="tries">Waiting for solver...</div>
+    </div>
+    <div class="panel">
+      <h3>Solution</h3>
+      <div class="body" id="solution">No solution yet.</div>
+      <div class="statusbar">
+        <span class="badge" id="status">Idle</span>
+        <span class="badge" id="expanded">Expanded: 0</span>
+        <span class="badge" id="depth">Depth: 0</span>
+      </div>
+      <div class="btns">
+        <button id="applyBtn" disabled>Apply Solution</button>
+        <button id="closeBtn">Close</button>
+      </div>
+    </div>
+  </div>
+<script>
+  const triesEl = document.getElementById('tries');
+  const solutionEl = document.getElementById('solution');
+  const statusEl = document.getElementById('status');
+  const expandedEl = document.getElementById('expanded');
+  const depthEl = document.getElementById('depth');
+  const applyBtn = document.getElementById('applyBtn');
+  const closeBtn = document.getElementById('closeBtn');
+
+  let latestStarts = null;
+
+  window.addEventListener('message', (event) => {
+    const data = event.data || {};
+    if (data.type === 'init') {
+      statusEl.textContent = 'Running';
+      triesEl.textContent = 'Solver started...';
+      solutionEl.textContent = 'No solution yet.';
+      expandedEl.textContent = 'Expanded: 0';
+      depthEl.textContent = 'Depth: 0';
+      applyBtn.disabled = true;
+      latestStarts = null;
+      return;
+    }
+    if (data.type === 'progress') {
+      statusEl.textContent = data.status || 'Running';
+      expandedEl.textContent = 'Expanded: ' + (data.expanded || 0);
+      depthEl.textContent = 'Depth: ' + (data.depth || 0);
+      if (Array.isArray(data.tried) && data.tried.length) {
+        const existing = triesEl.textContent === 'Waiting for solver...' ? '' : triesEl.textContent;
+        const lines = data.tried.map((x, i) => String(x));
+        const joined = existing ? existing + '\\n' + lines.join('\\n') : lines.join('\\n');
+        const trimmed = joined.split('\\n').slice(-2500).join('\\n');
+        triesEl.textContent = trimmed;
+        triesEl.scrollTop = triesEl.scrollHeight;
+      }
+      return;
+    }
+    if (data.type === 'solved') {
+      statusEl.textContent = 'Solved';
+      expandedEl.textContent = 'Expanded: ' + (data.expanded || 0);
+      depthEl.textContent = 'Depth: ' + (data.depth || 0);
+      latestStarts = data.starts || null;
+      solutionEl.textContent =
+        'Move labels:\\n' + (data.labels && data.labels.length ? data.labels.join(' -> ') : '(already solved)') +
+        '\\n\\nStarts:\\n' + (data.starts && data.starts.length ? data.starts.map(x => x + 1).join(', ') : '(none)') +
+        '\\n\\nLength: ' + ((data.starts && data.starts.length) || 0);
+      applyBtn.disabled = !latestStarts;
+      return;
+    }
+    if (data.type === 'stopped') {
+      statusEl.textContent = 'Stopped';
+      return;
+    }
+    if (data.type === 'error') {
+      statusEl.textContent = 'Error';
+      solutionEl.textContent = data.message || 'Unknown solver error';
+      return;
+    }
+  });
+
+  applyBtn.addEventListener('click', () => {
+    if (window.opener && latestStarts) {
+      window.opener.postMessage({ type: 'apply-solution', starts: latestStarts }, '*');
+    }
+  });
+
+  closeBtn.addEventListener('click', () => window.close());
+</script>
+</body>
+</html>`;
+
+      popup = window.open('', 'ovalPuzzleSolverWindow', 'width=900,height=700,resizable=yes,scrollbars=yes');
+      if (!popup) {
+        logError('Popup blocked by browser. Allow popups for this page.');
+        alert('Popup was blocked. Please allow popups for this page.');
+        return null;
+      }
+
+      popup.document.open();
+      popup.document.write(popupHtml);
+      popup.document.close();
+      return popup;
+    }
+
+    function createWorker() {
+      const workerCode = `
+const TOTAL = 20;
+const SEGMENT = 4;
+let stopFlag = false;
+
+function clone(arr){ return arr.slice(); }
+
+function reverseSegment(arr, start){
+  const next = clone(arr);
+  const idx = [];
+  for(let i=0;i<SEGMENT;i++) idx.push((start+i)%TOTAL);
+  const vals = idx.map(i => next[i]).reverse();
+  idx.forEach((p,k)=> next[p] = vals[k]);
+  return next;
+}
+
+function isSolved(arr){
+  for(let i=0;i<TOTAL;i++) if(arr[i] !== i+1) return false;
+  return true;
+}
+
+function moveLabel(arr, start){
+  return arr[(start + SEGMENT) % TOTAL];
+}
+
+function stateKey(arr){
+  return arr.join(',');
+}
+
+function heuristic(arr){
+  let misplaced = 0;
+  let breaks = 0;
+  for(let i=0;i<TOTAL;i++){
+    if(arr[i] !== i+1) misplaced++;
+    const a = arr[i];
+    const b = arr[(i+1)%TOTAL];
+    const expected = a === TOTAL ? 1 : a + 1;
+    if(b !== expected) breaks++;
+  }
+  return Math.ceil(misplaced / 3) + Math.ceil(breaks / 4);
+}
+
+function optimizePath(startState, path){
+  if(!path || !path.length) return path || [];
+  let changed = true;
+  let current = path.slice();
+
+  while(changed){
+    changed = false;
+    const out = [];
+    for(let i=0;i<current.length;i++){
+      if(i < current.length - 1 && current[i] === current[i+1]){
+        changed = true;
+        i++;
+        continue;
+      }
+      out.push(current[i]);
+    }
+    current = out;
   }
 
-  function render() {
-    renderBoard();
-    updatePanels();
+  return current;
+}
+
+async function beamSearch(start){
+  stopFlag = false;
+  if(isSolved(start)){
+    return { starts: [], labels: [], expanded: 0, depth: 0 };
   }
 
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  const maxDepth = 70;
+  const beamWidth = 900;
+  const keepPerParent = 6;
+  const recentTried = [];
+  let expanded = 0;
 
-  async function bfsSolveChunked(startArr, maxDepth = 7, chunkSize = 400) {
-    const target = solvedState().join(',');
-    const startKey = startArr.join(',');
+  let frontier = [{
+    arr: clone(start),
+    path: [],
+    score: heuristic(start)
+  }];
 
-    if (startKey === target) return [];
+  let bestScore = Infinity;
+  let bestNode = frontier[0];
 
-    const queue = [{ arr: startArr, path: [] }];
-    let qIndex = 0;
-    const visited = new Set([startKey]);
-    let expanded = 0;
+  for(let depth=0; depth<maxDepth; depth++){
+    if(stopFlag) return { stopped:true, expanded, depth };
 
-    while (qIndex < queue.length) {
-      const end = Math.min(qIndex + chunkSize, queue.length);
+    const nextCandidates = [];
+    const seenThisLayer = new Map();
 
-      for (; qIndex < end; qIndex++) {
-        const { arr, path } = queue[qIndex];
+    for(let n=0; n<frontier.length; n++){
+      const node = frontier[n];
+      const parentArr = node.arr;
+
+      const moves = [];
+      for(let startIdx=0; startIdx<TOTAL; startIdx++){
+        if(node.path.length && startIdx === node.path[node.path.length - 1]) continue;
+
+        const nextArr = reverseSegment(parentArr, startIdx);
+        const h = heuristic(nextArr);
+        const g = node.path.length + 1;
+        const score = g + h * 1.7;
+        moves.push({
+          start: startIdx,
+          label: moveLabel(parentArr, startIdx),
+          nextArr,
+          score,
+          h
+        });
+      }
+
+      moves.sort((a,b)=> a.score - b.score);
+
+      for(let m=0; m<Math.min(keepPerParent, moves.length); m++){
+        const cand = moves[m];
         expanded++;
 
-        if (path.length >= maxDepth) continue;
+        recentTried.push('d' + (depth+1) + ' -> ' + cand.label);
+        if(recentTried.length > 200) recentTried.shift();
 
-        for (let i = 0; i < TOTAL; i++) {
-          const next = reverseSegment(arr, i);
-          const key = next.join(',');
+        if(isSolved(cand.nextArr)){
+          const starts = optimizePath(start, node.path.concat(cand.start));
+          const labels = replayLabels(start, starts);
+          postMessage({
+            type:'solved',
+            starts,
+            labels,
+            expanded,
+            depth: starts.length
+          });
+          return { solved:true };
+        }
 
-          if (visited.has(key)) continue;
-          visited.add(key);
+        const key = stateKey(cand.nextArr);
+        const prev = seenThisLayer.get(key);
+        if(prev === undefined || cand.score < prev.score){
+          const entry = {
+            arr: cand.nextArr,
+            path: node.path.concat(cand.start),
+            score: cand.score,
+            h: cand.h
+          };
+          seenThisLayer.set(key, entry);
+        }
 
-          const nextPath = path.concat(i);
-
-          if (key === target) {
-            moveLog.push(`solver expanded ${expanded} states`);
-            render();
-            return nextPath;
-          }
-
-          queue.push({ arr: next, path: nextPath });
+        if(cand.score < bestScore){
+          bestScore = cand.score;
+          bestNode = {
+            arr: cand.nextArr,
+            path: node.path.concat(cand.start),
+            score: cand.score
+          };
         }
       }
 
-      if (expanded % 2000 < chunkSize) {
-        moveLog.push(`searching... expanded ${expanded} states`);
-        render();
+      if(expanded % 500 === 0){
+        postMessage({
+          type:'progress',
+          status:'Searching',
+          expanded,
+          depth: depth + 1,
+          tried: recentTried.slice()
+        });
+        recentTried.length = 0;
+        await new Promise(r => setTimeout(r, 8));
+        if(stopFlag) return { stopped:true, expanded, depth: depth + 1 };
+      }
+    }
+
+    nextCandidates.push(...seenThisLayer.values());
+    nextCandidates.sort((a,b)=> a.score - b.score);
+
+    frontier = nextCandidates.slice(0, beamWidth);
+
+    postMessage({
+      type:'progress',
+      status:'Searching',
+      expanded,
+      depth: depth + 1,
+      tried: recentTried.splice(0)
+    });
+
+    await new Promise(r => setTimeout(r, 8));
+  }
+
+  const fallbackStarts = optimizePath(start, bestNode.path);
+  const fallbackLabels = replayLabels(start, fallbackStarts);
+  postMessage({
+    type:'solved',
+    starts: fallbackStarts,
+    labels: fallbackLabels,
+    expanded,
+    depth: fallbackStarts.length
+  });
+  return { fallback:true };
+}
+
+function replayLabels(startState, starts){
+  const arr = clone(startState);
+  const labels = [];
+  for(const s of starts){
+    labels.push(moveLabel(arr, s));
+    const next = reverseSegment(arr, s);
+    for(let i=0;i<TOTAL;i++) arr[i] = next[i];
+  }
+  return labels;
+}
+
+onmessage = async (e) => {
+  const data = e.data || {};
+  try{
+    if(data.type === 'solve'){
+      await beamSearch(data.state);
+    } else if(data.type === 'stop'){
+      stopFlag = true;
+      postMessage({ type:'stopped' });
+    }
+  } catch(err){
+    postMessage({ type:'error', message: err && err.message ? err.message : String(err) });
+  }
+};`;
+
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+      return new Worker(url);
+    }
+
+    function startSolver() {
+      if (solverRunning || animatingSolution) return;
+
+      const p = openSolverPopup();
+      if (!p) return;
+
+      if (worker) {
+        worker.terminate();
+        worker = null;
       }
 
-      await sleep(0);
-    }
-
-    moveLog.push(`solver exhausted search after ${expanded} states`);
-    render();
-    return null;
-  }
-
-  async function autoSolve() {
-    if (isBusy) return;
-
-    isBusy = true;
-    hoveredSegment = null;
-    moveLog.push('starting auto-solve...');
-    render();
-
-    const t0 = performance.now();
-
-    const solution = await bfsSolveChunked(clone(state), 7, 500);
-
-    const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
-
-    if (!solution) {
-      moveLog.push(`no solution found within depth limit after ${elapsed}s`);
-      isBusy = false;
+      solverRunning = true;
+      sendToPopup({ type: 'init' });
       render();
-      alert(`No solution found within depth 7.\nSearch time: ${elapsed}s`);
-      return;
+
+      worker = createWorker();
+
+      worker.onmessage = (e) => {
+        const data = e.data || {};
+
+        if (data.type === 'progress') {
+          sendToPopup(data);
+        } else if (data.type === 'solved') {
+          sendToPopup(data);
+          solverRunning = false;
+          solveQueue = Array.isArray(data.starts) ? data.starts.slice() : [];
+          moveLog.push(`solver found ${solveQueue.length} move(s)`);
+          render();
+        } else if (data.type === 'stopped') {
+          sendToPopup(data);
+          solverRunning = false;
+          moveLog.push('solver stopped');
+          render();
+        } else if (data.type === 'error') {
+          sendToPopup(data);
+          solverRunning = false;
+          logError('Solver error: ' + (data.message || 'unknown'));
+          render();
+        }
+      };
+
+      worker.onerror = (err) => {
+        solverRunning = false;
+        logError('Worker crashed: ' + (err.message || 'unknown worker error'));
+        render();
+      };
+
+      worker.postMessage({ type: 'solve', state: clone(state) });
     }
 
-    moveLog.push(`solution found: ${solution.length} move(s) in ${elapsed}s`);
-    render();
-
-    await sleep(250);
-
-    for (const start of solution) {
-      await animateMove(start, 380, true);
-      await sleep(120);
+    function stopSolver() {
+      if (!solverRunning || !worker) return;
+      worker.postMessage({ type: 'stop' });
     }
 
-    moveLog.push('auto-solve complete');
-    isBusy = false;
-    hoveredSegment = null;
+    window.addEventListener('message', async (event) => {
+      const data = event.data || {};
+      if (data.type === 'apply-solution') {
+        if (!Array.isArray(data.starts)) return;
+        if (solverRunning || animatingSolution) return;
+        try {
+          await animateSolutionPath(data.starts);
+        } catch (err) {
+          logError('Apply solution failed: ' + err.message);
+        }
+      }
+    });
+
+    shuffleBtn.addEventListener('click', () => shuffle(10));
+    resetBtn.addEventListener('click', resetPuzzle);
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    solveBtn.addEventListener('click', startSolver);
+    stopSolveBtn.addEventListener('click', stopSolver);
+    applyCustomBtn.addEventListener('click', applyCustomState);
+    normalizeBtn.addEventListener('click', normalizeRotation);
+
     render();
-  }
-
-  shuffleBtn.addEventListener('click', () => shuffle(8));
-  resetBtn.addEventListener('click', resetPuzzle);
-  undoBtn.addEventListener('click', undo);
-  redoBtn.addEventListener('click', redo);
-  autoBtn.addEventListener('click', autoSolve);
-  applyCustomBtn.addEventListener('click', applyCustomState);
-  normalizeBtn.addEventListener('click', normalizeRotation);
-
-  render();
-</script>
+  </script>
 </body>
 </html>
