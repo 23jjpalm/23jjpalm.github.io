@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Astroneer Factory Viewer</title>
+    <style>
+        body {
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #buttonContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #333;
+        }
+        #factoryImage {
+            max-width: 90%;
+            border: 2px solid #444;
+            background: #000;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Astroneer Factory Viewer</h1>
+<p>Click a resource to view its factory layout.</p>
+
+<div id="buttonContainer"></div>
+
+<div id="imageContainer">
+    <img id="factoryImage" src="" alt="Select a factory" hidden>
+</div>
+
+<script>
+    const resources = [
+        "Ammonium","Hematite","Quartz","Astronium","Laterite","Resin","Clay",
+        "Lithium","Sphalerite","Compound","Malachite","Titanite","Graphite",
+        "Organic","Wolframite","Aluminum","Copper","Zinc","Glass","Ceramic",
+        "Carbon","Iron","Titanium","Tungsten","Rubber","Plastic","Aluminum Alloy",
+        "Tungsten Carbide","Steel","Titanium Alloy","Graphene","Diamond",
+        "Hydrazine","Explosive Powder","Silicone","Nanocarbon Alloy"
+    ];
+
+    const buttonContainer = document.getElementById("buttonContainer");
+    const factoryImage = document.getElementById("factoryImage");
+
+    resources.forEach(res => {
+        const btn = document.createElement("button");
+        btn.textContent = res;
+        btn.addEventListener("click", () => loadFactory(res));
+        buttonContainer.appendChild(btn);
+    });
+
+    function loadFactory(resource) {
+        const filename = `${resource.toLowerCase().replace(/ /g, "")}factory.png`;
+        factoryImage.src = filename;
+        factoryImage.hidden = false;
+    }
+</script>
+
+</body>
+</html>

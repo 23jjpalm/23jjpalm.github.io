@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div id="output">Loading...</div>
+
+<script>
+const airports = ["KGHG", "KEWB", "KBOS", "KPYM", "KTAN"];
+
+async function getMetar(station) {
+  const url = `https://aviationweather.gov/api/data/metar?ids=${station}&format=raw&hoursBeforeNow=1&mostRecent=true`;
+  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+  try {
+    const r = await fetch(proxy);
+    const j = await r.json();
+    const lines = j.contents.split("\n");
+    return lines.find(l => l.includes(station)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function flightCategory(metar) {
+  if (!metar) return "N/A";
+
+  let vis = 10;
+  let ceiling = 99999;
+
+  let v = metar.match(/ (\d{1,2})SM /);
+  if (v) vis = parseFloat(v[1]);
+
+  let layers = [...metar.matchAll(/(BKN|OVC)(\d{3})/g)];
+  if (layers.length) {
+    ceiling = Math.min(...layers.map(l => parseInt(l[2]) * 100));
+  }
+
+  if (vis >= 5 && ceiling > 3000) return "VFR";
+  if (vis >= 3 || ceiling >= 1000) return "MVFR";
+  if (vis >= 1 || ceiling >= 500) return "IFR";
+  return "LIFR";
+}
+
+async function updateWeather() {
+  let out = "";
+  for (const a of airports) {
+    const metar = await getMetar(a);
+    out += `${a}: ${flightCategory(metar)}<br>`;
+  }
+  document.getElementById("output").innerHTML = out;
+}
+
+updateWeather();
+</script>
+
+</body>
+</html>

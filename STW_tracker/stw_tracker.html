@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STW Weapon + Resource Tracker</title>
+</head>
+<body>
+
+<h1>Fortnite STW Match Tracker</h1>
+
+<input type="text" id="weaponSearch" placeholder="Search for a weapon...">
+<button onclick="searchWeapon()">Search</button>
+
+<ul id="searchResults"></ul>
+
+<hr>
+
+<h2>Selected Weapon</h2>
+<div id="weaponInfo"></div>
+<button onclick="addSelectedWeapon()">Add to Loadout</button>
+
+<hr>
+
+<h2>Your Loadout</h2>
+<div id="loadoutList"></div>
+<script src="stw_crafting_data.js"></script>
+<script src="stw_weapon_catalog.js"></script>
+<script src="main.js"></script>
+<script src="weapons.js"></script>
+<script>
+
+let selectedWeapon = null;
+let loadout = [];
+
+function searchWeapon() {
+    const term = document.getElementById("weaponSearch").value.toLowerCase();
+    const list = document.getElementById("searchResults");
+    list.innerHTML = "";
+
+    weaponData.forEach(w => {
+        if (w.baseName.toLowerCase().includes(term)) {
+            w.variants.forEach(v => {
+                const name = `${w.baseName}${v.suffix}`;
+                const li = document.createElement("li");
+                li.textContent = name;
+                li.onclick = () => selectWeapon(w, v);
+                list.appendChild(li);
+            });
+        }
+    });
+}
+
+function selectWeapon(base, variant) {
+    selectedWeapon = { base, variant };
+
+    document.getElementById("weaponInfo").innerHTML = `
+      <p><b>${base.baseName}${variant.suffix}</b></p>
+      <p>Ammo: ${base.ammoType}</p>
+      <p>Crafting:</p>
+      <ul>
+        ${Object.entries(variant.craft).map(
+            ([mat, amt]) => `<li>${mat}: ${amt}</li>`
+        ).join("")}
+      </ul>
+      <label>Max Durability:
+          <input type="number" id="weaponDur" value="0">
+      </label>
+    `;
+}
+
+function addSelectedWeapon() {
+    if (!selectedWeapon) return;
+
+    const dur = document.getElementById("weaponDur").value;
+    loadout.push({
+        name: `${selectedWeapon.base.baseName}${selectedWeapon.variant.suffix}`,
+        ammo: selectedWeapon.base.ammoType,
+        craft: selectedWeapon.variant.craft,
+        durabilityMax: parseInt(dur)
+    });
+    updateLoadout();
+}
+
+function updateLoadout() {
+    const div = document.getElementById("loadoutList");
+    div.innerHTML = "";
+
+    loadout.forEach((w, i) => {
+        div.innerHTML += `
+          <p>${i+1}. ${w.name} - Ammo: ${w.ammo} - Dur: ${w.durabilityMax}</p>
+        `;
+    });
+}
+function searchWeapon() {
+    const input = document.getElementById("weaponSearch").value.toLowerCase();
+    const results = document.getElementById("searchResults");
+    results.innerHTML = "";
+
+    Object.keys(WeaponCatalog).forEach(name => {
+        if (name.toLowerCase().includes(input)) {
+
+            ["Brightcore", "Sunbeam"].forEach(variant => {
+                const li = document.createElement("li");
+                li.textContent = `${name} (${variant === "Brightcore" ? "BC" : "SB"})`;
+
+                li.onclick = () => selectWeapon(name, variant);
+
+                results.appendChild(li);
+            });
+        }
+    });
+}
+function selectWeapon(name, variant) {
+
+    const weaponInfo = WeaponCatalog[name];
+    const archetype = CraftingData[weaponInfo.archetype];
+
+    let ammo = null;
+
+    if (weaponInfo.category) {
+        ammo = archetype.ammoTypeByCategory
+            ? archetype.ammoTypeByCategory[weaponInfo.category]
+            : archetype.ammoType;
+    }
+
+    const recipe = archetype.variants[variant];
+
+    document.getElementById("weaponInfo").innerHTML = `
+        <h3>${name} (${variant === "Brightcore" ? "BC" : "SB"})</h3>
+        <p>Ammo Type: ${ammo || "None"}</p>
+        <p>Crafting:</p>
+        <ul>
+            ${Object.entries(recipe).map(([key, value]) =>
+                `<li>${key}: ${value}</li>`
+            ).join("")}
+        </ul>
+        <label>Max Durability:
+            <input type="number" id="durabilityInput">
+        </label>
+    `;
+}
+
+</script>
+
+</body>
+</html>
