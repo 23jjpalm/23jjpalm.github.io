@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oval Track Puzzle</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141b34;
+      --panel-2: #1a2344;
+      --text: #ecf2ff;
+      --muted: #9fb0df;
+      --accent: #7cc7ff;
+      --accent-2: #8ef0c1;
+      --warn: #ffcf6e;
+      --danger: #ff7f96;
+      --track: #2e3b6d;
+      --slot: #202b52;
+      --piece: #f4f8ff;
+      --piece-text: #0c1738;
+      --solved: #6ee7a8;
+      --shadow: 0 12px 28px rgba(0,0,0,.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top, #16214a 0%, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1.35fr 0.95fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .main {
+      padding: 18px;
+    }
+
+    .side {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+      line-height: 1.1;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    button, textarea {
+      font: inherit;
+    }
+
+    button {
+      background: linear-gradient(180deg, #2a3870, #1f2a52);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: transform .15s ease, opacity .15s ease, border-color .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.secondary { background: linear-gradient(180deg, #26305d, #192140); }
+    button.good { background: linear-gradient(180deg, #25614b, #1b4837); }
+    button.warn { background: linear-gradient(180deg, #705c21, #564618); }
+    button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(255,207,110,.12);
+    }
+
+    .dot.solved {
+      background: var(--solved);
+      box-shadow: 0 0 0 4px rgba(110,231,168,.12);
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.03), rgba(255,255,255,0));
+      border-radius: 20px;
+    }
+
+    .panel-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: .85rem;
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .sequence {
+      background: var(--panel-2);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .moves-log {
+      max-height: 220px;
+      overflow: auto;
+      background: var(--panel-2);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .input-block {
+      display: grid;
+      gap: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      background: #111831;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.4;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124,199,255,.08);
+      color: var(--accent);
+      border: 1px solid rgba(124,199,255,.18);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .84rem;
+      font-weight: 700;
+    }
+
+    @media (max-width: 960px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card main">
+      <h1>Oval Track Puzzle Simulator</h1>
+      <div class="sub">
+        Twenty numbered pieces sit on an oval track. They cannot leave the track or pass each other.
+        The only legal move is rotating a 4-piece segment 180°, which reverses the order of those four consecutive pieces.
+      </div>
+
+      <div class="toolbar">
+        <button id="shuffleBtn">Shuffle</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+        <button id="undoBtn" class="secondary">Undo</button>
+        <button id="redoBtn" class="secondary">Redo</button>
+        <button id="autoBtn" class="warn">Try Auto-Solve</button>
+      </div>
+
+      <div class="status">
+        <span id="statusDot" class="dot"></span>
+        <span id="statusText">Not solved</span>
+        <span class="pill">Click any highlighted 4-slot segment</span>
+      </div>
+
+      <svg id="board" viewBox="0 0 900 580" aria-label="Oval track puzzle board"></svg>
+    </section>
+
+    <aside class="card side">
+      <div>
+        <div class="panel-title">Current State</div>
+        <div id="sequence" class="sequence"></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="label">Pieces</div>
+          <div class="value">20</div>
+        </div>
+        <div class="stat">
+          <div class="label">Moves</div>
+          <div id="moveCount" class="value">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Correct Spots</div>
+          <div id="correctCount" class="value">20</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-title">Move Log</div>
+        <div id="log" class="moves-log">No moves yet.</div>
+      </div>
+
+      <div class="input-block">
+        <div class="panel-title">Load Custom State</div>
+        <textarea id="customInput" placeholder="Example: 4, 3, 2, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20"></textarea>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="applyCustomBtn" class="good">Apply State</button>
+          <button id="normalizeBtn" class="secondary">Normalize Rotation</button>
+        </div>
+        <div class="hint">
+          Enter all 20 numbers exactly once. Normalize Rotation rotates the whole display so piece 1 appears first.
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Auto-Solve uses a bounded breadth-first search, so it works best when the puzzle is already fairly close to solved.
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const TOTAL = 20;
+    const SEGMENT = 4;
+
+    const svg = document.getElementById('board');
+    const sequenceEl = document.getElementById('sequence');
+    const moveCountEl = document.getElementById('moveCount');
+    const correctCountEl = document.getElementById('correctCount');
+    const logEl = document.getElementById('log');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+    const customInput = document.getElementById('customInput');
+
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const autoBtn = document.getElementById('autoBtn');
+    const applyCustomBtn = document.getElementById('applyCustomBtn');
+    const normalizeBtn = document.getElementById('normalizeBtn');
+
+    let state = solvedState();
+    let history = [];
+    let redoStack = [];
+    let moveLog = [];
+    let moveCount = 0;
+    let isBusy = false;
+
+    function solvedState() {
+      return Array.from({ length: TOTAL }, (_, i) => i + 1);
+    }
+
+    function clone(arr) {
+      return arr.slice();
+    }
+
+    function isSolved(arr = state) {
+      return arr.every((v, i) => v === i + 1);
+    }
+
+    function countCorrect(arr = state) {
+      return arr.reduce((acc, v, i) => acc + (v === i + 1 ? 1 : 0), 0);
+    }
+
+    function reverseSegment(arr, start) {
+      const next = clone(arr);
+      const indices = [];
+      for (let i = 0; i < SEGMENT; i++) {
+        indices.push((start + i) % TOTAL);
+      }
+      const vals = indices.map(i => next[i]).reverse();
+      indices.forEach((idx, k) => {
+        next[idx] = vals[k];
+      });
+      return next;
+    }
+
+    function rotateWhole(arr, offset) {
+      const n = arr.length;
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        out.push(arr[(i + offset) % n]);
+      }
+      return out;
+    }
+
+    function normalizeRotation() {
+      const idx = state.indexOf(1);
+      if (idx > 0) {
+        state = rotateWhole(state, idx);
+        history.push({ type: 'normalize' });
+        redoStack = [];
+        moveLog.push(`normalize rotation (piece 1 moved to slot 1)`);
+        render();
+      }
+    }
+
+    function applyMove(start, record = true) {
+      const before = clone(state);
+      state = reverseSegment(state, start);
+
+      if (record) {
+        history.push({
+          type: 'move',
+          start,
+          before
+        });
+        redoStack = [];
+        moveCount++;
+        moveLog.push(`move ${moveCount}: reverse slots ${slotLabel(start)}-${slotLabel((start + 3) % TOTAL)} (start ${start + 1})`);
+      }
+
+      render();
+    }
+
+    function undo() {
+      if (!history.length || isBusy) return;
+      const entry = history.pop();
+
+      if (entry.type === 'move') {
+        redoStack.push({
+          type: 'move',
+          start: entry.start,
+          before: clone(state)
+        });
+        state = entry.before;
+        moveCount = Math.max(0, moveCount - 1);
+        moveLog.push(`undo`);
+      } else {
+        redoStack.push({ type: 'normalize', before: clone(state) });
+        moveLog.push(`undo normalize`);
+      }
+
+      render();
+    }
+
+    function redo() {
+      if (!redoStack.length || isBusy) return;
+      const entry = redoStack.pop();
+
+      if (entry.type === 'move') {
+        history.push({
+          type: 'move',
+          start: entry.start,
+          before: clone(state)
+        });
+        state = reverseSegment(state, entry.start);
+        moveCount++;
+        moveLog.push(`redo move at start ${entry.start + 1}`);
+      } else {
+        history.push({ type: 'normalize' });
+        normalizeRotation();
+        return;
+      }
+
+      render();
+    }
+
+    function shuffle(times = 24) {
+      if (isBusy) return;
+      state = solvedState();
+      history = [];
+      redoStack = [];
+      moveLog = [];
+      moveCount = 0;
+
+      for (let i = 0; i < times; i++) {
+        const start = Math.floor(Math.random() * TOTAL);
+        state = reverseSegment(state, start);
+      }
+
+      moveLog.push(`shuffled with ${times} random moves`);
+      render();
+    }
+
+    function resetPuzzle() {
+      if (isBusy) return;
+      state = solvedState();
+      history = [];
+      redoStack = [];
+      moveLog = [];
+      moveCount = 0;
+      render();
+    }
+
+    function slotLabel(i) {
+      return i + 1;
+    }
+
+    function parseCustomInput(text) {
+      const parts = text
+        .split(/[\s,]+/)
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(Number);
+
+      if (parts.length !== TOTAL) {
+        throw new Error(`Need exactly ${TOTAL} numbers.`);
+      }
+
+      const set = new Set(parts);
+      if (set.size !== TOTAL) {
+        throw new Error(`Numbers must not repeat.`);
+      }
+
+      for (let i = 1; i <= TOTAL; i++) {
+        if (!set.has(i)) {
+          throw new Error(`Missing number ${i}.`);
+        }
+      }
+
+      return parts;
+    }
+
+    function applyCustomState() {
+      if (isBusy) return;
+      try {
+        const parsed = parseCustomInput(customInput.value);
+        state = parsed;
+        history = [];
+        redoStack = [];
+        moveLog = ['custom state loaded'];
+        moveCount = 0;
+        render();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function stateToString(arr = state) {
+      return arr.join(', ');
+    }
+
+    function updatePanels() {
+      sequenceEl.textContent = `[ ${stateToString()} ]`;
+      moveCountEl.textContent = String(moveCount);
+      correctCountEl.textContent = String(countCorrect());
+
+      if (!moveLog.length) {
+        logEl.textContent = 'No moves yet.';
+      } else {
+        logEl.textContent = moveLog.slice(-40).join('\n');
+      }
+
+      if (isSolved()) {
+        statusText.textContent = 'Solved';
+        statusDot.classList.add('solved');
+      } else {
+        statusText.textContent = 'Not solved';
+        statusDot.classList.remove('solved');
+      }
+
+      undoBtn.disabled = !history.length || isBusy;
+      redoBtn.disabled = !redoStack.length || isBusy;
+      autoBtn.disabled = isBusy;
+      shuffleBtn.disabled = isBusy;
+      resetBtn.disabled = isBusy;
+      applyCustomBtn.disabled = isBusy;
+      normalizeBtn.disabled = isBusy;
+    }
+
+    function createSvg(tag, attrs = {}) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, v);
+      }
+      return el;
+    }
+
+    function pointOnOval(t, cx, cy, rx, ry) {
+      return {
+        x: cx + rx * Math.cos(t),
+        y: cy + ry * Math.sin(t)
+      };
+    }
+
+    function renderBoard() {
+      svg.innerHTML = '';
+
+      const cx = 450;
+      const cy = 290;
+      const rx = 310;
+      const ry = 180;
+      const pieceR = 28;
+
+      const defs = createSvg('defs');
+      const glow = createSvg('filter', { id: 'softGlow' });
+      glow.innerHTML = `
+        <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+        <feMerge>
+          <feMergeNode in="blur"></feMergeNode>
+          <feMergeNode in="SourceGraphic"></feMergeNode>
+        </feMerge>
+      `;
+      defs.appendChild(glow);
+      svg.appendChild(defs);
+
+      const trackOuter = createSvg('ellipse', {
+        cx, cy,
+        rx: rx + 40,
+        ry: ry + 40,
+        fill: 'none',
+        stroke: 'rgba(255,255,255,0.10)',
+        'stroke-width': '52'
+      });
+
+      const trackInner = createSvg('ellipse', {
+        cx, cy,
+        rx: rx + 6,
+        ry: ry + 6,
+        fill: 'none',
+        stroke: '#2e3b6d',
+        'stroke-width': '74'
+      });
+
+      const lane = createSvg('ellipse', {
+        cx, cy,
+        rx,
+        ry,
+        fill: 'none',
+        stroke: '#202b52',
+        'stroke-width': '62'
+      });
+
+      svg.appendChild(trackOuter);
+      svg.appendChild(trackInner);
+      svg.appendChild(lane);
+
+      const points = [];
+      for (let i = 0; i < TOTAL; i++) {
+        const theta = (-Math.PI / 2) + (i * 2 * Math.PI / TOTAL);
+        points.push(pointOnOval(theta, cx, cy, rx, ry));
+      }
+
+      for (let start = 0; start < TOTAL; start++) {
+        const group = createSvg('g', { cursor: isBusy ? 'default' : 'pointer' });
+
+        const centers = [];
+        for (let k = 0; k < SEGMENT; k++) {
+          centers.push(points[(start + k) % TOTAL]);
+        }
+
+        const avgX = centers.reduce((a, p) => a + p.x, 0) / SEGMENT;
+        const avgY = centers.reduce((a, p) => a + p.y, 0) / SEGMENT;
+
+        const minX = Math.min(...centers.map(p => p.x));
+        const maxX = Math.max(...centers.map(p => p.x));
+        const minY = Math.min(...centers.map(p => p.y));
+        const maxY = Math.max(...centers.map(p => p.y));
+
+        const box = createSvg('rect', {
+          x: minX - 38,
+          y: minY - 38,
+          width: (maxX - minX) + 76,
+          height: (maxY - minY) + 76,
+          rx: 22,
+          fill: 'rgba(124,199,255,0.06)',
+          stroke: 'rgba(124,199,255,0.18)',
+          'stroke-width': '2',
+          opacity: '0'
+        });
+
+        group.appendChild(box);
+
+        group.addEventListener('mouseenter', () => {
+          if (!isBusy) box.setAttribute('opacity', '1');
+        });
+
+        group.addEventListener('mouseleave', () => {
+          box.setAttribute('opacity', '0');
+        });
+
+        group.addEventListener('click', () => {
+          if (!isBusy) applyMove(start, true);
+        });
+
+        const label = createSvg('text', {
+          x: avgX,
+          y: avgY + 5,
+          'text-anchor': 'middle',
+          'font-size': '12',
+          fill: 'rgba(124,199,255,0.8)',
+          'pointer-events': 'none'
+        });
+        label.textContent = `${start + 1}`;
+        group.appendChild(label);
+
+        svg.appendChild(group);
+      }
+
+      for (let i = 0; i < TOTAL; i++) {
+        const p = points[i];
+
+        const slot = createSvg('circle', {
+          cx: p.x,
+          cy: p.y,
+          r: pieceR + 7,
+          fill: '#1a2344',
+          stroke: 'rgba(255,255,255,0.08)',
+          'stroke-width': '2'
+        });
+        svg.appendChild(slot);
+
+        const piece = createSvg('circle', {
+          cx: p.x,
+          cy: p.y,
+          r: pieceR,
+          fill: '#f4f8ff',
+          stroke: state[i] === i + 1 ? 'rgba(110,231,168,0.9)' : 'rgba(12,23,56,0.18)',
+          'stroke-width': state[i] === i + 1 ? '4' : '2',
+          filter: state[i] === i + 1 ? 'url(#softGlow)' : ''
+        });
+
+        const text = createSvg('text', {
+          x: p.x,
+          y: p.y + 6,
+          'text-anchor': 'middle',
+          'font-size': '18',
+          'font-weight': '800',
+          fill: '#0c1738',
+          'pointer-events': 'none'
+        });
+        text.textContent = String(state[i]);
+
+        const slotNum = createSvg('text', {
+          x: p.x,
+          y: p.y + 50,
+          'text-anchor': 'middle',
+          'font-size': '12',
+          fill: 'rgba(255,255,255,0.55)',
+          'pointer-events': 'none'
+        });
+        slotNum.textContent = `slot ${i + 1}`;
+
+        svg.appendChild(piece);
+        svg.appendChild(text);
+        svg.appendChild(slotNum);
+      }
+    }
+
+    function render() {
+      renderBoard();
+      updatePanels();
+    }
+
+    function bfsSolve(startArr, maxDepth = 8) {
+      const target = solvedState().join(',');
+      const startKey = startArr.join(',');
+      if (startKey === target) return [];
+
+      const queue = [{ arr: startArr, path: [] }];
+      const visited = new Set([startKey]);
+
+      while (queue.length) {
+        const { arr, path } = queue.shift();
+
+        if (path.length >= maxDepth) continue;
+
+        for (let i = 0; i < TOTAL; i++) {
+          const next = reverseSegment(arr, i);
+          const key = next.join(',');
+
+          if (visited.has(key)) continue;
+          visited.add(key);
+
+          const nextPath = path.concat(i);
+          if (key === target) return nextPath;
+
+          queue.push({ arr: next, path: nextPath });
+        }
+      }
+
+      return null;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function autoSolve() {
+      if (isBusy) return;
+
+      isBusy = true;
+      render();
+
+      moveLog.push('searching for solution...');
+      render();
+
+      const solution = bfsSolve(clone(state), 8);
+
+      if (!solution) {
+        moveLog.push('no solution found within depth limit 8');
+        isBusy = false;
+        render();
+        alert('No solution found within the search depth limit.');
+        return;
+      }
+
+      moveLog.push(`solution found in ${solution.length} move(s)`);
+      render();
+
+      for (const start of solution) {
+        await sleep(260);
+        applyMove(start, true);
+      }
+
+      isBusy = false;
+      render();
+    }
+
+    shuffleBtn.addEventListener('click', () => shuffle());
+    resetBtn.addEventListener('click', resetPuzzle);
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    autoBtn.addEventListener('click', autoSolve);
+    applyCustomBtn.addEventListener('click', applyCustomState);
+    normalizeBtn.addEventListener('click', normalizeRotation);
+
+    render();
+  </script>
+</body>
+</html>
