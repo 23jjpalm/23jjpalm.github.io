@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mancala</title>
+<style>
+  body { font-family: Arial; background:#f4f4f4; text-align:center; }
+  .board { display:inline-grid; grid-template-columns: 80px repeat(6,80px) 80px; gap:10px; margin-top:20px; }
+  .pit, .store {
+    background:#fff; border:2px solid #333; border-radius:50%;
+    height:70px; width:70px; display:flex;
+    align-items:center; justify-content:center; font-size:18px;
+  }
+  .pit { cursor:pointer; }
+  .store { border-radius:15px; height:160px; cursor:default; }
+  .disabled { background:#ddd; cursor:not-allowed; }
+  #chat {
+    margin:20px auto;
+    width:360px;
+    height:140px;
+    background:#fff;
+    border:2px solid #333;
+    overflow-y:auto;
+    padding:8px;
+    text-align:left;
+    font-size:14px;
+  }
+  button { margin:5px; padding:6px 12px; }
+</style>
+</head>
+<body>
+
+<h2>Mancala (6–4 Kalah)</h2>
+
+<button onclick="startGame(0)">You go first</button>
+<button onclick="startGame(1)">AI goes first</button>
+
+<div class="board" id="board"></div>
+
+<div id="chat"></div>
+
+<script>
+let state;
+const MAX_DEPTH = 9;
+const memo = new Map();
+
+function log(msg){
+  const c=document.getElementById("chat");
+  c.innerHTML += msg + "<br>";
+  c.scrollTop = c.scrollHeight;
+}
+
+function startGame(first){
+  state = {
+    A:[4,4,4,4,4,4],
+    B:[4,4,4,4,4,4],
+    As:0, Bs:0, turn:first
+  };
+  memo.clear();
+  document.getElementById("chat").innerHTML="";
+  draw();
+  if(state.turn===1) setTimeout(aiLoop,300);
+}
+
+function clone(s){ return JSON.parse(JSON.stringify(s)); }
+
+function terminal(s){
+  return s.A.every(x=>x===0)||s.B.every(x=>x===0);
+}
+
+function finalize(s){
+  if(s.A.every(x=>x===0)){ s.Bs+=s.B.reduce((a,b)=>a+b,0); s.B=[0,0,0,0,0,0]; }
+  if(s.B.every(x=>x===0)){ s.As+=s.A.reduce((a,b)=>a+b,0); s.A=[0,0,0,0,0,0]; }
+}
+
+function score(s){ return s.As-s.Bs; }
+
+function applyMove(s,pit,label){
+  let stones,side,idx,extra=false;
+  if(s.turn===0){ stones=s.A[pit]; s.A[pit]=0; side=0; idx=pit; }
+  else{ stones=s.B[pit]; s.B[pit]=0; side=1; idx=pit; }
+
+  while(stones){
+    idx++;
+    if(side===0){
+      if(idx===6){ s.As++; stones--; if(!stones&&s.turn===0) extra=true; side=1; idx=-1; }
+      else{ s.A[idx]++; stones--; }
+    }else{
+      if(idx===6){ s.Bs++; stones--; if(!stones&&s.turn===1) extra=true; side=0; idx=-1; }
+      else{ s.B[idx]++; stones--; }
+    }
+  }
+
+  if(!extra && side===s.turn){
+    if(s.turn===0 && s.A[idx]===1 && s.B[5-idx]>0){
+      s.As+=s.B[5-idx]+1; s.A[idx]=0; s.B[5-idx]=0;
+    }
+    if(s.turn===1 && s.B[idx]===1 && s.A[5-idx]>0){
+      s.Bs+=s.A[5-idx]+1; s.B[idx]=0; s.A[5-idx]=0;
+    }
+  }
+
+  log(label+" moved pit "+(pit+1)+(extra?" (extra turn)":""));
+  if(!extra) s.turn^=1;
+  finalize(s);
+}
+
+function minimax(s,d,a,b){
+  const k=JSON.stringify(s)+d;
+  if(memo.has(k)) return memo.get(k);
+  if(d===0||terminal(s)) return score(s);
+
+  if(s.turn===0){
+    let v=-1e9;
+    for(let i=0;i<6;i++){
+      if(!s.A[i]) continue;
+      let n=clone(s); applyMove(n,i,"");
+      v=Math.max(v,minimax(n,d-1,a,b)); a=Math.max(a,v);
+      if(b<=a) break;
+    }
+    memo.set(k,v); return v;
+  }else{
+    let v=1e9;
+    for(let i=0;i<6;i++){
+      if(!s.B[i]) continue;
+      let n=clone(s); applyMove(n,i,"");
+      v=Math.min(v,minimax(n,d-1,a,b)); b=Math.min(b,v);
+      if(b<=a) break;
+    }
+    memo.set(k,v); return v;
+  }
+}
+
+function bestMove(s){
+  let best=1e9,m=null;
+  for(let i=0;i<6;i++){
+    if(!s.B[i]) continue;
+    let n=clone(s); applyMove(n,i,"");
+    let v=minimax(n,MAX_DEPTH,-1e9,1e9);
+    if(v<best){ best=v; m=i; }
+  }
+  return m;
+}
+
+function aiLoop(){
+  if(state.turn===1 && !terminal(state)){
+    const m=bestMove(state);
+    applyMove(state,m,"AI");
+    draw();
+    setTimeout(aiLoop,300);
+  }
+}
+
+function draw(){
+  const b=document.getElementById("board");
+  b.innerHTML="";
+  b.appendChild(store(state.Bs));
+  for(let i=5;i>=0;i--) b.appendChild(pit(state.B[i],true));
+  b.appendChild(store(state.As));
+  b.appendChild(document.createElement("div"));
+  for(let i=0;i<6;i++) b.appendChild(pit(state.A[i],false,i));
+  b.appendChild(document.createElement("div"));
+}
+
+function pit(val,dis,i){
+  const d=document.createElement("div");
+  d.className="pit"+(dis||state.turn?" disabled":"");
+  d.innerText=val;
+  if(!dis&&state.turn===0){
+    d.onclick=()=>{ applyMove(state,i,"You"); draw(); setTimeout(aiLoop,300); };
+  }
+  return d;
+}
+
+function store(v){
+  const d=document.createElement("div");
+  d.className="store"; d.innerText=v; return d;
+}
+</script>
+
+</body>
+</html>
