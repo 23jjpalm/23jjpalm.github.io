@@ -1,4 +1,3 @@
-
 <!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -15,6 +14,10 @@
       --blocked: #05070b;
       --target: #f59e0b;
       --outline: #4b5563;
+      --good: #22c55e;
+      --warn: #eab308;
+      --hard: #f97316;
+      --brutal: #ef4444;
     }* { box-sizing: border-box; }
 body {
   margin: 0;
@@ -25,10 +28,10 @@ body {
 }
 
 .wrap {
-  max-width: 1250px;
+  max-width: 1280px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 380px 1fr;
   gap: 20px;
 }
 
@@ -40,9 +43,7 @@ body {
   box-shadow: 0 12px 30px rgba(0,0,0,0.28);
 }
 
-h1, h2, h3 {
-  margin-top: 0;
-}
+h1, h2, h3 { margin-top: 0; }
 
 .controls {
   display: grid;
@@ -56,7 +57,7 @@ label {
   margin-bottom: 6px;
 }
 
-select, button {
+select, button, input {
   width: 100%;
   padding: 10px 12px;
   border-radius: 12px;
@@ -71,9 +72,7 @@ button {
   font-weight: 700;
 }
 
-button:hover {
-  filter: brightness(1.08);
-}
+button:hover { filter: brightness(1.08); }
 
 .small {
   color: var(--muted);
@@ -196,9 +195,7 @@ button:hover {
   background: transparent;
 }
 
-.mini-cell.on {
-  background: #93c5fd;
-}
+.mini-cell.on { background: #93c5fd; }
 
 .solution-list {
   font-family: Consolas, Monaco, monospace;
@@ -209,16 +206,68 @@ button:hover {
   border: 1px solid rgba(255,255,255,0.08);
   padding: 12px;
   border-radius: 12px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.stat-box {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.difficulty-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.diff-easy { background: rgba(34,197,94,0.18); color: #86efac; }
+.diff-medium { background: rgba(234,179,8,0.18); color: #fde047; }
+.diff-hard { background: rgba(249,115,22,0.18); color: #fdba74; }
+.diff-brutal { background: rgba(239,68,68,0.18); color: #fca5a5; }
+.diff-none { background: rgba(156,163,175,0.18); color: #d1d5db; }
+
+.inline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 @media (max-width: 1100px) {
-  .wrap {
-    grid-template-columns: 1fr;
-  }
+  .wrap { grid-template-columns: 1fr; }
   .board {
     grid-template-columns: repeat(7, minmax(46px, 1fr));
     grid-auto-rows: 56px;
   }
+  .stats { grid-template-columns: 1fr; }
+  .inline-row { grid-template-columns: 1fr; }
 }
 
   </style>
@@ -240,12 +289,28 @@ button:hover {
           <label for="weekdaySelect">Weekday</label>
           <select id="weekdaySelect"></select>
         </div>
-        <button id="solveBtn">Solve Puzzle</button>
-        <button id="todayBtn">Use Today</button>
+        <div>
+          <label for="maxSolutionsInput">Maximum solutions to search</label>
+          <input id="maxSolutionsInput" type="number" min="1" step="1" value="5000" />
+        </div>
+        <div class="inline-row">
+          <button id="solveBtn">Solve + Count</button>
+          <button id="todayBtn">Use Today</button>
+        </div>
         <button id="resetBtn">Clear Solution</button>
         <div class="status" id="status">Ready.</div>
+        <div class="stats">
+          <div class="stat-box">
+            <div class="stat-label">Total Solutions Found</div>
+            <div class="stat-value" id="solutionCount">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Difficulty</div>
+            <div id="difficultyPill" class="difficulty-pill diff-none">Not rated</div>
+          </div>
+        </div>
         <div class="small">
-          The solver leaves exactly three cells uncovered: the selected month, date, and weekday. All other usable cells must be covered by the 10 pieces using any rotation or reflection.
+          Difficulty is based on the number of valid tilings found. Fewer solutions means a harder day. The maximum search limit prevents runaway solve times on easier dates.
         </div>
       </div>
     </div><div class="board-wrap">
@@ -265,7 +330,7 @@ button:hover {
   </div>
 
   <div class="card">
-    <h2>Placement Output</h2>
+    <h2>Sample Placement</h2>
     <div class="solution-list" id="solutionText">No solution calculated yet.</div>
   </div>
 </div>
@@ -274,7 +339,6 @@ button:hover {
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-    // 8 rows x 7 columns
     const BOARD = [
       ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', null],
       ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', null],
@@ -286,7 +350,6 @@ button:hover {
       [null,  null,  null,  null,  'Thu', 'Fri', 'Sat']
     ];
 
-    // Pieces from the conversation, using 1 = occupied and 0 = empty.
     const PIECES = [
       { name: 'P1', shape: [[1,1,1,1]] },
       { name: 'P2', shape: [[1,1,1],[1,1,0]] },
@@ -312,12 +375,11 @@ button:hover {
     const monthSelect = document.getElementById('monthSelect');
     const daySelect = document.getElementById('daySelect');
     const weekdaySelect = document.getElementById('weekdaySelect');
+    const solutionCountEl = document.getElementById('solutionCount');
+    const difficultyPillEl = document.getElementById('difficultyPill');
+    const maxSolutionsInput = document.getElementById('maxSolutionsInput');
 
-    let lastSolution = null;
-
-    function deepClone(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    }
+    let lastSolutions = [];
 
     function populateControls() {
       MONTHS.forEach(m => {
@@ -382,7 +444,7 @@ button:hover {
       const colorMap = new Map();
       const pieceIdMap = new Map();
 
-      placements.forEach((placement, idx) => {
+      placements.forEach((placement) => {
         for (const [r, c] of placement.cells) {
           colorMap.set(`${r},${c}`, PIECE_COLORS[placement.pieceIndex]);
           pieceIdMap.set(`${r},${c}`, placement.name);
@@ -415,7 +477,6 @@ button:hover {
           coord.className = 'coord';
           coord.textContent = `${r+1},${c+1}`;
           cell.appendChild(coord);
-
           boardEl.appendChild(cell);
         }
       }
@@ -439,51 +500,37 @@ button:hover {
 
     function normalizeCells(cells) {
       const minR = Math.min(...cells.map(([r]) => r));
-      const minC = Math.min(...cells.map(([,c]) => c));
-      const shifted = cells.map(([r,c]) => [r - minR, c - minC]);
-      shifted.sort((a,b) => a[0] - b[0] || a[1] - b[1]);
+      const minC = Math.min(...cells.map(([, c]) => c));
+      const shifted = cells.map(([r, c]) => [r - minR, c - minC]);
+      shifted.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
       return shifted;
     }
 
     function rotateCells(cells) {
-      // (r, c) -> (c, -r)
-      return normalizeCells(cells.map(([r,c]) => [c, -r]));
+      return normalizeCells(cells.map(([r, c]) => [c, -r]));
     }
 
     function reflectCells(cells) {
-      // horizontal mirror: (r, c) -> (r, -c)
-      return normalizeCells(cells.map(([r,c]) => [r, -c]));
+      return normalizeCells(cells.map(([r, c]) => [r, -c]));
     }
 
     function cellsKey(cells) {
-      return cells.map(([r,c]) => `${r},${c}`).join('|');
+      return cells.map(([r, c]) => `${r},${c}`).join('|');
     }
 
     function generateOrientations(shape) {
       const base = normalizeCells(shapeToCells(shape));
       const variants = new Map();
-
       let current = base;
-      for (let i = 0; i < 4; i++) {
-        const key = cellsKey(current);
-        variants.set(key, current);
 
+      for (let i = 0; i < 4; i++) {
+        variants.set(cellsKey(current), current);
         const reflected = reflectCells(current);
         variants.set(cellsKey(reflected), reflected);
-
         current = rotateCells(current);
       }
 
       return Array.from(variants.values());
-    }
-
-    function getCellByLabel(label) {
-      for (let r = 0; r < BOARD.length; r++) {
-        for (let c = 0; c < BOARD[r].length; c++) {
-          if (BOARD[r][c] === label) return [r, c];
-        }
-      }
-      return null;
     }
 
     function getAvailableCells(targets) {
@@ -504,7 +551,7 @@ button:hover {
       for (let o = 0; o < orientations.length; o++) {
         const cells = orientations[o];
         const maxR = Math.max(...cells.map(([r]) => r));
-        const maxC = Math.max(...cells.map(([,c]) => c));
+        const maxC = Math.max(...cells.map(([, c]) => c));
 
         for (let br = 0; br < BOARD.length - maxR; br++) {
           for (let bc = 0; bc < BOARD[0].length - maxC; bc++) {
@@ -538,7 +585,32 @@ button:hover {
       return placements;
     }
 
-    function solveExactCover(targetSet) {
+    function getDifficulty(solutionCount, hitLimit) {
+      if (solutionCount === 0) {
+        return { label: 'No solution', className: 'diff-none' };
+      }
+      if (hitLimit) {
+        return { label: `Very easy (${solutionCount}+)`, className: 'diff-easy' };
+      }
+      if (solutionCount === 1) {
+        return { label: 'Brutal', className: 'diff-brutal' };
+      }
+      if (solutionCount <= 5) {
+        return { label: 'Hard', className: 'diff-hard' };
+      }
+      if (solutionCount <= 20) {
+        return { label: 'Medium', className: 'diff-medium' };
+      }
+      return { label: 'Easy', className: 'diff-easy' };
+    }
+
+    function setDifficulty(solutionCount, hitLimit) {
+      const diff = getDifficulty(solutionCount, hitLimit);
+      difficultyPillEl.className = `difficulty-pill ${diff.className}`;
+      difficultyPillEl.textContent = diff.label;
+    }
+
+    function solveAndCount(targetSet, maxSolutions) {
       const usableCells = getAvailableCells(targetSet);
       const usableCount = usableCells.length;
       const totalPieceCells = PIECES.reduce((sum, p) => sum + countFilled(p.shape), 0);
@@ -546,17 +618,23 @@ button:hover {
       if (usableCount !== totalPieceCells) {
         return {
           ok: false,
-          reason: `Cell count mismatch. Usable cells: ${usableCount}, piece cells: ${totalPieceCells}`
+          reason: `Cell count mismatch. Usable cells: ${usableCount}, piece cells: ${totalPieceCells}`,
+          solutions: [],
+          solutionCount: 0,
+          hitLimit: false
         };
       }
 
-      const required = new Set(usableCells.map(([r,c]) => `${r},${c}`));
+      const required = new Set(usableCells.map(([r, c]) => `${r},${c}`));
       const piecePlacements = PIECES.map((piece, idx) => placementsForPiece(piece, idx, targetSet));
 
       if (piecePlacements.some(list => list.length === 0)) {
         return {
           ok: false,
-          reason: 'At least one piece has no legal placements for this target date.'
+          reason: 'At least one piece has no legal placements for this target date.',
+          solutions: [],
+          solutionCount: 0,
+          hitLimit: false
         };
       }
 
@@ -573,18 +651,34 @@ button:hover {
 
       const usedPieces = new Set();
       const covered = new Set();
-      const solution = [];
+      const currentSolution = [];
+      const solutions = [];
+      let solutionCount = 0;
+      let hitLimit = false;
 
       function search() {
-        if (covered.size === required.size) return true;
+        if (solutionCount >= maxSolutions) {
+          hitLimit = true;
+          return;
+        }
 
-        let bestCell = null;
+        if (covered.size === required.size) {
+          solutionCount++;
+          solutions.push(currentSolution.map(pl => ({
+            pieceIndex: pl.pieceIndex,
+            name: pl.name,
+            orientationIndex: pl.orientationIndex,
+            anchor: [...pl.anchor],
+            cells: pl.cells.map(([r, c]) => [r, c])
+          })));
+          return;
+        }
+
         let bestOptions = null;
 
         for (const key of required) {
           if (covered.has(key)) continue;
-          const [rr, cc] = key.split(',').map(Number);
-          let options = (cellToPlacements.get(key) || []).filter(pl => {
+          const options = (cellToPlacements.get(key) || []).filter(pl => {
             if (usedPieces.has(pl.pieceIndex)) return false;
             for (const [r, c] of pl.cells) {
               if (covered.has(`${r},${c}`)) return false;
@@ -594,98 +688,33 @@ button:hover {
 
           if (!bestOptions || options.length < bestOptions.length) {
             bestOptions = options;
-            bestCell = key;
-            if (options.length === 0) return false;
+            if (options.length === 0) return;
             if (options.length === 1) break;
           }
         }
 
-        if (!bestOptions || bestOptions.length === 0) return false;
+        if (!bestOptions || bestOptions.length === 0) return;
 
         for (const placement of bestOptions) {
+          if (solutionCount >= maxSolutions) {
+            hitLimit = true;
+            return;
+          }
+
           usedPieces.add(placement.pieceIndex);
-          solution.push(placement);
+          currentSolution.push(placement);
           for (const [r, c] of placement.cells) covered.add(`${r},${c}`);
 
-          if (search()) return true;
+          search();
 
           for (const [r, c] of placement.cells) covered.delete(`${r},${c}`);
-          solution.pop();
+          currentSolution.pop();
           usedPieces.delete(placement.pieceIndex);
         }
-
-        return false;
       }
 
-      const ok = search();
-      if (!ok) {
-        return {
-          ok: false,
-          reason: 'No tiling found for this date.'
-        };
-      }
+      search();
 
-      return { ok: true, solution };
-    }
-
-    function describeSolution(solution) {
-      return solution.map(pl => {
-        const coords = pl.cells.map(([r,c]) => `(${r+1},${c+1})`).join(' ');
-        return `${pl.name} | orientation ${pl.orientationIndex + 1} | anchor (${pl.anchor[0] + 1},${pl.anchor[1] + 1})\n${coords}`;
-      }).join('\n\n');
-    }
-
-    function solveCurrent() {
-      const targets = new Set([monthSelect.value, daySelect.value, weekdaySelect.value]);
-      renderBoard(targets, []);
-      statusEl.textContent = `Solving for ${monthSelect.value} ${daySelect.value}, ${weekdaySelect.value}...`;
-      solutionTextEl.textContent = 'Working...';
-
-      setTimeout(() => {
-        const result = solveExactCover(targets);
-        if (!result.ok) {
-          lastSolution = null;
-          renderBoard(targets, []);
-          statusEl.textContent = result.reason;
-          solutionTextEl.textContent = 'No solution found.';
-          return;
-        }
-
-        lastSolution = result.solution;
-        renderBoard(targets, result.solution);
-        statusEl.textContent = `Solved for ${monthSelect.value} ${daySelect.value}, ${weekdaySelect.value}.`;
-        solutionTextEl.textContent = describeSolution(result.solution);
-      }, 20);
-    }
-
-    function useToday() {
-      const today = new Date();
-      monthSelect.value = MONTHS[today.getMonth()];
-      daySelect.value = String(today.getDate());
-      weekdaySelect.value = WEEKDAYS[today.getDay()];
-      const targets = new Set([monthSelect.value, daySelect.value, weekdaySelect.value]);
-      renderBoard(targets, []);
-      statusEl.textContent = `Selection set to ${monthSelect.value} ${daySelect.value}, ${weekdaySelect.value}.`;
-      solutionTextEl.textContent = 'No solution calculated yet.';
-    }
-
-    function clearSolution() {
-      lastSolution = null;
-      const targets = new Set([monthSelect.value, daySelect.value, weekdaySelect.value]);
-      renderBoard(targets, []);
-      statusEl.textContent = 'Solution cleared.';
-      solutionTextEl.textContent = 'No solution calculated yet.';
-    }
-
-    document.getElementById('solveBtn').addEventListener('click', solveCurrent);
-    document.getElementById('todayBtn').addEventListener('click', useToday);
-    document.getElementById('resetBtn').addEventListener('click', clearSolution);
-    monthSelect.addEventListener('change', clearSolution);
-    daySelect.addEventListener('change', clearSolution);
-    weekdaySelect.addEventListener('change', clearSolution);
-
-    populateControls();
-    renderPieces();
-    renderBoard(new Set([monthSelect.value, daySelect.value, weekdaySelect.value]), []);
-  </script></body>
-</html>
+      return {
+        ok: solutionCount > 0,
+        reason: solutionCount > 0 ? '' : 'No tiling 
