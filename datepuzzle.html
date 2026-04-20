@@ -14,10 +14,6 @@
       --blocked: #05070b;
       --target: #f59e0b;
       --outline: #4b5563;
-      --good: #22c55e;
-      --warn: #eab308;
-      --hard: #f97316;
-      --brutal: #ef4444;
     }* { box-sizing: border-box; }
 body {
   margin: 0;
@@ -117,13 +113,7 @@ button:hover { filter: brightness(1.08); }
 
 .cell.empty { background: var(--empty); }
 .cell.blocked {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--blocked),
-    var(--blocked) 10px,
-    #111 10px,
-    #111 20px
-  );
+  background: repeating-linear-gradient(45deg, var(--blocked), var(--blocked) 10px, #111 10px, #111 20px);
   color: #666;
 }
 .cell.target {
@@ -246,6 +236,8 @@ button:hover { filter: brightness(1.08); }
   border-radius: 999px;
   font-weight: 800;
   border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(156,163,175,0.18);
+  color: #d1d5db;
 }
 
 .diff-easy { background: rgba(34,197,94,0.18); color: #86efac; }
@@ -266,8 +258,7 @@ button:hover { filter: brightness(1.08); }
     grid-template-columns: repeat(7, minmax(46px, 1fr));
     grid-auto-rows: 56px;
   }
-  .stats { grid-template-columns: 1fr; }
-  .inline-row { grid-template-columns: 1fr; }
+  .stats, .inline-row { grid-template-columns: 1fr; }
 }
 
   </style>
@@ -291,7 +282,7 @@ button:hover { filter: brightness(1.08); }
         </div>
         <div>
           <label for="maxSolutionsInput">Maximum solutions to search</label>
-          <input id="maxSolutionsInput" type="number" min="1" step="1" value="5000" />
+          <input id="maxSolutionsInput" type="number" min="1" step="1" value="1000" />
         </div>
         <div class="inline-row">
           <button id="solveBtn">Solve + Count</button>
@@ -310,7 +301,7 @@ button:hover { filter: brightness(1.08); }
           </div>
         </div>
         <div class="small">
-          Difficulty is based on the number of valid tilings found. Fewer solutions means a harder day. The maximum search limit prevents runaway solve times on easier dates.
+          The solver leaves exactly three cells uncovered: the selected month, date, and weekday. It counts valid tilings up to the cap you choose, while only keeping one sample solution in memory.
         </div>
       </div>
     </div><div class="board-wrap">
@@ -363,10 +354,7 @@ button:hover { filter: brightness(1.08); }
       { name: 'P10', shape: [[1,1,0],[0,1,1]] }
     ];
 
-    const PIECE_COLORS = [
-      '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
-      '#3b82f6', '#8b5cf6', '#ec4899', '#84cc16', '#f43f5e'
-    ];
+    const PIECE_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#8b5cf6','#ec4899','#84cc16','#f43f5e'];
 
     const boardEl = document.getElementById('board');
     const piecesEl = document.getElementById('pieces');
@@ -379,108 +367,8 @@ button:hover { filter: brightness(1.08); }
     const difficultyPillEl = document.getElementById('difficultyPill');
     const maxSolutionsInput = document.getElementById('maxSolutionsInput');
 
-    let lastSolutions = [];
-
-    function populateControls() {
-      MONTHS.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m;
-        opt.textContent = m;
-        monthSelect.appendChild(opt);
-      });
-
-      for (let d = 1; d <= 31; d++) {
-        const opt = document.createElement('option');
-        opt.value = String(d);
-        opt.textContent = d;
-        daySelect.appendChild(opt);
-      }
-
-      WEEKDAYS.forEach(w => {
-        const opt = document.createElement('option');
-        opt.value = w;
-        opt.textContent = w;
-        weekdaySelect.appendChild(opt);
-      });
-
-      const today = new Date();
-      monthSelect.value = MONTHS[today.getMonth()];
-      daySelect.value = String(today.getDate());
-      weekdaySelect.value = WEEKDAYS[today.getDay()];
-    }
-
-    function renderPieces() {
-      piecesEl.innerHTML = '';
-      PIECES.forEach((piece, index) => {
-        const card = document.createElement('div');
-        card.className = 'piece-card';
-        const title = document.createElement('div');
-        title.className = 'piece-title';
-        title.textContent = `${piece.name} (${countFilled(piece.shape)} cells)`;
-
-        const rows = piece.shape.length;
-        const cols = piece.shape[0].length;
-        const mini = document.createElement('div');
-        mini.className = 'mini-grid';
-        mini.style.gridTemplateColumns = `repeat(${cols}, 18px)`;
-
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            const cell = document.createElement('div');
-            cell.className = 'mini-cell' + (piece.shape[r][c] ? ' on' : '');
-            if (piece.shape[r][c]) cell.style.background = PIECE_COLORS[index];
-            mini.appendChild(cell);
-          }
-        }
-
-        card.appendChild(title);
-        card.appendChild(mini);
-        piecesEl.appendChild(card);
-      });
-    }
-
-    function renderBoard(targets = new Set(), placements = []) {
-      boardEl.innerHTML = '';
-      const colorMap = new Map();
-      const pieceIdMap = new Map();
-
-      placements.forEach((placement) => {
-        for (const [r, c] of placement.cells) {
-          colorMap.set(`${r},${c}`, PIECE_COLORS[placement.pieceIndex]);
-          pieceIdMap.set(`${r},${c}`, placement.name);
-        }
-      });
-
-      for (let r = 0; r < BOARD.length; r++) {
-        for (let c = 0; c < BOARD[r].length; c++) {
-          const value = BOARD[r][c];
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-
-          if (value === null) {
-            cell.classList.add('blocked');
-            cell.textContent = 'XXXX';
-          } else {
-            cell.classList.add('empty');
-            cell.textContent = value;
-            if (targets.has(value)) cell.classList.add('target');
-
-            const key = `${r},${c}`;
-            if (colorMap.has(key)) {
-              cell.style.background = colorMap.get(key);
-              cell.style.color = '#111';
-              cell.title = pieceIdMap.get(key);
-            }
-          }
-
-          const coord = document.createElement('div');
-          coord.className = 'coord';
-          coord.textContent = `${r+1},${c+1}`;
-          cell.appendChild(coord);
-          boardEl.appendChild(cell);
-        }
-      }
-    }
+    let cachedPlacementLibrary = null;
+    let lastSampleSolution = null;
 
     function countFilled(shape) {
       let total = 0;
@@ -522,15 +410,147 @@ button:hover { filter: brightness(1.08); }
       const base = normalizeCells(shapeToCells(shape));
       const variants = new Map();
       let current = base;
-
       for (let i = 0; i < 4; i++) {
         variants.set(cellsKey(current), current);
         const reflected = reflectCells(current);
         variants.set(cellsKey(reflected), reflected);
         current = rotateCells(current);
       }
-
       return Array.from(variants.values());
+    }
+
+    function buildPlacementLibrary() {
+      const placements = [];
+      for (let pieceIndex = 0; pieceIndex < PIECES.length; pieceIndex++) {
+        const piece = PIECES[pieceIndex];
+        const orientations = generateOrientations(piece.shape);
+        for (let o = 0; o < orientations.length; o++) {
+          const cells = orientations[o];
+          const maxR = Math.max(...cells.map(([r]) => r));
+          const maxC = Math.max(...cells.map(([, c]) => c));
+          for (let br = 0; br < BOARD.length - maxR; br++) {
+            for (let bc = 0; bc < BOARD[0].length - maxC; bc++) {
+              const placed = [];
+              let ok = true;
+              for (const [r, c] of cells) {
+                const rr = br + r;
+                const cc = bc + c;
+                if (BOARD[rr]?.[cc] == null) {
+                  ok = false;
+                  break;
+                }
+                placed.push([rr, cc]);
+              }
+              if (ok) {
+                placements.push({
+                  pieceIndex,
+                  name: piece.name,
+                  orientationIndex: o,
+                  anchor: [br, bc],
+                  cells: placed,
+                  cellKeys: placed.map(([r, c]) => `${r},${c}`)
+                });
+              }
+            }
+          }
+        }
+      }
+      return placements;
+    }
+
+    function getPlacementLibrary() {
+      if (!cachedPlacementLibrary) cachedPlacementLibrary = buildPlacementLibrary();
+      return cachedPlacementLibrary;
+    }
+
+    function populateControls() {
+      MONTHS.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        monthSelect.appendChild(opt);
+      });
+      for (let d = 1; d <= 31; d++) {
+        const opt = document.createElement('option');
+        opt.value = String(d);
+        opt.textContent = d;
+        daySelect.appendChild(opt);
+      }
+      WEEKDAYS.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w;
+        opt.textContent = w;
+        weekdaySelect.appendChild(opt);
+      });
+      const today = new Date();
+      monthSelect.value = MONTHS[today.getMonth()];
+      daySelect.value = String(today.getDate());
+      weekdaySelect.value = WEEKDAYS[today.getDay()];
+    }
+
+    function renderPieces() {
+      piecesEl.innerHTML = '';
+      PIECES.forEach((piece, index) => {
+        const card = document.createElement('div');
+        card.className = 'piece-card';
+        const title = document.createElement('div');
+        title.className = 'piece-title';
+        title.textContent = `${piece.name} (${countFilled(piece.shape)} cells)`;
+        const rows = piece.shape.length;
+        const cols = piece.shape[0].length;
+        const mini = document.createElement('div');
+        mini.className = 'mini-grid';
+        mini.style.gridTemplateColumns = `repeat(${cols}, 18px)`;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'mini-cell' + (piece.shape[r][c] ? ' on' : '');
+            if (piece.shape[r][c]) cell.style.background = PIECE_COLORS[index];
+            mini.appendChild(cell);
+          }
+        }
+        card.appendChild(title);
+        card.appendChild(mini);
+        piecesEl.appendChild(card);
+      });
+    }
+
+    function renderBoard(targets = new Set(), placements = []) {
+      boardEl.innerHTML = '';
+      const colorMap = new Map();
+      const pieceIdMap = new Map();
+      placements.forEach((placement) => {
+        for (const [r, c] of placement.cells) {
+          colorMap.set(`${r},${c}`, PIECE_COLORS[placement.pieceIndex]);
+          pieceIdMap.set(`${r},${c}`, placement.name);
+        }
+      });
+      for (let r = 0; r < BOARD.length; r++) {
+        for (let c = 0; c < BOARD[r].length; c++) {
+          const value = BOARD[r][c];
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          if (value === null) {
+            cell.classList.add('blocked');
+            cell.textContent = 'XXXX';
+          } else {
+            cell.classList.add('empty');
+            cell.textContent = value;
+            if (targets.has(value)) cell.classList.add('target');
+            const key = `${r},${c}`;
+            if (colorMap.has(key)) {
+              cell.style.background = colorMap.get(key);
+              cell.style.color = '#111';
+              cell.title = pieceIdMap.get(key);
+            }
+          }
+          const coord = document.createElement('div');
+          coord.className = 'coord';
+          coord.textContent = `${r + 1},${c + 1}`;
+          cell.appendChild(coord);
+          boardEl.appendChild(cell);
+        }
+      }
     }
 
     function getAvailableCells(targets) {
@@ -538,69 +558,18 @@ button:hover { filter: brightness(1.08); }
       for (let r = 0; r < BOARD.length; r++) {
         for (let c = 0; c < BOARD[r].length; c++) {
           const v = BOARD[r][c];
-          if (v !== null && !targets.has(v)) open.push([r, c]);
+          if (v !== null && !targets.has(v)) open.push(`${r},${c}`);
         }
       }
       return open;
     }
 
-    function placementsForPiece(piece, pieceIndex, targetSet) {
-      const placements = [];
-      const orientations = generateOrientations(piece.shape);
-
-      for (let o = 0; o < orientations.length; o++) {
-        const cells = orientations[o];
-        const maxR = Math.max(...cells.map(([r]) => r));
-        const maxC = Math.max(...cells.map(([, c]) => c));
-
-        for (let br = 0; br < BOARD.length - maxR; br++) {
-          for (let bc = 0; bc < BOARD[0].length - maxC; bc++) {
-            const placed = [];
-            let ok = true;
-
-            for (const [r, c] of cells) {
-              const rr = br + r;
-              const cc = bc + c;
-              const label = BOARD[rr]?.[cc];
-              if (label == null || targetSet.has(label)) {
-                ok = false;
-                break;
-              }
-              placed.push([rr, cc]);
-            }
-
-            if (ok) {
-              placements.push({
-                pieceIndex,
-                name: piece.name,
-                orientationIndex: o,
-                anchor: [br, bc],
-                cells: placed
-              });
-            }
-          }
-        }
-      }
-
-      return placements;
-    }
-
     function getDifficulty(solutionCount, hitLimit) {
-      if (solutionCount === 0) {
-        return { label: 'No solution', className: 'diff-none' };
-      }
-      if (hitLimit) {
-        return { label: `Very easy (${solutionCount}+)`, className: 'diff-easy' };
-      }
-      if (solutionCount === 1) {
-        return { label: 'Brutal', className: 'diff-brutal' };
-      }
-      if (solutionCount <= 5) {
-        return { label: 'Hard', className: 'diff-hard' };
-      }
-      if (solutionCount <= 20) {
-        return { label: 'Medium', className: 'diff-medium' };
-      }
+      if (solutionCount === 0) return { label: 'No solution', className: 'diff-none' };
+      if (hitLimit && solutionCount >= 50) return { label: `Very easy (${solutionCount}+)`, className: 'diff-easy' };
+      if (solutionCount === 1) return { label: 'Brutal', className: 'diff-brutal' };
+      if (solutionCount <= 5) return { label: 'Hard', className: 'diff-hard' };
+      if (solutionCount <= 20) return { label: 'Medium', className: 'diff-medium' };
       return { label: 'Easy', className: 'diff-easy' };
     }
 
@@ -608,6 +577,26 @@ button:hover { filter: brightness(1.08); }
       const diff = getDifficulty(solutionCount, hitLimit);
       difficultyPillEl.className = `difficulty-pill ${diff.className}`;
       difficultyPillEl.textContent = diff.label;
+    }
+
+    function describeSolution(solution) {
+      if (!solution) return 'No solution calculated yet.';
+      return solution.map(pl => {
+        const coords = pl.cells.map(([r, c]) => `(${r + 1},${c + 1})`).join(' ');
+        return `${pl.name} | orientation ${pl.orientationIndex + 1} | anchor (${pl.anchor[0] + 1},${pl.anchor[1] + 1})\n${coords}`;
+      }).join('\n\n');
+    }
+
+    function currentTargets() {
+      return new Set([monthSelect.value, daySelect.value, weekdaySelect.value]);
+    }
+
+    function clearDisplayedSolution(message = 'No solution calculated yet.') {
+      lastSampleSolution = null;
+      solutionCountEl.textContent = '0';
+      setDifficulty(0, false);
+      renderBoard(currentTargets(), []);
+      solutionTextEl.textContent = message;
     }
 
     function solveAndCount(targetSet, maxSolutions) {
@@ -619,40 +608,37 @@ button:hover { filter: brightness(1.08); }
         return {
           ok: false,
           reason: `Cell count mismatch. Usable cells: ${usableCount}, piece cells: ${totalPieceCells}`,
-          solutions: [],
           solutionCount: 0,
-          hitLimit: false
+          hitLimit: false,
+          sampleSolution: null
         };
       }
 
-      const required = new Set(usableCells.map(([r, c]) => `${r},${c}`));
-      const piecePlacements = PIECES.map((piece, idx) => placementsForPiece(piece, idx, targetSet));
-
-      if (piecePlacements.some(list => list.length === 0)) {
-        return {
-          ok: false,
-          reason: 'At least one piece has no legal placements for this target date.',
-          solutions: [],
-          solutionCount: 0,
-          hitLimit: false
-        };
-      }
+      const usableSet = new Set(usableCells);
+      const allPlacements = getPlacementLibrary().filter(pl => pl.cellKeys.every(key => usableSet.has(key)));
 
       const cellToPlacements = new Map();
-      for (let p = 0; p < piecePlacements.length; p++) {
-        for (const placement of piecePlacements[p]) {
-          for (const [r, c] of placement.cells) {
-            const key = `${r},${c}`;
-            if (!cellToPlacements.has(key)) cellToPlacements.set(key, []);
-            cellToPlacements.get(key).push(placement);
-          }
+      for (const cell of usableSet) cellToPlacements.set(cell, []);
+      for (const placement of allPlacements) {
+        for (const key of placement.cellKeys) {
+          cellToPlacements.get(key).push(placement);
         }
+      }
+
+      if (Array.from(cellToPlacements.values()).some(list => list.length === 0)) {
+        return {
+          ok: false,
+          reason: 'At least one open cell cannot be covered with the current piece set.',
+          solutionCount: 0,
+          hitLimit: false,
+          sampleSolution: null
+        };
       }
 
       const usedPieces = new Set();
       const covered = new Set();
       const currentSolution = [];
-      const solutions = [];
+      let sampleSolution = null;
       let solutionCount = 0;
       let hitLimit = false;
 
@@ -662,59 +648,27 @@ button:hover { filter: brightness(1.08); }
           return;
         }
 
-        if (covered.size === required.size) {
+        if (covered.size === usableSet.size) {
           solutionCount++;
-          solutions.push(currentSolution.map(pl => ({
-            pieceIndex: pl.pieceIndex,
-            name: pl.name,
-            orientationIndex: pl.orientationIndex,
-            anchor: [...pl.anchor],
-            cells: pl.cells.map(([r, c]) => [r, c])
-          })));
+          if (!sampleSolution) {
+            sampleSolution = currentSolution.map(pl => ({
+              pieceIndex: pl.pieceIndex,
+              name: pl.name,
+              orientationIndex: pl.orientationIndex,
+              anchor: [...pl.anchor],
+              cells: pl.cells.map(([r, c]) => [r, c])
+            }));
+          }
           return;
         }
 
+        let bestCell = null;
         let bestOptions = null;
 
-        for (const key of required) {
-          if (covered.has(key)) continue;
-          const options = (cellToPlacements.get(key) || []).filter(pl => {
+        for (const cell of usableSet) {
+          if (covered.has(cell)) continue;
+          const options = cellToPlacements.get(cell).filter(pl => {
             if (usedPieces.has(pl.pieceIndex)) return false;
-            for (const [r, c] of pl.cells) {
-              if (covered.has(`${r},${c}`)) return false;
-            }
+            for (const key of pl.cellKeys) if (covered.has(key)) return false;
             return true;
-          });
-
-          if (!bestOptions || options.length < bestOptions.length) {
-            bestOptions = options;
-            if (options.length === 0) return;
-            if (options.length === 1) break;
-          }
-        }
-
-        if (!bestOptions || bestOptions.length === 0) return;
-
-        for (const placement of bestOptions) {
-          if (solutionCount >= maxSolutions) {
-            hitLimit = true;
-            return;
-          }
-
-          usedPieces.add(placement.pieceIndex);
-          currentSolution.push(placement);
-          for (const [r, c] of placement.cells) covered.add(`${r},${c}`);
-
-          search();
-
-          for (const [r, c] of placement.cells) covered.delete(`${r},${c}`);
-          currentSolution.pop();
-          usedPieces.delete(placement.pieceIndex);
-        }
-      }
-
-      search();
-
-      return {
-        ok: solutionCount > 0,
-        reason: solutionCount > 0 ? '' : 'No tiling 
+      
