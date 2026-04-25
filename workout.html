@@ -13,16 +13,16 @@ body {
   color: white;
   display: flex;
   justify-content: center;
-  align-items: center;
   min-height: 100vh;
 }
 
 .container {
   background: #1e1e1e;
+  margin: 20px;
   padding: 25px;
   border-radius: 20px;
   width: 95%;
-  max-width: 550px;
+  max-width: 700px;
   text-align: center;
 }
 
@@ -33,7 +33,7 @@ input {
   border-radius: 8px;
   border: none;
   text-align: center;
-  width: 90px;
+  width: 120px;
 }
 
 button {
@@ -67,6 +67,25 @@ button:hover { background: #1f6fd1; }
   color: #4ade80;
 }
 
+.progress-bar {
+  background: #444;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 24px;
+  margin-top: 10px;
+}
+
+.progress-fill {
+  background: #4ade80;
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s;
+}
+
+.daily-fill {
+  background: #60a5fa;
+}
+
 .log {
   max-height: 220px;
   overflow-y: auto;
@@ -77,6 +96,14 @@ button:hover { background: #1f6fd1; }
 .log-item {
   border-bottom: 1px solid #444;
   padding: 6px 0;
+}
+
+canvas {
+  background: #181818;
+  border-radius: 10px;
+  margin-top: 10px;
+  width: 100%;
+  height: 250px;
 }
 </style>
 </head>
@@ -97,8 +124,33 @@ button:hover { background: #1f6fd1; }
 <button class="reset" onclick="resetTimer()">Reset</button>
 
 <div class="section">
+  <h3>Goal Progress</h3>
+  <input id="goalInput" type="number" placeholder="Final goal">
+  <button onclick="saveGoal()">Set Goal</button>
+
   <p>Total Pullups</p>
   <div class="big" id="totalDisplay">0</div>
+
+  <p>Final Goal: <span id="goalDisplay">0</span></p>
+  <p>Remaining: <span id="remainingGoalDisplay">0</span></p>
+  <p>Progress: <span id="percentDisplay">0%</span></p>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <hr>
+
+  <h3>Daily Goal Tracker</h3>
+  <p>Daily Goal: <span id="dailyGoalDisplay">200</span></p>
+  <p>Today: <span id="todayDisplay">0</span> / 200</p>
+  <p>Daily Remaining: <span id="dailyRemainingDisplay">200</span></p>
+  <p>Daily Progress: <span id="dailyPercentDisplay">0%</span></p>
+
+  <div class="progress-bar">
+    <div class="progress-fill daily-fill" id="dailyProgressFill"></div>
+  </div>
+
   <p>Session: <span id="sessionDisplay">0</span></p>
   <button onclick="resetTotal()">Reset Total</button>
 </div>
@@ -106,9 +158,30 @@ button:hover { background: #1f6fd1; }
 <div class="section">
   <h3>Manual Add</h3>
   <input id="manualInput" type="number" placeholder="Pullups">
-  <input id="weightInput" type="number" placeholder="Weight lbs (optional)">
+  <input id="weightInput" type="number" placeholder="Weight lbs optional">
   <br>
-  <button onclick="addManual()">Add</button>
+  <button onclick="addManual()">Add Pullups</button>
+</div>
+
+<div class="section">
+  <h3>PR Tracker</h3>
+  <input id="maxRepsInput" type="number" placeholder="Max reps">
+  <input id="maxWeightInput" type="number" placeholder="Max weight">
+  <br>
+  <button onclick="savePR()">Save PR</button>
+
+  <p>Best Max Reps: <span id="bestRepsDisplay">0</span></p>
+  <p>Best Added Weight: <span id="bestWeightDisplay">0</span> lbs</p>
+</div>
+
+<div class="section">
+  <h3>Progress Graph</h3>
+  <canvas id="progressChart" width="600" height="250"></canvas>
+</div>
+
+<div class="section">
+  <h3>Daily Totals</h3>
+  <div id="dailyTotals"></div>
 </div>
 
 <div class="section">
@@ -121,22 +194,44 @@ button:hover { background: #1f6fd1; }
 </div>
 
 <script>
+const DAILY_GOAL = 200;
+
 let totalSeconds = 600;
 let remainingSeconds = 600;
 let timer = null;
-let lastMinute = null;
 
 let total = Number(localStorage.getItem("pullups")) || 0;
 let session = 0;
+let goal = Number(localStorage.getItem("goal")) || 69168;
+let bestReps = Number(localStorage.getItem("bestReps")) || 0;
+let bestWeight = Number(localStorage.getItem("bestWeight")) || 0;
 let log = JSON.parse(localStorage.getItem("log")) || [];
 
 const display = document.getElementById("display");
 const totalDisplay = document.getElementById("totalDisplay");
 const sessionDisplay = document.getElementById("sessionDisplay");
+const goalDisplay = document.getElementById("goalDisplay");
+const remainingGoalDisplay = document.getElementById("remainingGoalDisplay");
+const percentDisplay = document.getElementById("percentDisplay");
+const progressFill = document.getElementById("progressFill");
+
+const todayDisplay = document.getElementById("todayDisplay");
+const dailyRemainingDisplay = document.getElementById("dailyRemainingDisplay");
+const dailyPercentDisplay = document.getElementById("dailyPercentDisplay");
+const dailyProgressFill = document.getElementById("dailyProgressFill");
+
 const logDiv = document.getElementById("log");
+const dailyTotalsDiv = document.getElementById("dailyTotals");
+const bestRepsDisplay = document.getElementById("bestRepsDisplay");
+const bestWeightDisplay = document.getElementById("bestWeightDisplay");
+const chart = document.getElementById("progressChart");
+const ctx = chart.getContext("2d");
 
 function save() {
   localStorage.setItem("pullups", total);
+  localStorage.setItem("goal", goal);
+  localStorage.setItem("bestReps", bestReps);
+  localStorage.setItem("bestWeight", bestWeight);
   localStorage.setItem("log", JSON.stringify(log));
 }
 
@@ -151,7 +246,6 @@ function now() {
 function addLog(amount, source) {
   const w = document.getElementById("weightInput").value;
   const weight = w ? w + " lbs" : "Bodyweight";
-
   const t = now();
 
   log.unshift({
@@ -164,7 +258,36 @@ function addLog(amount, source) {
   });
 
   save();
-  renderLog();
+  renderAll();
+}
+
+function updateDisplays() {
+  totalDisplay.textContent = total;
+  sessionDisplay.textContent = session;
+  goalDisplay.textContent = goal;
+
+  const remaining = Math.max(goal - total, 0);
+  const percent = goal > 0 ? Math.min((total / goal) * 100, 100) : 0;
+
+  remainingGoalDisplay.textContent = remaining;
+  percentDisplay.textContent = percent.toFixed(2) + "%";
+  progressFill.style.width = percent + "%";
+
+  const today = new Date().toLocaleDateString();
+  const dailyTotals = getDailyTotals();
+  const todayAmount = dailyTotals[today] || 0;
+  const dailyRemaining = Math.max(DAILY_GOAL - todayAmount, 0);
+  const dailyPercent = Math.min((todayAmount / DAILY_GOAL) * 100, 100);
+
+  todayDisplay.textContent = todayAmount;
+  dailyRemainingDisplay.textContent = dailyRemaining;
+  dailyPercentDisplay.textContent = dailyPercent.toFixed(2) + "%";
+  dailyProgressFill.style.width = dailyPercent + "%";
+
+  bestRepsDisplay.textContent = bestReps;
+  bestWeightDisplay.textContent = bestWeight;
+
+  save();
 }
 
 function renderLog() {
@@ -188,139 +311,286 @@ function renderLog() {
   });
 }
 
-function updateDisplays() {
-  totalDisplay.textContent = total;
-  sessionDisplay.textContent = session;
-  save();
-}
-
-function addMinute() {
-  total += 5;
-  session += 5;
-  updateDisplays();
-  addLog(5, "Timer");
-}
-
-function addManual() {
-  const val = parseInt(document.getElementById("manualInput").value);
-  if (!val || val <= 0) return;
-
-  total += val;
-  session += val;
-
-  updateDisplays();
-  addLog(val, "Manual");
-
-  document.getElementById("manualInput").value = "";
-}
-
-function setTime() {
-  const m = parseInt(minutesInput.value) || 0;
-  const s = parseInt(secondsInput.value) || 0;
-
-  totalSeconds = m*60 + s;
-  remainingSeconds = totalSeconds;
-  lastMinute = Math.floor(remainingSeconds/60);
-
-  updateDisplay();
-}
-
-function updateDisplay() {
-  const m = Math.floor(remainingSeconds/60);
-  const s = remainingSeconds % 60;
-  display.textContent = `${m}:${s.toString().padStart(2,"0")}`;
-}
-
-function ding() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.frequency.value = 900;
-  gain.gain.value = 0.4;
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.start();
-  osc.stop(ctx.currentTime + 0.3);
-}
-
-function startTimer() {
-  if (timer) return;
-
-  if (remainingSeconds <= 0) setTime();
-
-  ding();
-
-  timer = setInterval(() => {
-    remainingSeconds--;
-
-    if (remainingSeconds <= 0) {
-      remainingSeconds = 0;
-      updateDisplay();
-      ding();
-      clearInterval(timer);
-      timer = null;
-      return;
-    }
-
-    if (remainingSeconds % 60 === 0) {
-      ding();
-      addMinute();
-    }
-
-    updateDisplay();
-  },1000);
-}
-
-function pauseTimer() {
-  clearInterval(timer);
-  timer = null;
-}
-
-function resetTimer() {
-  clearInterval(timer);
-  timer = null;
-  session = 0;
-  setTime();
-  updateDisplays();
-}
-
-function resetTotal() {
-  total = 0;
-  session = 0;
-  updateDisplays();
-  addLog(0, "Reset");
-}
-
-function clearLog() {
-  log = [];
-  save();
-  renderLog();
-}
-
-function downloadLog() {
-  let text = "Pullup Log\n\n";
+function getDailyTotals() {
+  const totals = {};
 
   log.forEach(e => {
-    text += `${e.date} ${e.time} | +${e.amount} | ${e.weight} | ${e.source} | Total ${e.total}\n`;
+    if (e.amount > 0) {
+      totals[e.date] = (totals[e.date] || 0) + e.amount;
+    }
   });
 
-  const blob = new Blob([text], {type:"text/plain"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "pullups.txt";
-  a.click();
+  return totals;
 }
 
-minutesInput.addEventListener("input", setTime);
-secondsInput.addEventListener("input", setTime);
+function renderDailyTotals() {
+  const totals = getDailyTotals();
+  dailyTotalsDiv.innerHTML = "";
 
-setTime();
-updateDisplays();
-renderLog();
-</script>
+  const dates = Object.keys(totals);
 
-</body>
-</html>
+  if (dates.length === 0) {
+    dailyTotalsDiv.innerHTML = "<p>No daily totals yet.</p>";
+    return;
+  }
+
+  dates.forEach(date => {
+    const dailyAmount = totals[date];
+    const remaining = Math.max(DAILY_GOAL - dailyAmount, 0);
+    const percent = Math.min((dailyAmount / DAILY_GOAL) * 100, 100);
+
+    dailyTotalsDiv.innerHTML += `
+      <p>
+        <strong>${date}:</strong>
+        ${dailyAmount} / ${DAILY_GOAL} pullups
+        (${percent.toFixed(1)}%) —
+        Remaining: ${remaining}
+      </p>
+    `;
+  });
+}
+
+function drawGraph() {
+  const totals = getDailyTotals();
+  const dates = Object.keys(totals).reverse();
+
+  ctx.clearRect(0, 0, chart.width, chart.height);
+
+  if (dates.length === 0) {
+    ctx.fillStyle = "white";
+    ctx.font = "14px Arial";
+    ctx.fillText("No graph data yet", 20, 30);
+    return;
+  }
+
+  let cumulative = [];
+  let running = 0;
+
+  dates.forEach(date => {
+    running += totals[date];
+    cumulative.push(running);
+  });
+
+  const maxVal = Math.max(...cumulative, goal, 1);
+  const padding = 35;
+  const graphWidth = chart.width - padding * 2;
+  const graphHeight = chart.height - padding * 2;
+
+  ctx.strokeStyle = "#777";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, chart.height - padding);
+  ctx.lineTo(chart.width - padding, chart.height - padding);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#4ade80";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  cumulative.forEach((value, i) => {
+    const x = padding + (dates.length === 1
+      ? graphWidth / 2
+      : (i / (dates.length - 1)) * graphWidth);
+
+    const y = chart.height - padding - (value / maxVal) * graphHeight;
+
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+
+  ctx.stroke();
+
+  cumulative.forEach((value, i) => {
+    const x = padding + (dates.length === 1
+      ? graphWidth / 2
+      : (i / (dates.length - 1)) * graphWidth);
+
+    const y = chart.height - padding - (value / maxVal) * graphHeight;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#4ade80";
+    ctx.fill();
+  });
+
+  if (goal > 0) {
+    const goalY = chart.height - padding - (goal / maxVal) * graphHeight;
+
+    ctx.strokeStyle = "#facc15";
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(padding, goalY);
+    ctx.lineTo(chart.width - padding, goalY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "#facc15";
+    ctx.fillText("Goal", chart.width - 65, goalY - 6);
+  }
+
+  ctx.fillStyle = "white";
+  ctx.font = "12px Arial";
+  ctx.fillText("Progress Over Time", padding, 18);
+  ctx.fillText("Total: " + total, padding, chart.height - 8);
+  }
+
+  function renderAll() {
+    updateDisplays();
+    renderLog();
+    renderDailyTotals();
+    drawGraph();
+  }
+
+  function addMinute() {
+    total += 5;
+    session += 5;
+    updateDisplays();
+    addLog(5, "Timer");
+  }
+
+  function addManual() {
+    const val = parseInt(document.getElementById("manualInput").value);
+    if (!val || val <= 0) return;
+
+    total += val;
+    session += val;
+
+    updateDisplays();
+    addLog(val, "Manual");
+
+    document.getElementById("manualInput").value = "";
+  }
+
+  function saveGoal() {
+    const val = parseInt(document.getElementById("goalInput").value);
+    if (!val || val <= 0) return;
+
+    goal = val;
+    save();
+    renderAll();
+  }
+
+  function savePR() {
+    const reps = parseInt(document.getElementById("maxRepsInput").value);
+    const weight = parseInt(document.getElementById("maxWeightInput").value);
+
+    if (reps && reps > bestReps) bestReps = reps;
+    if (weight && weight > bestWeight) bestWeight = weight;
+
+    save();
+    renderAll();
+
+    document.getElementById("maxRepsInput").value = "";
+    document.getElementById("maxWeightInput").value = "";
+  }
+
+  function setTime() {
+    const m = parseInt(minutesInput.value) || 0;
+    const s = parseInt(secondsInput.value) || 0;
+
+    totalSeconds = m * 60 + s;
+    remainingSeconds = totalSeconds;
+
+    updateDisplay();
+  }
+
+  function updateDisplay() {
+    const m = Math.floor(remainingSeconds / 60);
+    const s = remainingSeconds % 60;
+    display.textContent = `${m}:${s.toString().padStart(2,"0")}`;
+  }
+
+  function ding() {
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+
+    osc.frequency.value = 900;
+    gain.gain.value = 0.4;
+
+    osc.connect(gain);
+    gain.connect(audio.destination);
+
+    osc.start();
+    osc.stop(audio.currentTime + 0.3);
+  }
+
+  function startTimer() {
+    if (timer) return;
+    if (remainingSeconds <= 0) setTime();
+
+    ding();
+
+    timer = setInterval(() => {
+      remainingSeconds--;
+
+      if (remainingSeconds <= 0) {
+        remainingSeconds = 0;
+        updateDisplay();
+        ding();
+        clearInterval(timer);
+        timer = null;
+        return;
+      }
+
+      if (remainingSeconds % 60 === 0) {
+        ding();
+        addMinute();
+      }
+
+      updateDisplay();
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    clearInterval(timer);
+    timer = null;
+  }
+
+  function resetTimer() {
+    clearInterval(timer);
+    timer = null;
+    session = 0;
+    setTime();
+    renderAll();
+  }
+
+  function resetTotal() {
+    total = 0;
+    session = 0;
+    updateDisplays();
+    addLog(0, "Reset Total");
+  }
+
+  function clearLog() {
+    log = [];
+    save();
+    renderAll();
+  }
+
+  function downloadLog() {
+    let text = "Pullup Log\n\n";
+
+    log.forEach(e => {
+      text += `${e.date} ${e.time} | +${e.amount} | ${e.weight} | ${e.source} | Total ${e.total}\n`;
+    });
+
+    const blob = new Blob([text], {type:"text/plain"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "pullups.txt";
+    a.click();
+  }
+
+  minutesInput.addEventListener("input", setTime);
+  secondsInput.addEventListener("input", setTime);
+
+  document.getElementById("goalInput").value = goal;
+
+  setTime();
+  renderAll();
+  </script>
+
+  </body>
+  </html>
