@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Factory Layout Builder</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #121212;
+    color: white;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  #container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+  }
+  #machine-palette {
+    width: 250px;
+    background: #222;
+    padding: 15px;
+    border-radius: 8px;
+  }
+  .machine {
+    background: #333;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: grab;
+  }
+  .machine h3 {
+    margin: 0 0 8px 0;
+  }
+  select {
+    width: 100%;
+    padding: 5px;
+    border-radius: 4px;
+    border: none;
+    font-size: 1rem;
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(10, 50px);
+    grid-template-rows: repeat(10, 50px);
+    gap: 4px;
+    background: #222;
+    padding: 10px;
+    border-radius: 8px;
+  }
+  .cell {
+    width: 50px;
+    height: 50px;
+    background: #111;
+    border: 1px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .cell.drag-over {
+    outline: 2px dashed #4caf50;
+  }
+  .placed-machine {
+    width: 100%;
+    height: 100%;
+    background: #4caf50;
+    border-radius: 4px;
+    color: black;
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 2px 2px 0 2px;
+    user-select: none;
+    position: relative;
+    cursor: pointer;
+  }
+  .placed-machine select {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+  }
+  #save-btn {
+    display: block;
+    margin: 20px auto 0 auto;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    background: #4caf50;
+    color: black;
+    cursor: pointer;
+  }
+  #output {
+    background: #222;
+    margin-top: 20px;
+    padding: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: monospace;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Factory Layout Builder</h1>
+
+<div id="container">
+
+  <div id="machine-palette">
+    <h2>Machines</h2>
+    <!-- Machines will be inserted here by JS -->
+  </div>
+
+  <div id="grid">
+    <!-- Grid cells inserted by JS -->
+  </div>
+
+</div>
+
+<button id="save-btn">Save Layout</button>
+
+<pre id="output"></pre>
+
+<script>
+  // Machines list with display names
+  const machines = [
+    { id: "autoarm", name: "Auto Arm" },
+    { id: "chemistrylab", name: "Chemistry Lab" },
+    { id: "furnace", name: "Furnace" },
+    { id: "atmosphericcondenser", name: "Atmospheric Condenser" },
+    { id: "resourcecanister", name: "Resource Canister" }
+  ];
+
+  // Options per machine type for resource selector
+  function getOptionsForMachine(type) {
+    const allResources = [
+      "Ammonium","Hematite","Quartz","Astronium","Laterite",
+      "Resin","Clay","Lithium","Sphalerite","Compound",
+      "Malachite","Titanite","Graphite","Organic","Wolframite",
+      "Aluminum","Copper","Zinc","Glass","Ceramic",
+      "Carbon","Iron","Titanium","Tungsten",
+      "Rubber","Plastic","Aluminum Alloy","Tungsten Carbide",
+      "Steel","Titanium Alloy","Graphene","Diamond","Hydrazine",
+      "Explosive Powder","Silicone","Nanocarbon Alloy",
+      "Nitrogen","Hydrogen","Methane","Sulfur","Argon","Helium"
+    ];
+
+    const chemistryLabResources = [
+      "Rubber","Plastic","Aluminum Alloy","Tungsten Carbide",
+      "Steel","Titanium Alloy","Graphene","Diamond","Hydrazine",
+      "Explosive Powder","Silicone","Nanocarbon Alloy"
+    ];
+
+    const furnaceResources = [
+      "Aluminum","Copper","Zinc","Glass","Ceramic",
+      "Carbon","Iron","Titanium","Tungsten"
+    ];
+
+    const atmosphericCondenserResources = [
+      "Nitrogen","Hydrogen","Methane","Sulfur","Argon","Helium"
+    ];
+
+    switch(type) {
+      case "autoarm":
+        return allResources;
+      case "chemistrylab":
+        return chemistryLabResources;
+      case "furnace":
+        return furnaceResources;
+      case "atmosphericcondenser":
+        return atmosphericCondenserResources;
+      case "resourcecanister":
+        return allResources;
+      default:
+        return [];
+    }
+  }
+
+
+  const palette = document.getElementById('machine-palette');
+  const grid = document.getElementById('grid');
+  const output = document.getElementById('output');
+
+  // Create machine draggable items in palette
+  machines.forEach(machine => {
+    const div = document.createElement('div');
+    div.className = 'machine';
+    div.draggable = true;
+    div.id = `palette-${machine.id}`;
+    div.dataset.machineId = machine.id;
+    div.innerHTML = `<h3>${machine.name}</h3>`;
+    // Add selector inside palette for preview (optional)
+    const select = document.createElement('select');
+    select.innerHTML = getOptionsForMachine(machine.id)
+      .map(opt => `<option value="${opt}">${opt}</option>`)
+      .join('');
+    div.appendChild(select);
+
+    div.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('machineId', machine.id);
+      e.dataTransfer.setData('resource', select.value);
+    });
+
+    palette.appendChild(div);
+  });
+
+  // Create 10x10 grid
+  for (let i = 0; i < 100; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = i;
+
+    // Dragover and drop handlers for cells
+    cell.addEventListener('dragover', e => {
+      e.preventDefault();
+      cell.classList.add('drag-over');
+    });
+    cell.addEventListener('dragleave', () => {
+      cell.classList.remove('drag-over');
+    });
+    cell.addEventListener('drop', e => {
+      e.preventDefault();
+      cell.classList.remove('drag-over');
+      const machineId = e.dataTransfer.getData('machineId');
+      const resource = e.dataTransfer.getData('resource');
+      placeMachine(cell, machineId, resource);
+    });
+
+    grid.appendChild(cell);
+  }
+
+  // Place a machine in a grid cell
+  function placeMachine(cell, machineId, resource) {
+    cell.innerHTML = ''; // Clear cell
+
+    const machineInfo = machines.find(m => m.id === machineId);
+    if (!machineInfo) return;
+
+    const placedDiv = document.createElement('div');
+    placedDiv.className = 'placed-machine';
+    placedDiv.dataset.machineId = machineId;
+    placedDiv.textContent = machineInfo.name;
+
+    // Create resource dropdown selector inside placed machine
+    const select = document.createElement('select');
+    const options = getOptionsForMachine(machineId);
+    select.innerHTML = options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+    select.value = resource || options[0];
+
+    // When selector changes, update resource for this machine
+    select.addEventListener('change', e => {
+      placedDiv.dataset.resource = e.target.value;
+    });
+
+    placedDiv.dataset.resource = select.value;
+
+    placedDiv.appendChild(select);
+    cell.appendChild(placedDiv);
+  }
+
+  // Save layout as JSON
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const layout = [];
+    grid.querySelectorAll('.cell').forEach(cell => {
+      const machineDiv = cell.querySelector('.placed-machine');
+      if (machineDiv) {
+        layout.push({
+          index: parseInt(cell.dataset.index),
+          machineId: machineDiv.dataset.machineId,
+          resource: machineDiv.dataset.resource
+        });
+      }
+    });
+    output.textContent = JSON.stringify(layout, null, 2);
+  });
+</script>
+
+</body>
+</html>
