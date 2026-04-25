@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pullup Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+
+    <header>
+      <h1>Pullup Tracker</h1>
+
+      <nav class="tabs">
+  <button class="tab-button active" onclick="showTab('goalTab', this)">Final Goal</button>
+  <button class="tab-button" onclick="showTab('workoutTab', this)">Start Workout</button>
+  <button class="tab-button" onclick="showTab('statsTab', this)">Stats</button>
+  <button class="tab-button" onclick="showTab('logTab', this)">Log</button>
+</nav>
+    </header>
+
+    <!-- FINAL GOAL TAB -->
+    <section id="goalTab" class="tab-page active">
+      <div class="card">
+        <h2>Final Goal Progress</h2>
+
+        <div class="big-number" id="totalDisplay">0</div>
+        <p>Total Pullups Completed</p>
+
+        <div class="goal-row">
+          <input id="goalInput" type="number" placeholder="Final goal" />
+          <button onclick="saveGoal()">Set Goal</button>
+        </div>
+
+        <p>Goal: <strong id="goalDisplay">69168</strong></p>
+        <p>Remaining: <strong id="remainingGoalDisplay">69168</strong></p>
+        <p>Progress: <strong id="percentDisplay">0%</strong></p>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Daily Goal</h2>
+
+        <p>Goal: <strong>200</strong> pullups per day</p>
+        <p>Today: <strong id="todayDisplay">0</strong> / 200</p>
+        <p>Remaining Today: <strong id="dailyRemainingDisplay">200</strong></p>
+        <p>Daily Progress: <strong id="dailyPercentDisplay">0%</strong></p>
+
+        <div class="progress-bar">
+          <div class="progress-fill blue" id="dailyProgressFill"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Extra Stats</h2>
+
+        <p>Best Max Reps: <strong id="bestRepsDisplay">0</strong></p>
+        <p>Best Added Weight: <strong id="bestWeightDisplay">0</strong> lbs</p>
+        <p>Session Pullups: <strong id="sessionDisplay">0</strong></p>
+      </div>
+    </section>
+
+    <!-- START WORKOUT TAB -->
+    <section id="workoutTab" class="tab-page">
+      <div class="card">
+        <h2>Workout Timer</h2>
+
+        <div class="timer-inputs">
+          <input id="minutesInput" type="number" value="10" min="0" /> min
+          <input id="secondsInput" type="number" value="0" min="0" max="59" /> sec
+        </div>
+
+        <div id="display">10:00</div>
+
+        <button onclick="startTimer()">Start</button>
+        <button onclick="pauseTimer()">Pause</button>
+        <button class="danger" onclick="resetTimer()">Reset Timer</button>
+
+        <p class="hint">Adds 5 pullups every completed minute.</p>
+      </div>
+
+      <div class="card">
+        <h2>Add Pullups</h2>
+
+        <input id="manualInput" type="number" placeholder="Pullups" />
+        <input id="weightInput" type="number" placeholder="Weight lbs optional" />
+
+        <br />
+
+        <button onclick="addManual()">Add Pullups</button>
+      </div>
+
+      <div class="card">
+        <h2>PR Tracker</h2>
+
+        <input id="maxRepsInput" type="number" placeholder="Max reps" />
+        <input id="maxWeightInput" type="number" placeholder="Max weight" />
+
+        <br />
+
+        <button onclick="savePR()">Save PR</button>
+      </div>
+    </section>
+    <!-- STATS TAB -->
+<section id="statsTab" class="tab-page">
+  <div class="card">
+    <h2>Stats Dashboard</h2>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <h3 id="avgPerDayDisplay">0</h3>
+        <p>Average / Day</p>
+      </div>
+
+      <div class="stat-box">
+        <h3 id="bestDayDisplay">0</h3>
+        <p>Best Day</p>
+      </div>
+
+      <div class="stat-box">
+        <h3 id="goalDaysDisplay">0</h3>
+        <p>Goal Days Hit</p>
+      </div>
+
+      <div class="stat-box">
+        <h3 id="streakDisplay">0</h3>
+        <p>Current Streak</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Daily Pullups vs Goal</h2>
+    <canvas id="dailyChart" width="700" height="320"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Cumulative Progress</h2>
+    <canvas id="cumulativeChart" width="700" height="320"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Last 7 Days</h2>
+    <div id="lastSevenDays"></div>
+  </div>
+</section>
+    <!-- LOG TAB -->
+    <section id="logTab" class="tab-page">
+      <div class="card">
+        <h2>Pullup Log</h2>
+
+        <button onclick="downloadLog()">Download Log</button>
+        <button class="danger" onclick="clearLog()">Clear Entire Log</button>
+
+        <div id="log"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
