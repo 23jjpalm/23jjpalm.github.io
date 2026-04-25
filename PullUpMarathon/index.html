@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pull-Up Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 16px;
+    }
+
+    .app {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    .title {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .sub {
+      text-align: center;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .goal {
+      text-align: center;
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #22c55e;
+      margin: 8px 0;
+    }
+
+    .small-note {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .workout-title {
+      font-size: 1.35rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #f8fafc;
+    }
+
+    .workout-date {
+      color: #93c5fd;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .workout-summary {
+      color: #cbd5e1;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .rest-badge {
+      display: inline-block;
+      background: #7f1d1d;
+      color: #fecaca;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .exercise-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .exercise-item {
+      background: #334155;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .exercise-left {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .exercise-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .exercise-detail {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+    }
+
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+    }
+
+    .checkbox-wrap input {
+      transform: scale(1.4);
+      cursor: pointer;
+    }
+
+    .counter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .counter button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .counter button:hover {
+      background: #1d4ed8;
+    }
+
+    .counter-value {
+      min-width: 48px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .calendar-header button {
+      border: none;
+      background: #334155;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .calendar-header button:hover {
+      background: #475569;
+    }
+
+    .month-label {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .days-row, .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .days-row div {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      padding-bottom: 4px;
+    }
+
+    .day {
+      min-height: 70px;
+      background: #334155;
+      border-radius: 14px;
+      padding: 8px 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: 0.2s ease;
+    }
+
+    .day:hover {
+      background: #475569;
+    }
+
+    .day.empty {
+      background: transparent;
+      cursor: default;
+    }
+
+    .day-number {
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .day-tag {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      margin-top: 6px;
+      line-height: 1.2;
+    }
+
+    .selected-day {
+      outline: 2px solid #38bdf8;
+    }
+
+    .today {
+      border: 2px solid #22c55e;
+    }
+
+    .rest-day {
+      background: #3f1d1d;
+    }
+
+    .rest-day:hover {
+      background: #5b2323;
+    }
+
+    .training-day {
+      background: #1f3b2d;
+    }
+
+    .training-day:hover {
+      background: #28513c;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      margin-top: 10px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .dot.train {
+      background: #1f3b2d;
+    }
+
+    .dot.rest {
+      background: #7f1d1d;
+    }
+
+    .footer {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <div class="title">Pull-Up Tracker</div>
+      <div class="sub">Year starts on May 14, 2026</div>
+      <div class="goal">190 pull-ups/day</div>
+      <div class="small-note">
+        Main target: 69,168 pull-ups in 1 year<br />
+        This month is your build-up phase from April 14, 2026 to May 13, 2026
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="workoutDisplay">
+        <div class="workout-title">Select a day</div>
+        <div class="workout-summary">
+          Click a date on the calendar to load that day's exact workout.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="calendar-header">
+        <button id="prevMonth">&lt;</button>
+        <div class="month-label" id="monthLabel"></div>
+        <button id="nextMonth">&gt;</button>
+      </div>
+
+      <div class="days-row">
+        <div>Sun</div>
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+      </div>
+
+      <div class="calendar-grid" id="calendarGrid"></div>
+
+      <div class="legend">
+        <span><i class="dot train"></i> Workout day</span>
+        <span><i class="dot rest"></i> Rest day</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      Version 2: calendar + exact daily workout + checkboxes/counters
+    </div>
+  </div>
+
+  <script>
+    const workoutData = {
+      "2026-04-14": {
+        type: "workout",
+        title: "Day 1 – Base Volume",
+        summary: "Start controlled. Stay 2-3 reps shy of failure. Clean form only.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 5", detail: "5 pull-ups" },
+          { kind: "counter", name: "Dead hangs", detail: "2 rounds of 20 sec", target: 2 }
+        ]
+      },
+      "2026-04-15": {
+        type: "workout",
+        title: "Day 2 – Easy Technique",
+        summary: "Very easy day. Perfect reps. No grinding.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "4 pull-ups" },
+          { kind: "counter", name: "Scapular pull-up rounds", detail: "8 reps per round", target: 3 },
+          { kind: "counter", name: "Dead hangs", detail: "20 sec each", target: 3 }
+        ]
+      },
+      "2026-04-16": {
+        type: "rest",
+        title: "Day 3 – Full Rest",
+        summary: "No pull-ups today. Walk, stretch, recover.",
+        items: []
+      },
+      "2026-04-17": {
+        type: "workout",
+        title: "Day 4 – Ladder Day",
+        summary: "Do smooth reps. Rest 30-60 sec between ladder steps, 2-3 min between full ladders.",
+        items: [
+          { kind: "counter", name: "Ladder 1-2-3-4", detail: "Complete full ladder once", target: 1 },
+          { kind: "counter", name: "Ladder 1-2-3-4", detail: "Complete full ladder again", target: 1 },
+          { kind: "counter", name: "Optional extra ladder", detail: "Only if you still feel fresh", target: 1 }
+        ]
+      },
+      "2026-04-18": {
+        type: "workout",
+        title: "Day 5 – Accessory + Light Pulling",
+        summary: "This day protects shoulders and elbows while still building your back.",
+        items: [
+          { kind: "check", name: "Easy pull-up set 1", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 2", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 3", detail: "3 pull-ups" },
+          { kind: "counter", name: "Bodyweight rows", detail: "10 reps per round", target: 4 },
+          { kind: "counter", name: "Plank rounds", detail: "30 sec each", target: 3 }
+        ]
+      },
+      "2026-04-19": {
+        type: "workout",
+        title: "Day 6 – Density Work",
+        summary: "Set a 10-minute timer. Do tiny sets without failure. Goal is controlled volume.",
+        items: [
+          { kind: "counter", name: "Mini sets completed", detail: "2 pull-ups per mini set", target: 10 }
+        ]
+      },
+      "2026-04-20": {
+        type: "rest",
+        title: "Day 7 – Full Rest",
+        summary: "Full rest day. No pull-ups.",
+        items: []
+      },
+
+      "2026-04-21": {
+        type: "workout",
+        title: "Week 2 Day 1 – Volume Progression",
+        summary: "Slightly more volume than last week.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 5", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 6", detail: "4 pull-ups" },
+          { kind: "counter", name: "Dead hangs", detail: "25 sec each", target: 3 }
+        ]
+      },
+      "2026-04-22": {
+        type: "workout",
+        title: "Week 2 Day 2 – Easy Technique",
+        summary: "Still easy. Keep some gas in the tank.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 5", detail: "4 pull-ups" },
+          { kind: "counter", name: "Scapular pull-up rounds", detail: "8 reps per round", target: 3 }
+        ]
+      },
+      "2026-04-23": {
+        type: "rest",
+        title: "Week 2 Day 3 – Full Rest",
+        summary: "No pulling today. Mobility only if you want.",
+        items: []
+      },
+      "2026-04-24": {
+        type: "workout",
+        title: "Week 2 Day 4 – Ladder Day",
+        summary: "Good day to get reps without maxing out.",
+        items: [
+          { kind: "counter", name: "Ladder 1-2-3-4", detail: "Complete full ladder", target: 1 },
+          { kind: "counter", name: "Ladder 1-2-3-4", detail: "Complete second full ladder", target: 1 },
+          { kind: "counter", name: "Ladder 1-2-3", detail: "Smaller finisher ladder", target: 1 }
+        ]
+      },
+      "2026-04-25": {
+        type: "workout",
+        title: "Week 2 Day 5 – Back/Arm Support",
+        summary: "Support work makes the high-volume goal more realistic.",
+        items: [
+          { kind: "check", name: "Easy pull-up set 1", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 2", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 3", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 4", detail: "3 pull-ups" },
+          { kind: "counter", name: "Rows", detail: "10 reps per round", target: 4 },
+          { kind: "counter", name: "Hollow hold rounds", detail: "25 sec each", target: 3 }
+        ]
+      },
+      "2026-04-26": {
+        type: "workout",
+        title: "Week 2 Day 6 – Density Progression",
+        summary: "12-minute timer. Small sets only.",
+        items: [
+          { kind: "counter", name: "Mini sets completed", detail: "2 pull-ups per mini set", target: 12 }
+        ]
+      },
+      "2026-04-27": {
+        type: "rest",
+        title: "Week 2 Day 7 – Full Rest",
+        summary: "Recover. Your joints need it.",
+        items: []
+      },
+
+      "2026-04-28": {
+        type: "workout",
+        title: "Week 3 Day 1 – Volume Push",
+        summary: "This is your hardest volume day so far. Stop before form breaks.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "6 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "6 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 5", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 6", detail: "4 pull-ups" },
+          { kind: "counter", name: "Dead hangs", detail: "25 sec each", target: 3 }
+        ]
+      },
+      "2026-04-29": {
+        type: "workout",
+        title: "Week 3 Day 2 – Technique + Easy Volume",
+        summary: "Back off slightly after yesterday.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 5", detail: "4 pull-ups" },
+          { kind: "counter", name: "Scapular pull-up rounds", detail: "10 reps per round", target: 3 }
+        ]
+      },
+      "2026-04-30": {
+        type: "rest",
+        title: "Week 3 Day 3 – Full Rest",
+        summary: "No pull-ups today.",
+        items: []
+      },
+      "2026-05-01": {
+        type: "workout",
+        title: "Week 3 Day 4 – Ladder Progression",
+        summary: "This is one of the more important days of the block.",
+        items: [
+          { kind: "counter", name: "Ladder 1-2-3-4-5", detail: "Complete first full ladder", target: 1 },
+          { kind: "counter", name: "Ladder 1-2-3-4", detail: "Complete second ladder", target: 1 }
+        ]
+      },
+      "2026-05-02": {
+        type: "workout",
+        title: "Week 3 Day 5 – Support Work",
+        summary: "Keep pulling quality high and manage fatigue.",
+        items: [
+          { kind: "check", name: "Easy pull-up set 1", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 2", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 3", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 4", detail: "3 pull-ups" },
+          { kind: "counter", name: "Rows", detail: "12 reps per round", target: 4 },
+          { kind: "counter", name: "Bicep curl rounds", detail: "10 reps per round", target: 3 }
+        ]
+      },
+      "2026-05-03": {
+        type: "workout",
+        title: "Week 3 Day 6 – Density Push",
+        summary: "12-minute timer. Today use mostly 3-rep mini sets if possible.",
+        items: [
+          { kind: "counter", name: "Mini sets completed", detail: "3 pull-ups per mini set", target: 8 }
+        ]
+      },
+      "2026-05-04": {
+        type: "rest",
+        title: "Week 3 Day 7 – Full Rest",
+        summary: "Recover fully.",
+        items: []
+      },
+
+      "2026-05-05": {
+        type: "workout",
+        title: "Week 4 Day 1 – Strong Volume",
+        summary: "Last hard volume wave before tapering down.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "6 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "6 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "6 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 5", detail: "5 pull-ups" },
+          { kind: "check", name: "Set 6", detail: "4 pull-ups" }
+        ]
+      },
+      "2026-05-06": {
+        type: "workout",
+        title: "Week 4 Day 2 – Easy Technique",
+        summary: "Deload starts here. Keep things crisp and easy.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 4", detail: "4 pull-ups" },
+          { kind: "counter", name: "Dead hangs", detail: "20 sec each", target: 2 }
+        ]
+      },
+      "2026-05-07": {
+        type: "rest",
+        title: "Week 4 Day 3 – Full Rest",
+        summary: "No pull-ups today.",
+        items: []
+      },
+      "2026-05-08": {
+        type: "workout",
+        title: "Week 4 Day 4 – Light Ladder",
+        summary: "Keep the pattern, but reduce stress.",
+        items: [
+          { kind: "counter", name: "Ladder 1-2-3-4", detail: "Complete once", target: 1 },
+          { kind: "counter", name: "Ladder 1-2-3", detail: "Complete once", target: 1 }
+        ]
+      },
+      "2026-05-09": {
+        type: "workout",
+        title: "Week 4 Day 5 – Light Support Day",
+        summary: "Stay moving, but keep fatigue low.",
+        items: [
+          { kind: "check", name: "Easy pull-up set 1", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 2", detail: "3 pull-ups" },
+          { kind: "check", name: "Easy pull-up set 3", detail: "3 pull-ups" },
+          { kind: "counter", name: "Rows", detail: "10 reps per round", target: 3 },
+          { kind: "counter", name: "Plank rounds", detail: "30 sec each", target: 2 }
+        ]
+      },
+      "2026-05-10": {
+        type: "workout",
+        title: "Week 4 Day 6 – Light Density",
+        summary: "8-minute timer. Just grease the groove.",
+        items: [
+          { kind: "counter", name: "Mini sets completed", detail: "2 pull-ups per mini set", target: 8 }
+        ]
+      },
+      "2026-05-11": {
+        type: "rest",
+        title: "Week 4 Day 7 – Full Rest",
+        summary: "Recover.",
+        items: []
+      },
+      "2026-05-12": {
+        type: "workout",
+        title: "Final Tune-Up Day",
+        summary: "Short, easy, and clean. Do not test your max.",
+        items: [
+          { kind: "check", name: "Set 1", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 2", detail: "4 pull-ups" },
+          { kind: "check", name: "Set 3", detail: "4 pull-ups" }
+        ]
+      },
+      "2026-05-13": {
+        type: "rest",
+        title: "Last Prep Day – Full Rest",
+        summary: "Rest completely. Tomorrow begins the full-year target phase.",
+        items: []
+      }
+    };
+
+    const monthLabel = document.getElementById("monthLabel");
+    const calendarGrid = document.getElementById("calendarGrid");
+    const workoutDisplay = document.getElementById("workoutDisplay");
+    const prevMonthBtn = document.getElementById("prevMonth");
+    const nextMonthBtn = document.getElementById("nextMonth");
+
+    const today = new Date("2026-04-14T12:00:00");
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
+    let selectedDateKey = null;
+
+    function formatDateKey(year, month, day) {
+      const mm = String(month + 1).padStart(2, "0");
+      const dd = String(day).padStart(2, "0");
+      return `${year}-${mm}-${dd}`;
+    }
+
+    function prettyDate(dateKey) {
+      const date = new Date(dateKey + "T12:00:00");
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function saveState(dateKey, itemIndex, value) {
+      localStorage.setItem(`pullup_${dateKey}_${itemIndex}`, JSON.stringify(value));
+    }
+
+    function loadState(dateKey, itemIndex, fallback) {
+      const raw = localStorage.getItem(`pullup_${dateKey}_${itemIndex}`);
+      return raw ? JSON.parse(raw) : fallback;
+    }
+
+    function renderWorkout(dateKey) {
+      const workout = workoutData[dateKey];
+
+      if (!workout) {
+        workoutDisplay.innerHTML = `
+          <div class="workout-title">No programmed workout</div>
+          <div class="workout-date">${prettyDate(dateKey)}</div>
+          <div class="workout-summary">This date is outside the current 1-month prep block.</div>
+        `;
+        return;
+      }
+
+      let html = `
+        <div class="workout-title">${workout.title}</div>
+        <div class="workout-date">${prettyDate(dateKey)}</div>
+      `;
+
+      if (workout.type === "rest") {
+        html += `<div class="rest-badge">REST DAY</div>`;
+      }
+
+      html += `<div class="workout-summary">${workout.summary}</div>`;
+
+      if (workout.items.length > 0) {
+        html += `<div class="exercise-list">`;
+
+        workout.items.forEach((item, index) => {
+          const savedValue = loadState(dateKey, index, item.kind === "check" ? false : 0);
+
+          if (item.kind === "check") {
+            html += `
+              <div class="exercise-item">
+                <div class="exercise-left">
+                  <div class="exercise-name">${item.name}</div>
+                  <div class="exercise-detail">${item.detail}</div>
+                </div>
+                <label class="checkbox-wrap">
+                  <input type="checkbox" data-date="${dateKey}" data-index="${index}" ${savedValue ? "checked" : ""} />
+                  Done
+                </label>
+              </div>
+            `;
+          } else {
+            html += `
+              <div class="exercise-item">
+                <div class="exercise-left">
+                  <div class="exercise-name">${item.name}</div>
+                  <div class="exercise-detail">${item.detail} | Goal: ${item.target}</div>
+                </div>
+                <div class="counter">
+                  <button class="minus-btn" data-date="${dateKey}" data-index="${index}">-</button>
+                  <div class="counter-value" id="counter-${dateKey}-${index}">${savedValue}</div>
+                  <button class="plus-btn" data-date="${dateKey}" data-index="${index}" data-target="${item.target}">+</button>
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        html += `</div>`;
+      } else {
+        html += `<div class="exercise-list">
+          <div class="exercise-item">
+            <div class="exercise-left">
+              <div class="exercise-name">Recovery only</div>
+              <div class="exercise-detail">Light walking, stretching, hydration, sleep.</div>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      workoutDisplay.innerHTML = html;
+
+      document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+        box.addEventListener("change", e => {
+          const date = e.target.dataset.date;
+          const index = e.target.dataset.index;
+          saveState(date, index, e.target.checked);
+        });
+      });
+
+      document.querySelectorAll(".minus-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const date = e.target.dataset.date;
+          const index = e.target.dataset.index;
+          const display = document.getElementById(`counter-${date}-${index}`);
+          let value = parseInt(display.textContent, 10);
+          value = Math.max(0, value - 1);
+          display.textContent = value;
+          saveState(date, index, value);
+        });
+      });
+
+      document.querySelectorAll(".plus-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const date = e.target.dataset.date;
+          const index = e.target.dataset.index;
+          const display = document.getElementById(`counter-${date}-${index}`);
+          let value = parseInt(display.textContent, 10);
+          value += 1;
+          display.textContent = value;
+          saveState(date, index, value);
+        });
+      });
+    }
+
+    function renderCalendar(month, year) {
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      monthLabel.textContent = `${monthNames[month]} ${year}`;
+      calendarGrid.innerHTML = "";
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement("div");
+        empty.className = "day empty";
+        calendarGrid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = formatDateKey(year, month, day);
+        const dayEl = document.createElement("div");
+        dayEl.classList.add("day");
+
+        const workout = workoutData[dateKey];
+        if (workout) {
+          dayEl.classList.add(workout.type === "rest" ? "rest-day" : "training-day");
+        }
+
+        if (
+          day === today.getDate() &&
+          month === today.getMonth() &&
+          year === today.getFullYear()
+        ) {
+          dayEl.classList.add("today");
+        }
+
+        if (selectedDateKey === dateKey) {
+          dayEl.classList.add("selected-day");
+        }
+
+        let tagText = "";
+        if (workout) {
+          tagText = workout.type === "rest" ? "Rest" : workout.title.replace(/^Week \d+ Day \d+ – /, "").replace(/^Day \d+ – /, "");
+        }
+
+        dayEl.innerHTML = `
+          <div class="day-number">${day}</div>
+          <div class="day-tag">${tagText}</div>
+        `;
+
+        dayEl.addEventListener("click", () => {
+          selectedDateKey = dateKey;
+          renderCalendar(currentMonth, currentYear);
+          renderWorkout(dateKey);
+        });
+
+        calendarGrid.appendChild(dayEl);
+      }
+    }
+
+    prevMonthBtn.addEventListener("click", () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    nextMonthBtn.addEventListener("click", () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    selectedDateKey = "2026-04-14";
+    renderCalendar(currentMonth, currentYear);
+    renderWorkout(selectedDateKey);
+  </script>
+</body>
+</html>

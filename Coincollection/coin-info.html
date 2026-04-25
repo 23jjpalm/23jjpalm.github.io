@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coin Info - Coin Tracker</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tabs">
+      <a class="tab-btn" href="index.html">Home</a>
+      <a class="tab-btn" href="collection.html">Collection</a>
+      <a class="tab-btn active" href="coin-info.html">Coin Info</a>
+      <a class="tab-btn" href="special.html">Special</a>
+      <a class="tab-btn" href="manage.html">Add / Manage</a>
+    </div>
+
+    <h1>Coin Info</h1>
+    <p class="sub">One entry per unique coin and year, with history and your own story notes.</p>
+  </div>
+
+  <div class="section">
+    <div class="controls three">
+      <input id="search" placeholder="Search by year, denomination, history, or story"/>
+      <select id="filter">
+        <option value="All">All Denominations</option>
+      </select>
+      <select id="sort">
+        <option value="year-asc">Year ↑</option>
+        <option value="year-desc">Year ↓</option>
+        <option value="denomination">Denomination</option>
+      </select>
+    </div>
+
+    <div id="infoGrid" class="info-grid"></div>
+  </div>
+
+</div>
+
+<script src="data-store.js"></script>
+<script>
+function denomClass(denomination){
+  if (denomination === "Dime") return "denom-dime";
+  if (denomination === "Mercury Dime") return "denom-mercury-dime";
+  if (denomination === "Roosevelt Dime") return "denom-roosevelt-dime";
+  if (denomination === "Quarter") return "denom-quarter";
+  if (denomination === "Quarter (Barber)") return "denom-quarter-barber";
+  if (denomination === "Half Dollar") return "denom-half-dollar";
+  if (denomination === "Dollar Coin") return "denom-dollar-coin";
+  if (denomination === "Buffalo Nickel") return "denom-buffalo-nickel";
+  if (denomination === "Fine Silver") return "denom-fine-silver";
+  return "";
+}
+
+function escapeHtml(text){
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function uniqueCoins(coins){
+  const seen = new Set();
+  const result = [];
+
+  for (const coin of coins){
+    const key = `${coin.year}-${coin.denomination}`;
+    if (!seen.has(key)){
+      seen.add(key);
+      result.push(coin);
+    }
+  }
+
+  return result;
+}
+
+function getCoinHistory(year, denomination){
+  const map = {
+    "1877-Dime": "This 1877 dime comes from the Seated Liberty era, when U.S. silver coinage still carried a more classical design style. It helps bridge the gap between early American coinage and the more familiar 20th-century pieces in your collection.",
+    "1883-Dime": "This 1883 dime is another Seated Liberty issue from a time when silver dimes were a normal part of daily commerce in the United States.",
+    "1883-Dollar Coin": "The 1883 Morgan dollar is one of the classic large silver dollars of the United States. Morgan dollars are tied to the silver-mining boom, western expansion, and the image of Old West-era money.",
+    "1884-Dollar Coin": "The 1884 Morgan dollar continues that same story of late 19th-century silver coinage. Its size and silver content make it one of the most visually impressive coins in your collection.",
+    "1903-Quarter (Barber)": "This 1903 Barber quarter belongs to a design family that covered U.S. dimes, quarters, and half dollars in the late 1800s and early 1900s.",
+    "1911-Half Dollar": "This 1911 half dollar is from the Barber half dollar series and represents a large silver denomination that circulated before the Walking Liberty design took over.",
+    "1917-Mercury Dime": "The Mercury dime is one of the most popular U.S. coin designs. First introduced in 1916, it is admired for its art and connection to the early 20th century.",
+    "1928-Buffalo Nickel": "The Buffalo nickel is one of the most distinctive American coin designs, with a Native American portrait on one side and an American bison on the other.",
+    "1934-Half Dollar": "This 1934 half dollar belongs to the Walking Liberty series, widely regarded as one of the most beautiful designs in U.S. coinage.",
+    "1936-Buffalo Nickel": "This 1936 Buffalo nickel represents the final years of the Buffalo nickel series and keeps that rugged American design theme.",
+    "1940-Quarter": "This quarter is part of the Washington quarter series. Early silver Washington quarters are popular because they combine a familiar design with 90% silver content.",
+    "1941-Quarter": "This 1941 Washington quarter is a pre-1965 silver issue from a long-running and recognizable U.S. series.",
+    "1942-Quarter": "This 1942 Washington quarter comes from the World War II era, which adds extra historical interest.",
+    "1948-Quarter": "This 1948 Washington quarter is an early postwar silver quarter from a time of rapid U.S. growth.",
+    "1952-Half Dollar": "This 1952 half dollar belongs to the Franklin half dollar series, valued for both silver content and its short, distinct run.",
+    "1953-Quarter": "This 1953 Washington quarter is part of the silver quarter era that lasted until 1964.",
+    "1958-Quarter": "This 1958 Washington quarter is a later silver-era example that still carries the classic 90% silver composition.",
+    "1959-Quarter": "This 1959 Washington quarter is another example of traditional U.S. 90% silver coinage before the composition changes of the 1960s.",
+    "1963-Quarter": "This 1963 quarter comes from the final years of regular 90% silver Washington quarters.",
+    "1964-Quarter": "The 1964 quarter is the last regular-issue U.S. quarter struck in 90% silver for circulation.",
+    "1964-Half Dollar": "The 1964 Kennedy half dollar was the first year of the Kennedy series and the only regular-issue year struck in 90% silver.",
+    "1966-Half Dollar": "This 1966 Kennedy half dollar belongs to the reduced-silver era, when halves were struck in 40% silver instead of 90%.",
+    "1967-Half Dollar": "This 1967 Kennedy half dollar is another 40% silver issue from the transition period after silver was removed from most circulating U.S. coinage."
+  };
+
+  const key = `${year}-${denomination}`;
+  if (map[key]) return map[key];
+
+  if (denomination === "Mercury Dime") return "Mercury dimes are among the most collected U.S. silver coins. Their Winged Liberty design and silver content make them a favorite series.";
+  if (denomination === "Roosevelt Dime") return "Early Roosevelt dimes from before 1965 were struck in 90% silver and combine a familiar modern design with traditional silver composition.";
+  if (denomination === "Quarter") return "This silver Washington quarter is part of one of the longest-running U.S. coin series. Pre-1965 examples are especially collected because they contain 90% silver.";
+  if (denomination === "Half Dollar") return "This half dollar reflects how U.S. coinage changed over time, from the classic 90% silver standard to the reduced-silver issues of the mid-1960s.";
+  if (denomination === "Dollar Coin") return "This dollar coin represents the large silver dollar tradition in American coinage, especially associated with the late 19th century and the Morgan design.";
+  if (denomination === "Buffalo Nickel") return "Buffalo nickels remain one of the most iconic U.S. coin types because of their bold American imagery and recognizable design.";
+  if (denomination === "Dime") return "This silver dime comes from an older period of U.S. coinage and represents a smaller denomination with strong historical character.";
+  if (denomination === "Fine Silver") return "This is a fine silver bullion entry rather than a circulating coin. It represents pure silver weight tracked directly in your collection.";
+  return "This coin is part of your collection's broader history and can be expanded with your own story or research.";
+}
+
+function populateFilter(coins){
+  const filter = document.getElementById("filter");
+  const current = filter.value || "All";
+  const denominations = [...new Set(coins.map(c => c.denomination))].sort();
+
+  filter.innerHTML = '<option value="All">All Denominations</option>';
+  denominations.forEach(d => {
+    const option = document.createElement("option");
+    option.value = d;
+    option.textContent = d;
+    filter.appendChild(option);
+  });
+
+  if ([...filter.options].some(opt => opt.value === current)){
+    filter.value = current;
+  }
+}
+
+function render(){
+  const allCoins = CoinDataStore.getCoins();
+  const stories = CoinDataStore.getStories();
+  const coins = uniqueCoins(allCoins);
+
+  populateFilter(coins);
+
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  const denominationFilter = document.getElementById("filter").value;
+  const sort = document.getElementById("sort").value;
+
+  let rows = coins.filter(coin => {
+    const key = `${coin.year}-${coin.denomination}`;
+    const story = stories[key] || "";
+    const history = getCoinHistory(coin.year, coin.denomination);
+
+    const matchesQuery =
+      String(coin.year).includes(query) ||
+      coin.denomination.toLowerCase().includes(query) ||
+      history.toLowerCase().includes(query) ||
+      story.toLowerCase().includes(query);
+
+    const matchesDenomination =
+      denominationFilter === "All" || coin.denomination === denominationFilter;
+
+    return matchesQuery && matchesDenomination;
+  });
+
+  rows.sort((a, b) => {
+    if (sort === "year-desc") return b.year - a.year;
+    if (sort === "denomination") return a.denomination.localeCompare(b.denomination) || a.year - b.year;
+    return a.year - b.year;
+  });
+
+  const grid = document.getElementById("infoGrid");
+  grid.innerHTML = "";
+
+  if (!rows.length){
+    grid.innerHTML = '<div class="empty">No coins match your current search.</div>';
+    return;
+  }
+
+  rows.forEach(coin => {
+    const key = `${coin.year}-${coin.denomination}`;
+    const card = document.createElement("div");
+    card.className = "info-card";
+    card.innerHTML = `
+      <h2 class="info-title">${coin.year} ${escapeHtml(coin.denomination)}</h2>
+      <div class="meta">
+        <span class="badge ${denomClass(coin.denomination)}">${escapeHtml(coin.denomination)}</span>
+        <span class="badge">${coin.year}</span>
+        <span class="badge">Qty in Collection: ${coin.quantity}</span>
+      </div>
+      <div class="info-history">${escapeHtml(getCoinHistory(coin.year, coin.denomination))}</div>
+      <label class="story-label" for="story-${key}">Your personal story for this coin</label>
+      <textarea
+        id="story-${key}"
+        class="story-textarea"
+        data-key="${escapeHtml(key)}"
+        placeholder="Write your own story, memory, or reason this coin matters to you..."
+      >${escapeHtml(stories[key] || "")}</textarea>
+    `;
+    grid.appendChild(card);
+  });
+
+  document.querySelectorAll(".story-textarea").forEach(textarea => {
+    let timer = null;
+    textarea.addEventListener("input", (event) => {
+      const key = event.target.dataset.key;
+      const value = event.target.value;
+
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        CoinDataStore.saveStory(key, value);
+      }, 250);
+    });
+  });
+}
+
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("filter").addEventListener("change", render);
+document.getElementById("sort").addEventListener("change", render);
+
+CoinDataStore.initializeIfNeeded();
+render();
+</script>
+</body>
+</html>

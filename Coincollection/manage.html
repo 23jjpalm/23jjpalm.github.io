@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add / Manage - Coin Tracker</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tabs">
+      <a class="tab-btn" href="index.html">Home</a>
+      <a class="tab-btn" href="collection.html">Collection</a>
+      <a class="tab-btn" href="coin-info.html">Coin Info</a>
+      <a class="tab-btn" href="special.html">Special</a>
+      <a class="tab-btn active" href="manage.html">Add / Manage</a>
+    </div>
+
+    <h1>Add / Manage</h1>
+    <p class="sub">Add coins, add fine silver by weight, and adjust your bullion total.</p>
+  </div>
+
+  <div class="section">
+    <div class="action-grid">
+      <div class="subcard">
+        <h3>Add Coin or Fine Silver</h3>
+
+        <div class="mini-grid four">
+          <input id="addYear" type="number" placeholder="Year" />
+          <select id="addDenomination"></select>
+          <input id="addQuantity" type="number" min="1" value="1" placeholder="Qty" />
+          <button id="addEntryBtn" class="small-btn">Add Entry</button>
+        </div>
+
+        <div class="mini-grid four" style="margin-top:10px;">
+          <input id="addWeight" type="number" step="0.01" min="0" placeholder="Weight" />
+          <select id="addWeightUnit">
+            <option value="oz">oz</option>
+            <option value="g">g</option>
+          </select>
+          <div class="readonly">Used for Fine Silver only</div>
+          <div></div>
+        </div>
+
+        <div class="footer-note">
+          Choose one of your coin denominations for normal coins, or choose <strong>Fine Silver</strong>
+          and enter a weight. For Fine Silver entries, quantity is ignored and the weight is used directly.
+        </div>
+      </div>
+
+      <div class="subcard">
+        <h3>Quick Bullion Adjust</h3>
+
+        <div class="silver-controls">
+          <div>
+            <div class="stat-label">Current Bullion</div>
+            <div class="big-value" id="bullionDisplay">0.00 oz</div>
+          </div>
+
+          <div>
+            <div class="stat-label">Tracked Melt Value</div>
+            <div class="big-value" id="bullionValueDisplay">$0.00</div>
+          </div>
+        </div>
+
+        <div class="stepper" style="margin-top:12px;">
+          <button id="minusBullionBtn" class="step-btn">-</button>
+          <input id="bullionStep" type="number" min="0.01" step="0.01" value="1" style="max-width:120px;" />
+          <span class="badge">oz per click</span>
+          <button id="plusBullionBtn" class="step-btn">+</button>
+        </div>
+
+        <div class="footer-note">
+          This adjusts your separate bullion total in ounces.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Current Entries</h2>
+    <p class="sub">You can edit quantity and notes here, or remove custom Fine Silver entries.</p>
+
+    <div class="controls three" style="margin-top:16px;">
+      <input id="search" placeholder="Search by year or denomination" />
+      <select id="filter">
+        <option value="All">All Denominations</option>
+      </select>
+      <select id="sort">
+        <option value="year-asc">Year ↑</option>
+        <option value="year-desc">Year ↓</option>
+        <option value="denomination">Denomination</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Denomination</th>
+            <th>Qty</th>
+            <th>Weight (g)</th>
+            <th>Silver %</th>
+            <th>Notes</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody id="manageTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="data-store.js"></script>
+<script>
+const FALLBACK_SILVER_SPOT_PER_TROY_OUNCE = 76.61;
+let currentSilverSpotPerTroyOunce = FALLBACK_SILVER_SPOT_PER_TROY_OUNCE;
+const TROY_OUNCE_IN_GRAMS = 31.1035;
+
+function computeMeltValue(weightGrams, silverPercent) {
+  return weightGrams * (silverPercent / 100) * (currentSilverSpotPerTroyOunce / TROY_OUNCE_IN_GRAMS);
+}
+
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function denomClass(denomination){
+  if (denomination === "Dime") return "denom-dime";
+  if (denomination === "Mercury Dime") return "denom-mercury-dime";
+  if (denomination === "Roosevelt Dime") return "denom-roosevelt-dime";
+  if (denomination === "Quarter") return "denom-quarter";
+  if (denomination === "Quarter (Barber)") return "denom-quarter-barber";
+  if (denomination === "Half Dollar") return "denom-half-dollar";
+  if (denomination === "Dollar Coin") return "denom-dollar-coin";
+  if (denomination === "Buffalo Nickel") return "denom-buffalo-nickel";
+  if (denomination === "Fine Silver") return "denom-fine-silver";
+  return "";
+}
+
+function getCoins() {
+  return CoinDataStore.getCoins();
+}
+
+function saveCoins(coins) {
+  CoinDataStore.saveCoins(coins);
+}
+
+function populateDenominationDropdown() {
+  const select = document.getElementById("addDenomination");
+  const coins = getCoins();
+  const values = [...new Set(coins.map(c => c.denomination).filter(d => d !== "Fine Silver"))].sort();
+
+  select.innerHTML = '<option value="">Denomination</option>';
+  values.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+
+  const fineOption = document.createElement("option");
+  fineOption.value = "Fine Silver";
+  fineOption.textContent = "Fine Silver";
+  select.appendChild(fineOption);
+}
+
+function populateFilter() {
+  const filter = document.getElementById("filter");
+  const current = filter.value || "All";
+  const values = [...new Set(getCoins().map(c => c.denomination))].sort();
+
+  filter.innerHTML = '<option value="All">All Denominations</option>';
+  values.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    filter.appendChild(option);
+  });
+
+  if ([...filter.options].some(option => option.value === current)) {
+    filter.value = current;
+  }
+}
+
+function renderBullion() {
+  const oz = CoinDataStore.getBullionOz();
+  document.getElementById("bullionDisplay").textContent = `${oz.toFixed(2)} oz`;
+  document.getElementById("bullionValueDisplay").textContent = `$${(oz * currentSilverSpotPerTroyOunce).toFixed(2)}`;
+}
+
+function renderTable() {
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  const filter = document.getElementById("filter").value;
+  const sort = document.getElementById("sort").value;
+
+  populateFilter();
+
+  let coins = getCoins().filter(coin => {
+    const matchesQuery =
+      String(coin.year).includes(query) ||
+      coin.denomination.toLowerCase().includes(query) ||
+      (coin.notes || "").toLowerCase().includes(query);
+
+    const matchesFilter =
+      filter === "All" || coin.denomination === filter;
+
+    return matchesQuery && matchesFilter;
+  });
+
+  coins.sort((a, b) => {
+    if (sort === "year-desc") return b.year - a.year;
+    if (sort === "denomination") return a.denomination.localeCompare(b.denomination) || a.year - b.year;
+    return a.year - b.year;
+  });
+
+  const tbody = document.getElementById("manageTableBody");
+  tbody.innerHTML = "";
+
+  if (!coins.length) {
+    tbody.innerHTML = '<tr><td colspan="7">No entries match your current search.</td></tr>';
+    return;
+  }
+
+  coins.forEach(coin => {
+    const canRemove = coin.denomination === "Fine Silver";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${coin.year}</td>
+      <td><span class="badge ${denomClass(coin.denomination)}">${escapeHtml(coin.denomination)}</span></td>
+      <td>
+        <input class="small-input qty-input" data-id="${coin.id}" type="number" min="1" value="${coin.quantity}">
+      </td>
+      <td>${coin.weightGrams.toFixed(2)}</td>
+      <td>${coin.silverContent}%</td>
+      <td>
+        <input class="small-input note-input" data-id="${coin.id}" value="${escapeHtml(coin.notes || "")}" placeholder="Notes">
+      </td>
+      <td>
+        ${canRemove ? `<button class="small-btn remove-btn" data-id="${coin.id}">Remove</button>` : '<span class="sub">-</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll(".qty-input").forEach(input => {
+    input.addEventListener("change", (event) => {
+      const id = Number(event.target.dataset.id);
+      const coins = getCoins();
+      const coin = coins.find(c => Number(c.id) === id);
+      if (!coin) return;
+
+      const newQty = Math.max(1, Number(event.target.value) || 1);
+      coin.quantity = newQty;
+      saveCoins(coins);
+      renderTable();
+    });
+  });
+
+  tbody.querySelectorAll(".note-input").forEach(input => {
+    let timer = null;
+    input.addEventListener("input", (event) => {
+      const id = Number(event.target.dataset.id);
+      const coins = getCoins();
+      const coin = coins.find(c => Number(c.id) === id);
+      if (!coin) return;
+
+      coin.notes = event.target.value;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        saveCoins(coins);
+      }, 250);
+    });
+  });
+
+  tbody.querySelectorAll(".remove-btn").forEach(button => {
+    button.addEventListener("click", (event) => {
+      const id = Number(event.target.dataset.id);
+      const coins = getCoins().filter(c => Number(c.id) !== id);
+      saveCoins(coins);
+      renderAll();
+    });
+  });
+}
+
+function addEntry() {
+  const yearRaw = document.getElementById("addYear").value.trim();
+  const denomination = document.getElementById("addDenomination").value;
+  const quantity = Math.max(1, Number(document.getElementById("addQuantity").value) || 1);
+  const weightRaw = document.getElementById("addWeight").value.trim();
+  const weightUnit = document.getElementById("addWeightUnit").value;
+
+  if (!denomination) {
+    alert("Choose a denomination.");
+    return;
+  }
+
+  const coins = getCoins();
+
+  if (denomination === "Fine Silver") {
+    const weight = Number(weightRaw);
+    if (!Number.isFinite(weight) || weight <= 0) {
+      alert("Enter a valid weight for Fine Silver.");
+      return;
+    }
+
+    const weightGrams = weightUnit === "oz" ? weight * TROY_OUNCE_IN_GRAMS : weight;
+
+    coins.push({
+      id: CoinDataStore.nextCoinId(coins),
+      year: yearRaw ? Number(yearRaw) : new Date().getFullYear(),
+      denomination: "Fine Silver",
+      quantity: 1,
+      customWeightGrams: weightGrams,
+      customSilverContent: 100,
+      weightGrams,
+      silverContent: 100,
+      notes: "",
+      weightUnit
+    });
+  } else {
+    const year = Number(yearRaw);
+    if (!Number.isFinite(year) || year <= 0) {
+      alert("Enter a valid year.");
+      return;
+    }
+
+    const spec = CoinDataStore.getCoinSpec(year, denomination);
+
+    coins.push({
+      id: CoinDataStore.nextCoinId(coins),
+      year,
+      denomination,
+      quantity,
+      weightGrams: spec.weightGrams,
+      silverContent: spec.silverContent,
+      notes: "",
+      weightUnit: "g"
+    });
+  }
+
+  saveCoins(coins);
+
+  document.getElementById("addYear").value = "";
+  document.getElementById("addQuantity").value = "1";
+  document.getElementById("addWeight").value = "";
+  document.getElementById("addWeightUnit").value = "oz";
+  document.getElementById("addDenomination").value = "";
+
+  renderAll();
+}
+
+function adjustBullion(direction) {
+  const step = Math.max(0.01, Number(document.getElementById("bullionStep").value) || 1);
+  const current = CoinDataStore.getBullionOz();
+  const next = direction === "plus"
+    ? current + step
+    : Math.max(0, current - step);
+
+  CoinDataStore.saveBullionOz(Number(next.toFixed(2)));
+  renderBullion();
+}
+
+async function fetchLiveSilverSpotPrice() {
+  try {
+    const response = await fetch("https://api.gold-api.com/price/XAG", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const price = Number(data.price);
+    if (Number.isFinite(price) && price > 0) {
+      currentSilverSpotPerTroyOunce = price;
+    }
+  } catch (error) {
+    console.warn("Using fallback silver price.", error);
+  }
+
+  renderBullion();
+}
+
+function renderAll() {
+  populateDenominationDropdown();
+  renderBullion();
+  renderTable();
+}
+
+document.getElementById("addEntryBtn").addEventListener("click", addEntry);
+document.getElementById("plusBullionBtn").addEventListener("click", () => adjustBullion("plus"));
+document.getElementById("minusBullionBtn").addEventListener("click", () => adjustBullion("minus"));
+document.getElementById("search").addEventListener("input", renderTable);
+document.getElementById("filter").addEventListener("change", renderTable);
+document.getElementById("sort").addEventListener("change", renderTable);
+
+CoinDataStore.initializeIfNeeded();
+renderAll();
+fetchLiveSilverSpotPrice();
+</script>
+</body>
+</html>

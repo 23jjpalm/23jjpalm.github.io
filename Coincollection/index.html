@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jordan's Coin Collection</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="tabs">
+        <a class="tab-btn active" href="index.html">Home</a>
+        <a class="tab-btn" href="collection.html">Collection</a>
+        <a class="tab-btn" href="coin-info.html">Coin Info</a>
+        <a class="tab-btn" href="special.html">Special</a>
+        <a class="tab-btn" href="manage.html">Add / Manage</a>
+      </div>
+
+      <h1>Jordan's Coin Collection</h1>
+      <p class="sub">Main dashboard for coins, bullion, and bills.</p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Total Coin Pieces</div>
+          <div class="stat-value" id="totalCoins">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Total Bills</div>
+          <div class="stat-value" id="totalBills">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Bullion Entries</div>
+          <div class="stat-value" id="totalBullionEntries">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Year Range</div>
+          <div class="stat-value" id="yearRange">-</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Silver Spot Price</div>
+          <div class="stat-value" id="silverSpot">$0.00/oz</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Total Silver Weight</div>
+          <div class="stat-value" id="totalSilverWeight">0.00 oz</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Estimated Total Melt Value</div>
+          <div class="stat-value" id="totalMelt">$0.00</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Spot Change Since Daily First Visit</div>
+          <div class="stat-value" id="spotChangeValue">$0.00</div>
+          <div class="footer-note" id="spotChangeNote" style="margin-top:8px;">Baseline not set yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Dashboard</h2>
+      <p class="sub">
+        This page is ready for individually tracked coins, bullion with purchase prices, and bills.
+        The next file will wire in the serial-number style entries and the new data structure.
+      </p>
+    </div>
+  </div>
+
+  <script src="data-store.js"></script>
+  <script>
+    const FALLBACK_SILVER_SPOT_PER_TROY_OUNCE = 76.61;
+    let currentSilverSpotPerTroyOunce = FALLBACK_SILVER_SPOT_PER_TROY_OUNCE;
+    const TROY_OUNCE_IN_GRAMS = 31.1035;
+    const DAILY_SPOT_BASELINE_KEY = "dailySilverSpotBaseline";
+
+    function getTodayKey() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDailyBaselineRecord() {
+      try {
+        return JSON.parse(localStorage.getItem(DAILY_SPOT_BASELINE_KEY) || "null");
+      } catch {
+        return null;
+      }
+    }
+
+    function setDailyBaselineIfNeeded(price) {
+      const todayKey = getTodayKey();
+      const existing = getDailyBaselineRecord();
+
+      if (!existing || existing.date !== todayKey || !Number.isFinite(Number(existing.price))) {
+        const record = { date: todayKey, price: Number(price) };
+        localStorage.setItem(DAILY_SPOT_BASELINE_KEY, JSON.stringify(record));
+        return record;
+      }
+
+      return {
+        date: existing.date,
+        price: Number(existing.price)
+      };
+    }
+
+    function getCurrentBaseline() {
+      const existing = getDailyBaselineRecord();
+      const todayKey = getTodayKey();
+
+      if (!existing || existing.date !== todayKey || !Number.isFinite(Number(existing.price))) {
+        return null;
+      }
+
+      return {
+        date: existing.date,
+        price: Number(existing.price)
+      };
+    }
+
+    function renderSpotChange() {
+      const baseline = getCurrentBaseline();
+      const valueEl = document.getElementById("spotChangeValue");
+      const noteEl = document.getElementById("spotChangeNote");
+
+      if (!baseline) {
+        valueEl.textContent = "$0.00";
+        noteEl.textContent = "Baseline not set yet.";
+        valueEl.style.color = "";
+        return;
+      }
+
+      const change = currentSilverSpotPerTroyOunce - baseline.price;
+      const percent = baseline.price > 0 ? (change / baseline.price) * 100 : 0;
+      const sign = change > 0 ? "+" : "";
+
+      valueEl.textContent = `${sign}$${change.toFixed(2)} (${sign}${percent.toFixed(2)}%)`;
+      noteEl.textContent = `Compared to the first spot price seen on ${baseline.date}: $${baseline.price.toFixed(2)}/oz`;
+
+      if (change > 0) {
+        valueEl.style.color = "var(--success)";
+      } else if (change < 0) {
+        valueEl.style.color = "var(--danger)";
+      } else {
+        valueEl.style.color = "";
+      }
+    }
+
+    function getCoinsSafe() {
+      if (window.CoinDataStore && typeof CoinDataStore.getCoins === "function") {
+        return CoinDataStore.getCoins();
+      }
+      return [];
+    }
+
+    function getBillsSafe() {
+      if (window.CoinDataStore && typeof CoinDataStore.getBills === "function") {
+        return CoinDataStore.getBills();
+      }
+      return [];
+    }
+
+    function getBullionEntriesSafe() {
+      if (window.CoinDataStore && typeof CoinDataStore.getBullionEntries === "function") {
+        return CoinDataStore.getBullionEntries();
+      }
+      return [];
+    }
+
+    function renderStats() {
+      const coins = getCoinsSafe();
+      const bills = getBillsSafe();
+      const bullionEntries = getBullionEntriesSafe();
+
+      const totalCoinPieces = coins.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
+      const totalBills = bills.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
+      const totalBullionEntries = bullionEntries.length;
+
+      const years = [
+        ...coins.map(item => Number(item.year)).filter(Number.isFinite),
+        ...bills.map(item => Number(item.year)).filter(Number.isFinite),
+        ...bullionEntries.map(item => Number(item.year)).filter(Number.isFinite)
+      ];
+
+      const coinSilverGrams = coins.reduce((sum, item) => {
+        const weightGrams = Number(item.weightGrams || 0);
+        const silverContent = Number(item.silverContent || 0);
+        const quantity = Number(item.quantity || 1);
+        return sum + (weightGrams * (silverContent / 100) * quantity);
+      }, 0);
+
+      const bullionSilverGrams = bullionEntries.reduce((sum, item) => {
+        const weightGrams = Number(item.weightGrams || 0);
+        const silverContent = Number(item.silverContent || 100);
+        const quantity = Number(item.quantity || 1);
+        return sum + (weightGrams * (silverContent / 100) * quantity);
+      }, 0);
+
+      const totalSilverOz = (coinSilverGrams + bullionSilverGrams) / TROY_OUNCE_IN_GRAMS;
+
+      const coinMelt = coins.reduce((sum, item) => {
+        const weightGrams = Number(item.weightGrams || 0);
+        const silverContent = Number(item.silverContent || 0);
+        const quantity = Number(item.quantity || 1);
+        const meltEach = weightGrams * (silverContent / 100) * (currentSilverSpotPerTroyOunce / TROY_OUNCE_IN_GRAMS);
+        return sum + (meltEach * quantity);
+      }, 0);
+
+      const bullionMelt = bullionEntries.reduce((sum, item) => {
+        const weightGrams = Number(item.weightGrams || 0);
+        const silverContent = Number(item.silverContent || 100);
+        const quantity = Number(item.quantity || 1);
+        const meltEach = weightGrams * (silverContent / 100) * (currentSilverSpotPerTroyOunce / TROY_OUNCE_IN_GRAMS);
+        return sum + (meltEach * quantity);
+      }, 0);
+
+      document.getElementById("totalCoins").textContent = totalCoinPieces;
+      document.getElementById("totalBills").textContent = totalBills;
+      document.getElementById("totalBullionEntries").textContent = totalBullionEntries;
+      document.getElementById("yearRange").textContent = years.length
+        ? `${Math.min(...years)} - ${Math.max(...years)}`
+        : "-";
+      document.getElementById("silverSpot").textContent = `$${currentSilverSpotPerTroyOunce.toFixed(2)}/oz`;
+      document.getElementById("totalSilverWeight").textContent = `${totalSilverOz.toFixed(2)} oz`;
+      document.getElementById("totalMelt").textContent = `$${(coinMelt + bullionMelt).toFixed(2)}`;
+      renderSpotChange();
+    }
+
+    async function fetchLiveSilverSpotPrice() {
+      try {
+        const response = await fetch("https://api.gold-api.com/price/XAG", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const price = Number(data.price);
+        if (Number.isFinite(price) && price > 0) {
+          currentSilverSpotPerTroyOunce = price;
+        }
+      } catch (error) {
+        console.warn("Using fallback silver price.", error);
+      }
+
+      setDailyBaselineIfNeeded(currentSilverSpotPerTroyOunce);
+      renderStats();
+    }
+
+    if (window.CoinDataStore && typeof CoinDataStore.initializeIfNeeded === "function") {
+      CoinDataStore.initializeIfNeeded();
+    }
+
+    renderStats();
+    fetchLiveSilverSpotPrice();
+  </script>
+</body>
+</html>

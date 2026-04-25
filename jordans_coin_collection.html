@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jordan's Coin Collection</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --accent-2: #38bdf8;
+      --good: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .controls.three {
+      grid-template-columns: 2fr 1fr 1fr;
+    }
+
+    .controls input,
+    .controls select,
+    .controls button {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .controls button {
+      cursor: pointer;
+      background: var(--accent);
+      color: #111827;
+      font-weight: bold;
+      border: none;
+    }
+
+    .controls button:hover {
+      filter: brightness(1.05);
+    }
+
+    .section {
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--accent-2);
+      font-size: 0.95rem;
+    }
+
+    td {
+      color: var(--text);
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .denom-dime {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+    }
+
+    .denom-mercury-dime {
+      background: rgba(14, 165, 233, 0.18);
+      border-color: rgba(14, 165, 233, 0.35);
+      color: #e0f2fe;
+    }
+
+    .denom-roosevelt-dime {
+      background: rgba(59, 130, 246, 0.18);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #dbeafe;
+    }
+
+    .denom-quarter {
+      background: rgba(34, 197, 94, 0.16);
+      border-color: rgba(34, 197, 94, 0.35);
+      color: #dcfce7;
+    }
+
+    .denom-quarter-barber {
+      background: rgba(22, 163, 74, 0.16);
+      border-color: rgba(22, 163, 74, 0.35);
+      color: #dcfce7;
+    }
+
+    .denom-half-dollar {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fde68a;
+    }
+
+    .denom-dollar-coin {
+      background: rgba(250, 204, 21, 0.16);
+      border-color: rgba(250, 204, 21, 0.35);
+      color: #fef08a;
+    }
+
+    .denom-buffalo-nickel {
+      background: rgba(249, 115, 22, 0.16);
+      border-color: rgba(249, 115, 22, 0.35);
+      color: #fed7aa;
+    }
+
+    .small-input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+    }
+
+    .readonly-field {
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .summary-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .summary-box h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1rem;
+      color: var(--accent-2);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(148,163,184,0.15);
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      margin-top: 16px;
+      font-size: 0.9rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .tab-button.active {
+      background: var(--accent);
+      color: #111827;
+      border-color: transparent;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .special-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .special-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .special-title {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      color: var(--accent-2);
+    }
+
+    .special-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .special-text {
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .special-sub {
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    .info-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .info-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .info-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .info-title {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      color: var(--accent-2);
+    }
+
+    .info-history {
+      color: var(--text);
+      line-height: 1.65;
+      margin: 12px 0;
+    }
+
+    .story-label {
+      display: block;
+      color: var(--muted);
+      margin: 12px 0 8px;
+      font-size: 0.95rem;
+    }
+
+    .story-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      resize: vertical;
+      font: inherit;
+    }
+
+    .empty-special {
+      background: var(--panel-2);
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Jordan's Coin Collection</h1>
+      <p class="sub">A simple website to track your coins, quantities, silver content, average weight, melt value, and notes.</p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Unique Entries</div>
+          <div class="stat-value" id="uniqueEntries">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Coins</div>
+          <div class="stat-value" id="totalCoins">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Year Range</div>
+          <div class="stat-value" id="yearRange">-</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Silver Spot Price</div>
+          <div class="stat-value" id="silverSpot">$76.61/oz</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Estimated Total Melt</div>
+          <div class="stat-value" id="estimatedTotal">$0.00</div>
+        </div>
+      </div>
+    </div>
+
+        <div class="tabs">
+      <button class="tab-button active" data-tab="collectionTab">Collection</button>
+      <button class="tab-button" data-tab="infoTab">Coin Info</button>
+      <button class="tab-button" data-tab="specialTab">Special</button>
+    </div>
+
+    <div id="collectionTab" class="tab-panel active">
+      <div class="section" style="margin-bottom: 20px;">
+        <div class="controls">
+          <input type="text" id="searchInput" placeholder="Search by year or denomination" />
+          <select id="filterDenomination">
+            <option value="All">All Denominations</option>
+          </select>
+          <select id="sortBy">
+            <option value="year-asc">Sort: Year ↑</option>
+            <option value="year-desc">Sort: Year ↓</option>
+            <option value="qty-desc">Sort: Quantity ↓</option>
+            <option value="denomination">Sort: Denomination</option>
+          </select>
+          <button id="exportBtn">Export CSV</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Denomination</th>
+                <th>Quantity</th>
+                <th>Silver Content %</th>
+                <th>Average Weight</th>
+                <th>Unit</th>
+                <th>Melt Value Each</th>
+                <th>Total Row Value</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="coinTableBody"></tbody>
+          </table>
+        </div>
+
+        <p class="footer-note">Silver content, weight, and melt value are filled automatically. Notes and weight-unit selections save in your browser on this device.</p>
+      </div>
+    </div>
+
+    <div id="infoTab" class="tab-panel">
+      <div class="section" style="margin-bottom: 20px;">
+        <div class="controls three">
+          <input type="text" id="infoSearchInput" placeholder="Search coin info by year or denomination" />
+          <select id="infoFilterDenomination">
+            <option value="All">All Denominations</option>
+          </select>
+          <select id="infoSortBy">
+            <option value="year-asc">Sort: Year ↑</option>
+            <option value="year-desc">Sort: Year ↓</option>
+            <option value="denomination">Sort: Denomination</option>
+          </select>
+        </div>
+        <div id="infoGrid" class="info-grid"></div>
+      </div>
+    </div>
+
+    <div id="specialTab" class="tab-panel">
+      <div class="section" style="margin-bottom: 20px;">
+        <div class="controls three">
+          <input type="text" id="specialSearchInput" placeholder="Search your special stories" />
+          <select id="specialFilterDenomination">
+            <option value="All">All Denominations</option>
+          </select>
+          <select id="specialSortBy">
+            <option value="year-asc">Sort: Year ↑</option>
+            <option value="year-desc">Sort: Year ↓</option>
+            <option value="denomination">Sort: Denomination</option>
+          </select>
+        </div>
+        <div id="specialStories" class="special-grid"></div>
+      </div>
+    </div>
+
+<div class="summary-grid">
+      <div class="summary-box">
+        <h3>Collection Breakdown</h3>
+        <div id="breakdownList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultCoins = [
+      { year: 1877, denomination: "Dime", quantity: 1 },
+      { year: 1883, denomination: "Dime", quantity: 1 },
+      { year: 1883, denomination: "Dollar Coin", quantity: 1 },
+      { year: 1884, denomination: "Dollar Coin", quantity: 1 },
+      { year: 1903, denomination: "Quarter (Barber)", quantity: 1 },
+      { year: 1911, denomination: "Half Dollar", quantity: 1 },
+      { year: 1917, denomination: "Mercury Dime", quantity: 1 },
+      { year: 1928, denomination: "Buffalo Nickel", quantity: 1 },
+      { year: 1934, denomination: "Half Dollar", quantity: 1 },
+      { year: 1935, denomination: "Mercury Dime", quantity: 3 },
+      { year: 1936, denomination: "Mercury Dime", quantity: 4 },
+      { year: 1936, denomination: "Buffalo Nickel", quantity: 1 },
+      { year: 1938, denomination: "Mercury Dime", quantity: 2 },
+      { year: 1939, denomination: "Mercury Dime", quantity: 4 },
+      { year: 1940, denomination: "Mercury Dime", quantity: 1 },
+      { year: 1940, denomination: "Quarter", quantity: 1 },
+      { year: 1941, denomination: "Mercury Dime", quantity: 5 },
+      { year: 1941, denomination: "Quarter", quantity: 1 },
+      { year: 1942, denomination: "Mercury Dime", quantity: 14 },
+      { year: 1942, denomination: "Quarter", quantity: 2 },
+      { year: 1943, denomination: "Mercury Dime", quantity: 10 },
+      { year: 1944, denomination: "Mercury Dime", quantity: 8 },
+      { year: 1945, denomination: "Mercury Dime", quantity: 5 },
+      { year: 1946, denomination: "Roosevelt Dime", quantity: 4 },
+      { year: 1947, denomination: "Roosevelt Dime", quantity: 2 },
+      { year: 1948, denomination: "Roosevelt Dime", quantity: 2 },
+      { year: 1948, denomination: "Quarter", quantity: 1 },
+      { year: 1951, denomination: "Roosevelt Dime", quantity: 1 },
+      { year: 1952, denomination: "Roosevelt Dime", quantity: 1 },
+      { year: 1952, denomination: "Half Dollar", quantity: 1 },
+      { year: 1953, denomination: "Quarter", quantity: 1 },
+      { year: 1954, denomination: "Roosevelt Dime", quantity: 2 },
+      { year: 1956, denomination: "Roosevelt Dime", quantity: 1 },
+      { year: 1957, denomination: "Roosevelt Dime", quantity: 1 },
+      { year: 1958, denomination: "Quarter", quantity: 1 },
+      { year: 1959, denomination: "Roosevelt Dime", quantity: 1 },
+      { year: 1959, denomination: "Quarter", quantity: 1 },
+      { year: 1961, denomination: "Roosevelt Dime", quantity: 5 },
+      { year: 1962, denomination: "Roosevelt Dime", quantity: 3 },
+      { year: 1963, denomination: "Roosevelt Dime", quantity: 4 },
+      { year: 1963, denomination: "Quarter", quantity: 2 },
+      { year: 1964, denomination: "Roosevelt Dime", quantity: 13 },
+      { year: 1964, denomination: "Quarter", quantity: 2 },
+      { year: 1964, denomination: "Half Dollar", quantity: 2 },
+      { year: 1966, denomination: "Half Dollar", quantity: 1 },
+      { year: 1967, denomination: "Half Dollar", quantity: 2 }
+    ].map((coin, index) => ({
+      id: index + 1,
+      ...coin,
+      silverContent: null,
+      weightGrams: null,
+      weightUnit: "g",
+      meltValue: null,
+      notes: "",
+      personalStory: ""
+    }));
+
+    const storageKey = "jordans_coin_collection_site_data";
+    const SILVER_SPOT_PER_TROY_OUNCE = 76.61;
+    const TROY_OUNCE_IN_GRAMS = 31.1035;
+    const SILVER_SPOT_PER_GRAM = SILVER_SPOT_PER_TROY_OUNCE / TROY_OUNCE_IN_GRAMS;
+
+    function getCoinHistory(year, denomination) {
+      const key = `${year}-${denomination}`;
+      const historyMap = {
+        "1877-Dime": "This 1877 dime comes from the Seated Liberty era, a period when U.S. silver coinage still carried a more classical design style. Coins like this bridge the gap between early American coinage and the more familiar 20th-century pieces in your collection.",
+        "1883-Dime": "This 1883 dime is another Seated Liberty issue, from a time when silver dimes were an everyday part of commerce in the United States. It represents late 19th-century American pocket change before the Barber design replaced it.",
+        "1883-Dollar Coin": "The 1883 Morgan dollar is one of the classic large silver dollars of the United States. Morgan dollars are closely associated with the silver-mining boom, western expansion, and the iconic image of Old West-era money.",
+        "1884-Dollar Coin": "The 1884 Morgan dollar continues that same story of late 19th-century silver coinage. Its size and silver content make it one of the most visually impressive coins in your collection.",
+        "1903-Quarter (Barber)": "This 1903 Barber quarter belongs to a design family that covered U.S. dimes, quarters, and half dollars in the late 1800s and early 1900s. Barber coinage is often recognized for its formal, clean look and its place in pre-World War I American history.",
+        "1911-Half Dollar": "This 1911 half dollar is from the Barber half dollar series. It represents a large silver denomination that circulated widely in commerce before the more artistic Walking Liberty design took over.",
+        "1917-Mercury Dime": "The Mercury dime is one of the most popular U.S. coin designs. First introduced in 1916, it is admired for its art and for its strong connection to the early 20th century.",
+        "1928-Buffalo Nickel": "The Buffalo nickel is one of the most distinctive American coin designs. With a Native American portrait on one side and an American bison on the other, it stands out as a bold departure from more traditional coin styles.",
+        "1934-Half Dollar": "This 1934 half dollar belongs to the Walking Liberty series, a design widely regarded as one of the most beautiful in U.S. coinage. The same obverse design was later reused for the modern American Silver Eagle bullion coin.",
+        "1936-Buffalo Nickel": "This 1936 Buffalo nickel represents the final years of the Buffalo nickel series. It captures a rugged, distinctly American design theme that still appeals strongly to collectors.",
+        "1940-Quarter": "This quarter is part of the Washington quarter series. Early silver Washington quarters are popular because they combine familiar design with 90% silver content.",
+        "1941-Quarter": "This 1941 Washington quarter is a pre-1965 silver issue from a long-running and very recognizable U.S. series. It reflects the standard 90% silver composition used for circulating quarters at the time.",
+        "1942-Quarter": "This 1942 Washington quarter comes from the World War II era, which adds extra historical interest. It is still part of the classic 90% silver quarter period.",
+        "1948-Quarter": "This 1948 Washington quarter is an early postwar silver quarter, struck during a time of major economic and industrial growth in the United States.",
+        "1952-Half Dollar": "This 1952 half dollar belongs to the Franklin half dollar series. Franklin halves are valued for both their silver content and their short, distinct run before the Kennedy half dollar replaced them.",
+        "1953-Quarter": "This 1953 Washington quarter is part of the silver quarter era that lasted until 1964. It represents the middle period of the long Washington quarter series.",
+        "1958-Quarter": "This 1958 Washington quarter is a later silver-era example from the Eisenhower period. It retains the classic silver composition that ended just a few years later.",
+        "1959-Quarter": "This 1959 Washington quarter is another example of traditional U.S. 90% silver coinage just before the big metal-composition changes of the 1960s.",
+        "1963-Quarter": "This 1963 quarter comes from the final years of regular 90% silver Washington quarters. Coins from this period are often saved because they sit right before the 1965 composition change.",
+        "1964-Quarter": "The 1964 quarter is the last regular-issue U.S. quarter struck in 90% silver for circulation. That makes it especially notable to many collectors and stackers.",
+        "1964-Half Dollar": "The 1964 Kennedy half dollar was the first year of the Kennedy series and the only regular-issue year struck in 90% silver. It carries both historical and memorial significance after President Kennedy’s assassination.",
+        "1966-Half Dollar": "This 1966 Kennedy half dollar belongs to the reduced-silver era, when halves were struck in 40% silver instead of 90%. It marks the transition away from traditional silver coinage.",
+        "1967-Half Dollar": "This 1967 Kennedy half dollar is another 40% silver issue from the transition period after silver was removed from most circulating U.S. coinage."
+      };
+
+      if (historyMap[key]) return historyMap[key];
+
+      if (denomination === "Mercury Dime") return "Mercury dimes are among the most collected U.S. silver coins. Their Winged Liberty design, strong silver content, and long run through the Depression and World War II years make them a favorite series.";
+      if (denomination === "Roosevelt Dime") return "Early Roosevelt dimes from before 1965 were struck in 90% silver. They combine a familiar modern design with the traditional silver composition that disappeared from everyday U.S. dimes after 1964.";
+      if (denomination === "Quarter") return "This silver Washington quarter is part of one of the longest-running U.S. coin series. Pre-1965 examples are especially collected because they still contain 90% silver.";
+      if (denomination === "Half Dollar") return "This half dollar is part of a series that reflects how U.S. coinage changed over time, from the classic 90% silver standard to the reduced-silver issues of the mid-1960s.";
+      if (denomination === "Dollar Coin") return "This dollar coin represents the large silver dollar tradition in American coinage, a type especially associated with the late 19th century and the Morgan design.";
+      if (denomination === "Buffalo Nickel") return "Buffalo nickels remain one of the most iconic U.S. coin types because of their bold American imagery and instantly recognizable design.";
+      if (denomination === "Dime") return "This silver dime comes from an older period of U.S. coinage and represents a smaller denomination with strong historical character.";
+      return "This coin is part of your collection’s broader history and can be expanded with your own story or research.";
+    }
+
+    function getCoinSpec(year, denomination) {
+      if (denomination === "Buffalo Nickel") {
+        return { silverContent: 0, weightGrams: 5.00 };
+      }
+      if (denomination === "Dime" || denomination === "Mercury Dime" || denomination === "Roosevelt Dime") {
+        return { silverContent: 90, weightGrams: 2.50 };
+      }
+      if (denomination === "Quarter" || denomination === "Quarter (Barber)") {
+        return { silverContent: 90, weightGrams: 6.25 };
+      }
+      if (denomination === "Dollar Coin") {
+        return { silverContent: 90, weightGrams: 26.73 };
+      }
+      if (denomination === "Half Dollar") {
+        if (year === 1966 || year === 1967) {
+          return { silverContent: 40, weightGrams: 11.50 };
+        }
+        return { silverContent: 90, weightGrams: 12.50 };
+      }
+      return { silverContent: 0, weightGrams: 0 };
+    }
+
+    let coins = loadCoins();
+
+    const searchInput = document.getElementById("searchInput");
+    const filterDenomination = document.getElementById("filterDenomination");
+    const sortBy = document.getElementById("sortBy");
+    const tableBody = document.getElementById("coinTableBody");
+    const exportBtn = document.getElementById("exportBtn");
+
+    function loadCoins() {
+      const saved = localStorage.getItem(storageKey);
+      let parsed = [];
+      if (saved) {
+        try {
+          parsed = JSON.parse(saved);
+        } catch {
+          parsed = [];
+        }
+      }
+
+      return defaultCoins.map(defaultCoin => {
+        const match = parsed.find(savedCoin => savedCoin.id === defaultCoin.id) || {};
+        const spec = getCoinSpec(defaultCoin.year, defaultCoin.denomination);
+        const weightUnit = match.weightUnit || defaultCoin.weightUnit || "g";
+        const notes = match.notes || "";
+        const personalStory = match.personalStory || "";
+        const meltValue = spec.weightGrams * (spec.silverContent / 100) * SILVER_SPOT_PER_GRAM;
+
+        return {
+          ...defaultCoin,
+          notes,
+          personalStory,
+          weightUnit,
+          silverContent: spec.silverContent,
+          weightGrams: spec.weightGrams,
+          meltValue
+        };
+      });
+    }
+
+    function saveCoins() {
+      const minimal = coins.map(coin => ({
+        id: coin.id,
+        notes: coin.notes,
+        weightUnit: coin.weightUnit,
+        personalStory: coin.personalStory || ""
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(minimal));
+    }
+
+    function populateDenominations() {
+      const values = [...new Set(coins.map(c => c.denomination))].sort();
+      const selectIds = ["filterDenomination", "infoFilterDenomination", "specialFilterDenomination"];
+
+      selectIds.forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = '<option value="All">All Denominations</option>';
+        values.forEach(value => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    function getFilteredCoins() {
+      const query = searchInput.value.trim().toLowerCase();
+      const denomination = filterDenomination.value;
+      const sort = sortBy.value;
+
+      let result = coins.filter(coin => {
+        const matchesQuery =
+          String(coin.year).includes(query) ||
+          coin.denomination.toLowerCase().includes(query) ||
+          coin.notes.toLowerCase().includes(query) ||
+          String(coin.silverContent).includes(query) ||
+          String(coin.weightGrams).includes(query) ||
+          coin.weightUnit.toLowerCase().includes(query);
+
+        const matchesDenomination = denomination === "All" || coin.denomination === denomination;
+        return matchesQuery && matchesDenomination;
+      });
+
+      result.sort((a, b) => {
+        if (sort === "year-desc") return b.year - a.year;
+        if (sort === "qty-desc") return b.quantity - a.quantity;
+        if (sort === "denomination") return a.denomination.localeCompare(b.denomination) || a.year - b.year;
+        return a.year - b.year;
+      });
+
+      return result;
+    }
+
+    function renderStats() {
+      const totalCoins = coins.reduce((sum, coin) => sum + coin.quantity, 0);
+      const years = coins.map(c => c.year);
+      const estimatedTotal = coins.reduce((sum, coin) => {
+        const value = parseFloat(coin.meltValue);
+        return sum + ((isNaN(value) ? 0 : value) * coin.quantity);
+      }, 0);
+
+      document.getElementById("uniqueEntries").textContent = coins.length;
+      document.getElementById("totalCoins").textContent = totalCoins;
+      document.getElementById("yearRange").textContent = Math.min(...years) + " - " + Math.max(...years);
+      document.getElementById("silverSpot").textContent = "$" + SILVER_SPOT_PER_TROY_OUNCE.toFixed(2) + "/oz";
+      document.getElementById("estimatedTotal").textContent = "$" + estimatedTotal.toFixed(2);
+    }
+
+    function renderBreakdown() {
+      const breakdown = {};
+      coins.forEach(coin => {
+        breakdown[coin.denomination] = (breakdown[coin.denomination] || 0) + coin.quantity;
+      });
+
+      const breakdownList = document.getElementById("breakdownList");
+      breakdownList.innerHTML = "";
+
+      Object.entries(breakdown)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([name, qty]) => {
+          const row = document.createElement("div");
+          row.className = "summary-row";
+          row.innerHTML = `<span>${name}</span><span class="badge">${qty}</span>`;
+          breakdownList.appendChild(row);
+        });
+    }
+
+    function updateCoinField(id, field, value, options = {}) {
+      const coin = coins.find(c => c.id === id);
+      if (!coin) return;
+      if (field === "notes" || field === "weightUnit" || field === "personalStory") {
+        coin[field] = value;
+      }
+      saveCoins();
+      renderStats();
+      if (options.rerenderTable !== false) renderTable();
+      if (options.rerenderInfo !== false) renderInfoTab();
+      if (options.rerenderSpecial !== false) renderSpecialTab();
+    }
+
+    function renderTable() {
+      const filtered = getFilteredCoins();
+      tableBody.innerHTML = "";
+
+      filtered.forEach(coin => {
+        const tr = document.createElement("tr");
+        const rowTotal = ((parseFloat(coin.meltValue) || 0) * coin.quantity).toFixed(2);
+
+        tr.innerHTML = `
+          <td>${coin.year}</td>
+          <td><span class="badge ${getDenominationClass(coin.denomination)}">${coin.denomination}</span></td>
+          <td>${coin.quantity}</td>
+          <td><div class="readonly-field">${coin.silverContent.toFixed(0)}%</div></td>
+          <td><div class="readonly-field">${formatWeight(coin)}</div></td>
+          <td>
+            <select class="small-input unit-select" data-id="${coin.id}" data-field="weightUnit">
+              <option value="g" ${coin.weightUnit === "g" ? "selected" : ""}>g</option>
+              <option value="oz" ${coin.weightUnit === "oz" ? "selected" : ""}>oz</option>
+            </select>
+          </td>
+          <td><div class="readonly-field">$${coin.meltValue.toFixed(2)}</div></td>
+          <td>$${rowTotal}</td>
+          <td><input class="small-input" data-id="${coin.id}" data-field="notes" value="${escapeHtml(coin.notes)}" placeholder="Notes"></td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      document.querySelectorAll(".small-input, .unit-select").forEach(input => {
+        const eventName = input.tagName === "SELECT" ? "change" : "input";
+        input.addEventListener(eventName, e => {
+          const id = Number(e.target.dataset.id);
+          const field = e.target.dataset.field;
+          updateCoinField(id, field, e.target.value, { rerenderInfo: false, rerenderSpecial: field === "notes" ? false : true });
+        });
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function escapeAttribute(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function formatWeight(coin) {
+      if (coin.weightUnit === "oz") {
+        return (coin.weightGrams / 28.349523125).toFixed(4);
+      }
+      return coin.weightGrams.toFixed(2);
+    }
+
+    function getDenominationClass(denomination) {
+      if (denomination === "Dime") return "denom-dime";
+      if (denomination === "Mercury Dime") return "denom-mercury-dime";
+      if (denomination === "Roosevelt Dime") return "denom-roosevelt-dime";
+      if (denomination === "Quarter") return "denom-quarter";
+      if (denomination === "Quarter (Barber)") return "denom-quarter-barber";
+      if (denomination === "Half Dollar") return "denom-half-dollar";
+      if (denomination === "Dollar Coin") return "denom-dollar-coin";
+      if (denomination === "Buffalo Nickel") return "denom-buffalo-nickel";
+      return "";
+    }
+
+
+    function getUniqueCoinEntries() {
+      const seen = new Set();
+      const unique = [];
+      for (const coin of coins) {
+        const key = `${coin.year}-${coin.denomination}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(coin);
+        }
+      }
+      unique.sort((a, b) => a.year - b.year || a.denomination.localeCompare(b.denomination));
+      return unique;
+    }
+
+
+    function getFilteredUniqueCoins(searchValue, denominationValue, sortValue, requireStory = false) {
+      let uniqueCoins = getUniqueCoinEntries();
+
+      if (requireStory) {
+        uniqueCoins = uniqueCoins.filter(coin => (coin.personalStory || "").trim() !== "");
+      }
+
+      const query = (searchValue || "").trim().toLowerCase();
+      const denomination = denominationValue || "All";
+      const sort = sortValue || "year-asc";
+
+      uniqueCoins = uniqueCoins.filter(coin => {
+        const matchesQuery =
+          String(coin.year).includes(query) ||
+          coin.denomination.toLowerCase().includes(query) ||
+          getCoinHistory(coin.year, coin.denomination).toLowerCase().includes(query) ||
+          (coin.personalStory || "").toLowerCase().includes(query);
+
+        const matchesDenomination = denomination === "All" || coin.denomination === denomination;
+        return matchesQuery && matchesDenomination;
+      });
+
+      uniqueCoins.sort((a, b) => {
+        if (sort === "year-desc") return b.year - a.year;
+        if (sort === "denomination") return a.denomination.localeCompare(b.denomination) || a.year - b.year;
+        return a.year - b.year;
+      });
+
+      return uniqueCoins;
+    }
+
+    function renderInfoTab() {
+      const infoGrid = document.getElementById("infoGrid");
+      if (!infoGrid) return;
+
+      const searchValue = document.getElementById("infoSearchInput")?.value || "";
+      const denominationValue = document.getElementById("infoFilterDenomination")?.value || "All";
+      const sortValue = document.getElementById("infoSortBy")?.value || "year-asc";
+
+      const uniqueCoins = getFilteredUniqueCoins(searchValue, denominationValue, sortValue, false);
+      infoGrid.innerHTML = "";
+
+      uniqueCoins.forEach(coin => {
+        const card = document.createElement("div");
+        card.className = "info-card";
+        card.innerHTML = `
+          <div class="info-card-top">
+            <div>
+              <h2 class="info-title">${coin.year} ${coin.denomination}</h2>
+              <div class="special-meta">
+                <span class="badge ${getDenominationClass(coin.denomination)}">${coin.denomination}</span>
+                <span class="badge">${coin.year}</span>
+                <span class="badge">Qty in Collection: ${coin.quantity}</span>
+              </div>
+            </div>
+          </div>
+          <p class="info-history">${getCoinHistory(coin.year, coin.denomination)}</p>
+          <label class="story-label" for="story-${coin.id}">Your personal story for this coin</label>
+          <textarea class="story-textarea" id="story-${coin.id}" data-id="${coin.id}" data-field="personalStory" placeholder="Write your own story, memory, or reason this coin matters to you...">${String(coin.personalStory || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</textarea>
+        `;
+        infoGrid.appendChild(card);
+      });
+
+      document.querySelectorAll(".story-textarea").forEach(textarea => {
+        textarea.addEventListener("change", e => {
+          const id = Number(e.target.dataset.id);
+          const field = e.target.dataset.field;
+          updateCoinField(id, field, e.target.value, { rerenderInfo: false, rerenderSpecial: true });
+        });
+      });
+    }
+
+    function renderSpecialTab() {
+      const specialStories = document.getElementById("specialStories");
+      if (!specialStories) return;
+
+      const searchValue = document.getElementById("specialSearchInput")?.value || "";
+      const denominationValue = document.getElementById("specialFilterDenomination")?.value || "All";
+      const sortValue = document.getElementById("specialSortBy")?.value || "year-asc";
+
+      const uniqueCoins = getFilteredUniqueCoins(searchValue, denominationValue, sortValue, true);
+      specialStories.innerHTML = "";
+
+      if (uniqueCoins.length === 0) {
+        specialStories.innerHTML = `
+          <div class="empty-special">
+            No matching personal stories yet. Go to the Coin Info tab, write a story for any coin you want, and it will appear here automatically.
+          </div>
+        `;
+        return;
+      }
+
+      uniqueCoins.forEach(coin => {
+        const card = document.createElement("div");
+        card.className = "special-card";
+        card.innerHTML = `
+          <h2 class="special-title">${coin.year} ${coin.denomination}</h2>
+          <div class="special-meta">
+            <span class="badge ${getDenominationClass(coin.denomination)}">${coin.denomination}</span>
+            <span class="badge">${coin.year}</span>
+          </div>
+          <p class="special-text">${escapeHtml(coin.personalStory || "").replace(/
+/g, "<br>")}</p>
+        `;
+        specialStories.appendChild(card);
+      });
+    }
+
+    function exportCSV() {
+      const headers = ["Year","Denomination","Quantity","Silver Content %","Average Weight","Weight Unit","Melt Value Each","Total Row Value","Notes"];
+      const rows = coins.map(coin => [
+        coin.year,
+        coin.denomination,
+        coin.quantity,
+        coin.silverContent,
+        coin.weightUnit === "oz" ? (coin.weightGrams / 28.349523125).toFixed(4) : coin.weightGrams.toFixed(2),
+        coin.weightUnit,
+        coin.meltValue.toFixed(2),
+        (coin.meltValue * coin.quantity).toFixed(2),
+        coin.notes
+      ]);
+
+      const csv = [headers, ...rows]
+        .map(row => row.map(value => `"${String(value).replaceAll('"','""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "jordans_coin_collection.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    searchInput.addEventListener("input", renderTable);
+    filterDenomination.addEventListener("change", renderTable);
+    sortBy.addEventListener("change", renderTable);
+
+    document.getElementById("infoSearchInput").addEventListener("input", renderInfoTab);
+    document.getElementById("infoFilterDenomination").addEventListener("change", renderInfoTab);
+    document.getElementById("infoSortBy").addEventListener("change", renderInfoTab);
+
+    document.getElementById("specialSearchInput").addEventListener("input", renderSpecialTab);
+    document.getElementById("specialFilterDenomination").addEventListener("change", renderSpecialTab);
+    document.getElementById("specialSortBy").addEventListener("change", renderSpecialTab);
+
+    exportBtn.addEventListener("click", exportCSV);
+
+    document.querySelectorAll(".tab-button").forEach(button => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.tab;
+
+        document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("active"));
+
+        button.classList.add("active");
+        document.getElementById(target).classList.add("active");
+      });
+    });
+
+    populateDenominations();
+    renderStats();
+    renderBreakdown();
+    renderTable();
+    renderInfoTab();
+    renderSpecialTab();
+  </script>
+</body>
+</html>

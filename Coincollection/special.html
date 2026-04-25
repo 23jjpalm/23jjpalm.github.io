@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Special - Coin Tracker</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tabs">
+      <a class="tab-btn" href="index.html">Home</a>
+      <a class="tab-btn" href="collection.html">Collection</a>
+      <a class="tab-btn" href="coin-info.html">Coin Info</a>
+      <a class="tab-btn active" href="special.html">Special</a>
+      <a class="tab-btn" href="manage.html">Add / Manage</a>
+    </div>
+
+    <h1>Special</h1>
+    <p class="sub">This page only shows the personal stories you have actually written.</p>
+  </div>
+
+  <div class="section">
+    <div class="controls three">
+      <input id="search" placeholder="Search your saved stories"/>
+      <select id="filter">
+        <option value="All">All Denominations</option>
+      </select>
+      <select id="sort">
+        <option value="year-asc">Year ↑</option>
+        <option value="year-desc">Year ↓</option>
+        <option value="denomination">Denomination</option>
+      </select>
+    </div>
+
+    <div id="specialGrid" class="special-grid"></div>
+  </div>
+
+</div>
+
+<script>
+const defaultCoins = [
+  { id: 1, year: 1877, denomination: "Dime", quantity: 1 },
+  { id: 2, year: 1883, denomination: "Dime", quantity: 1 },
+  { id: 3, year: 1883, denomination: "Dollar Coin", quantity: 1 },
+  { id: 4, year: 1884, denomination: "Dollar Coin", quantity: 1 },
+  { id: 5, year: 1903, denomination: "Quarter (Barber)", quantity: 1 },
+  { id: 6, year: 1911, denomination: "Half Dollar", quantity: 1 },
+  { id: 7, year: 1917, denomination: "Mercury Dime", quantity: 1 },
+  { id: 8, year: 1928, denomination: "Buffalo Nickel", quantity: 1 },
+  { id: 9, year: 1934, denomination: "Half Dollar", quantity: 1 },
+  { id: 10, year: 1935, denomination: "Mercury Dime", quantity: 3 },
+  { id: 11, year: 1936, denomination: "Mercury Dime", quantity: 4 },
+  { id: 12, year: 1936, denomination: "Buffalo Nickel", quantity: 1 },
+  { id: 13, year: 1938, denomination: "Mercury Dime", quantity: 2 },
+  { id: 14, year: 1939, denomination: "Mercury Dime", quantity: 4 },
+  { id: 15, year: 1940, denomination: "Mercury Dime", quantity: 1 },
+  { id: 16, year: 1940, denomination: "Quarter", quantity: 1 },
+  { id: 17, year: 1941, denomination: "Mercury Dime", quantity: 5 },
+  { id: 18, year: 1941, denomination: "Quarter", quantity: 1 },
+  { id: 19, year: 1942, denomination: "Mercury Dime", quantity: 14 },
+  { id: 20, year: 1942, denomination: "Quarter", quantity: 2 },
+  { id: 21, year: 1943, denomination: "Mercury Dime", quantity: 10 },
+  { id: 22, year: 1944, denomination: "Mercury Dime", quantity: 8 },
+  { id: 23, year: 1945, denomination: "Mercury Dime", quantity: 5 },
+  { id: 24, year: 1946, denomination: "Roosevelt Dime", quantity: 4 },
+  { id: 25, year: 1947, denomination: "Roosevelt Dime", quantity: 2 },
+  { id: 26, year: 1948, denomination: "Roosevelt Dime", quantity: 2 },
+  { id: 27, year: 1948, denomination: "Quarter", quantity: 1 },
+  { id: 28, year: 1951, denomination: "Roosevelt Dime", quantity: 1 },
+  { id: 29, year: 1952, denomination: "Roosevelt Dime", quantity: 1 },
+  { id: 30, year: 1952, denomination: "Half Dollar", quantity: 1 },
+  { id: 31, year: 1953, denomination: "Quarter", quantity: 1 },
+  { id: 32, year: 1954, denomination: "Roosevelt Dime", quantity: 2 },
+  { id: 33, year: 1956, denomination: "Roosevelt Dime", quantity: 1 },
+  { id: 34, year: 1957, denomination: "Roosevelt Dime", quantity: 1 },
+  { id: 35, year: 1958, denomination: "Quarter", quantity: 1 },
+  { id: 36, year: 1959, denomination: "Roosevelt Dime", quantity: 1 },
+  { id: 37, year: 1959, denomination: "Quarter", quantity: 1 },
+  { id: 38, year: 1961, denomination: "Roosevelt Dime", quantity: 5 },
+  { id: 39, year: 1962, denomination: "Roosevelt Dime", quantity: 3 },
+  { id: 40, year: 1963, denomination: "Roosevelt Dime", quantity: 4 },
+  { id: 41, year: 1963, denomination: "Quarter", quantity: 2 },
+  { id: 42, year: 1964, denomination: "Roosevelt Dime", quantity: 13 },
+  { id: 43, year: 1964, denomination: "Quarter", quantity: 2 },
+  { id: 44, year: 1964, denomination: "Half Dollar", quantity: 2 },
+  { id: 45, year: 1966, denomination: "Half Dollar", quantity: 1 },
+  { id: 46, year: 1967, denomination: "Half Dollar", quantity: 2 }
+];
+
+function denomClass(denomination){
+  if (denomination === "Dime") return "denom-dime";
+  if (denomination === "Mercury Dime") return "denom-mercury-dime";
+  if (denomination === "Roosevelt Dime") return "denom-roosevelt-dime";
+  if (denomination === "Quarter") return "denom-quarter";
+  if (denomination === "Quarter (Barber)") return "denom-quarter-barber";
+  if (denomination === "Half Dollar") return "denom-half-dollar";
+  if (denomination === "Dollar Coin") return "denom-dollar-coin";
+  if (denomination === "Buffalo Nickel") return "denom-buffalo-nickel";
+  if (denomination === "Fine Silver") return "denom-fine-silver";
+  return "";
+}
+
+function escapeHtml(text){
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function getStoredCoins(){
+  const stored = localStorage.getItem("coins");
+  if (!stored) return defaultCoins;
+  try{
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) && parsed.length ? parsed : defaultCoins;
+  }catch{
+    return defaultCoins;
+  }
+}
+
+function getStoryStore(){
+  try{
+    return JSON.parse(localStorage.getItem("coinStories") || "{}");
+  }catch{
+    return {};
+  }
+}
+
+function uniqueCoins(coins){
+  const seen = new Set();
+  const result = [];
+
+  for (const coin of coins){
+    const key = `${coin.year}-${coin.denomination}`;
+    if (!seen.has(key)){
+      seen.add(key);
+      result.push(coin);
+    }
+  }
+
+  return result;
+}
+
+function populateFilter(coins){
+  const filter = document.getElementById("filter");
+  const current = filter.value || "All";
+  const denominations = [...new Set(coins.map(c => c.denomination))].sort();
+
+  filter.innerHTML = '<option value="All">All Denominations</option>';
+  denominations.forEach(d => {
+    const option = document.createElement("option");
+    option.value = d;
+    option.textContent = d;
+    filter.appendChild(option);
+  });
+
+  if ([...filter.options].some(opt => opt.value === current)){
+    filter.value = current;
+  }
+}
+
+function render(){
+  const allCoins = getStoredCoins();
+  const stories = getStoryStore();
+  const unique = uniqueCoins(allCoins).filter(coin => {
+    const key = `${coin.year}-${coin.denomination}`;
+    return (stories[key] || "").trim() !== "";
+  });
+
+  populateFilter(unique);
+
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  const denominationFilter = document.getElementById("filter").value;
+  const sort = document.getElementById("sort").value;
+
+  let rows = unique.filter(coin => {
+    const key = `${coin.year}-${coin.denomination}`;
+    const story = stories[key] || "";
+
+    const matchesQuery =
+      String(coin.year).includes(query) ||
+      coin.denomination.toLowerCase().includes(query) ||
+      story.toLowerCase().includes(query);
+
+    const matchesDenomination =
+      denominationFilter === "All" || coin.denomination === denominationFilter;
+
+    return matchesQuery && matchesDenomination;
+  });
+
+  rows.sort((a, b) => {
+    if (sort === "year-desc") return b.year - a.year;
+    if (sort === "denomination") return a.denomination.localeCompare(b.denomination) || a.year - b.year;
+    return a.year - b.year;
+  });
+
+  const grid = document.getElementById("specialGrid");
+  grid.innerHTML = "";
+
+  if (!rows.length){
+    grid.innerHTML = '<div class="empty">No personal stories match your current search. Go to Coin Info and write one for a coin to make it appear here.</div>';
+    return;
+  }
+
+  rows.forEach(coin => {
+    const key = `${coin.year}-${coin.denomination}`;
+    const story = stories[key] || "";
+    const card = document.createElement("div");
+    card.className = "special-card";
+    card.innerHTML = `
+      <h2 class="special-title">${coin.year} ${escapeHtml(coin.denomination)}</h2>
+      <div class="meta">
+        <span class="badge ${denomClass(coin.denomination)}">${escapeHtml(coin.denomination)}</span>
+        <span class="badge">${coin.year}</span>
+        <span class="badge">Qty in Collection: ${coin.quantity}</span>
+      </div>
+      <div class="special-text">${escapeHtml(story).replace(/\n/g, "<br>")}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("filter").addEventListener("change", render);
+document.getElementById("sort").addEventListener("change", render);
+
+render();
+</script>
+</body>
+</html>
