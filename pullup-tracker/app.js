@@ -251,18 +251,27 @@ function startTimer() {
   timer = setInterval(() => {
     remainingSeconds--;
 
+    // NORMAL minute ticks
+    if (remainingSeconds > 0 && remainingSeconds % 60 === 0) {
+      ding();
+      addMinutePullups();
+    }
+
+    // TIMER END
     if (remainingSeconds <= 0) {
       remainingSeconds = 0;
       updateTimerDisplay();
+
+      // 👇 THIS FIXES YOUR PROBLEM
+      // Add final minute if total time was >= 60 seconds
+      if (totalSeconds >= 60) {
+        addMinutePullups();
+      }
+
       ding();
       clearInterval(timer);
       timer = null;
       return;
-    }
-
-    if (remainingSeconds % 60 === 0) {
-      ding();
-      addMinutePullups();
     }
 
     updateTimerDisplay();
