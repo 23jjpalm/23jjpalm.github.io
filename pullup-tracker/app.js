@@ -1,5 +1,6 @@
 const DAILY_GOAL = 200;
 const PULLUPS_PER_MINUTE = 5;
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxtaqqUI6MhjsR3nw6dOYjzcn9CXaHbs_7qgB4AErx29gwHbIsF9U_j5C5dLxQc_WR4/exec";
 
 let timer = null;
 let totalSeconds = 600;
@@ -27,7 +28,7 @@ function save() {
 }
 
 function getTotalPullups() {
-  return log.reduce((sum, entry) => sum + entry.amount, 0);
+  return log.reduce((sum, entry) => sum + Number(entry.amount), 0);
 }
 
 function getTodayDate() {
@@ -49,26 +50,47 @@ function getDailyTotals() {
 
   log.forEach(entry => {
     if (!totals[entry.date]) totals[entry.date] = 0;
-    totals[entry.date] += entry.amount;
+    totals[entry.date] += Number(entry.amount);
   });
 
   return totals;
 }
 
+async function sendToGoogleSheet(entry) {
+  try {
+    await fetch(GOOGLE_SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(entry)
+    });
+  } catch (error) {
+    console.log("Google Sheet sync failed:", error);
+  }
+}
+
 function addLog(amount, source, weight = "") {
   const now = getTimeNow();
+  const totalAfterEntry = getTotalPullups() + Number(amount);
 
-  log.unshift({
+  const entry = {
     id: now.id,
     date: now.date,
     time: now.time,
-    amount: amount,
+    amount: Number(amount),
     source: source,
-    weight: weight || "Bodyweight"
-  });
+    weight: weight || "Bodyweight",
+    total: totalAfterEntry
+  };
+
+  log.unshift(entry);
 
   save();
   renderAll();
+
+  sendToGoogleSheet(entry);
 }
 
 function deleteLog(id) {
@@ -130,7 +152,7 @@ function renderLog() {
       <p>Amount: <strong>${entry.amount}</strong> pullups</p>
       <p>Weight: <strong>${entry.weight}</strong></p>
       <p>Source: <strong>${entry.source}</strong></p>
-      <p class="log-total">Total After Recalculation: ${getTotalPullups()}</p>
+      <p class="log-total">Running Total At Entry: ${entry.total || getTotalPullups()}</p>
     `;
 
     logDiv.appendChild(item);
@@ -273,7 +295,7 @@ function downloadLog() {
   let text = "Pullup Log\n\n";
 
   log.forEach(entry => {
-    text += `${entry.date} ${entry.time} | ${entry.amount} pullups | ${entry.weight} | ${entry.source}\n`;
+    text += `${entry.date} ${entry.time} | ${entry.amount} pullups | ${entry.weight} | ${entry.source} | Total: ${entry.total}\n`;
   });
 
   const blob = new Blob([text], { type: "text/plain" });
@@ -283,6 +305,9 @@ function downloadLog() {
   link.download = "pullup_log.txt";
   link.click();
 }
+
+/* STATS PAGE */
+
 function getSortedDailyData() {
   const totals = getDailyTotals();
 
@@ -337,11 +362,18 @@ function calculateStreak() {
 function updateStatsBoxes() {
   const dailyData = getSortedDailyData();
 
+  const avgDisplay = document.getElementById("avgPerDayDisplay");
+  const bestDisplay = document.getElementById("bestDayDisplay");
+  const goalDaysDisplay = document.getElementById("goalDaysDisplay");
+  const streakDisplay = document.getElementById("streakDisplay");
+
+  if (!avgDisplay || !bestDisplay || !goalDaysDisplay || !streakDisplay) return;
+
   if (dailyData.length === 0) {
-    document.getElementById("avgPerDayDisplay").textContent = "0";
-    document.getElementById("bestDayDisplay").textContent = "0";
-    document.getElementById("goalDaysDisplay").textContent = "0";
-    document.getElementById("streakDisplay").textContent = "0";
+    avgDisplay.textContent = "0";
+    bestDisplay.textContent = "0";
+    goalDaysDisplay.textContent = "0";
+    streakDisplay.textContent = "0";
     return;
   }
 
@@ -351,10 +383,10 @@ function updateStatsBoxes() {
   const goalDays = dailyData.filter(day => day.amount >= DAILY_GOAL).length;
   const streak = calculateStreak();
 
-  document.getElementById("avgPerDayDisplay").textContent = avg.toFixed(1);
-  document.getElementById("bestDayDisplay").textContent = best;
-  document.getElementById("goalDaysDisplay").textContent = goalDays;
-  document.getElementById("streakDisplay").textContent = streak;
+  avgDisplay.textContent = avg.toFixed(1);
+  bestDisplay.textContent = best;
+  goalDaysDisplay.textContent = goalDays;
+  streakDisplay.textContent = streak;
 }
 
 function drawDailyChart() {
