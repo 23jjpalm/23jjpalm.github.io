@@ -16,9 +16,10 @@
       --blocked: #05070b;
       --target: #f59e0b;
       --bad: #ef4444;
-      --good: #22c55e;
       --cell: 58px;
       --gap: 6px;
+      --bank-cell: 30px;
+      --bank-gap: 4px;
     }
 
     * { box-sizing: border-box; }
@@ -36,7 +37,7 @@
     h1, h2, h3 { margin-top: 0; }
 
     .app {
-      max-width: 1320px;
+      max-width: 1400px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: 340px 1fr;
@@ -51,10 +52,7 @@
       box-shadow: 0 18px 40px rgba(0,0,0,0.28);
     }
 
-    .controls {
-      display: grid;
-      gap: 12px;
-    }
+    .controls { display: grid; gap: 12px; }
 
     label {
       color: var(--muted);
@@ -73,11 +71,7 @@
       font-size: 15px;
     }
 
-    button {
-      cursor: pointer;
-      font-weight: 800;
-    }
-
+    button { cursor: pointer; font-weight: 800; }
     button:hover { filter: brightness(1.1); }
 
     .button-row {
@@ -103,16 +97,15 @@
       line-height: 1.45;
     }
 
-    .main-area {
-      display: grid;
-      gap: 18px;
-    }
+    .main-area { display: grid; gap: 18px; }
 
     .board-shell {
       position: relative;
       width: calc(7 * var(--cell) + 6 * var(--gap));
       height: calc(8 * var(--cell) + 7 * var(--gap));
       touch-action: none;
+      flex: 0 0 auto;
+      overflow: visible;
     }
 
     .board {
@@ -150,9 +143,7 @@
       box-shadow: 0 0 18px rgba(245, 158, 11, 0.25) inset;
     }
 
-    .cell.covered-ok {
-      opacity: 0.65;
-    }
+    .cell.covered-ok { opacity: 0.65; }
 
     .cell.covered-bad {
       outline: 3px solid var(--bad);
@@ -168,35 +159,77 @@
       font-weight: 400;
     }
 
-    .pieces-bank {
-      min-height: 250px;
-      background: rgba(255,255,255,0.04);
-      border: 1px dashed rgba(255,255,255,0.18);
-      border-radius: 18px;
-      padding: 12px;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-    }
-
     .play-layout {
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: auto minmax(360px, 1fr);
       gap: 18px;
       align-items: start;
     }
 
+    .pieces-bank {
+      min-height: 520px;
+      max-height: calc(8 * var(--cell) + 7 * var(--gap));
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      touch-action: none;
+    }
+
+    .bank-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+
+    .bank-slot {
+      min-height: 118px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .bank-slot-title {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+      align-self: stretch;
+      display: flex;
+      justify-content: space-between;
+    }
+
     .piece {
-      position: absolute;
       z-index: 10;
       touch-action: none;
       cursor: grab;
       filter: drop-shadow(0 10px 16px rgba(0,0,0,0.28));
+      user-select: none;
+    }
+
+    .piece.on-board { position: absolute; }
+
+    .piece.in-bank {
+      position: relative;
+      left: auto !important;
+      top: auto !important;
+      transform-origin: top left;
     }
 
     .piece.dragging {
+      position: fixed !important;
       cursor: grabbing;
-      z-index: 100;
+      z-index: 1000;
+      pointer-events: none;
       filter: drop-shadow(0 18px 24px rgba(0,0,0,0.45));
     }
 
@@ -219,6 +252,8 @@
       gap: var(--gap);
     }
 
+    .piece.in-bank .piece-grid { gap: var(--bank-gap); }
+
     .block {
       width: var(--cell);
       height: var(--cell);
@@ -232,9 +267,22 @@
       user-select: none;
     }
 
-    .ghost {
-      opacity: 0.25;
+    .piece.in-bank .block {
+      width: var(--bank-cell);
+      height: var(--bank-cell);
+      border-radius: 8px;
+      font-size: 12px;
     }
+
+    .piece.dragging .block,
+    .piece.on-board .block {
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 12px;
+      font-size: 16px;
+    }
+
+    .ghost { opacity: 0.18; }
 
     .piece-info {
       display: grid;
@@ -262,28 +310,35 @@
       font-weight: 900;
     }
 
-    .win {
-      color: #86efac;
-      font-weight: 900;
+    .win { color: #86efac; font-weight: 900; }
+    .bad-text { color: #fca5a5; font-weight: 900; }
+
+    .shortcut {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 7px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
     }
 
-    .bad-text {
-      color: #fca5a5;
-      font-weight: 900;
-    }
-
-    @media (max-width: 1050px) {
-      :root { --cell: 48px; --gap: 5px; }
+    @media (max-width: 1120px) {
+      :root { --cell: 48px; --gap: 5px; --bank-cell: 27px; }
       .app { grid-template-columns: 1fr; }
       .play-layout { grid-template-columns: 1fr; }
       .board-shell { margin: 0 auto; }
+      .pieces-bank { max-height: none; min-height: 360px; }
     }
 
-    @media (max-width: 430px) {
-      :root { --cell: 42px; --gap: 4px; }
+    @media (max-width: 520px) {
+      :root { --cell: 42px; --gap: 4px; --bank-cell: 24px; --bank-gap: 3px; }
       body { padding: 10px; }
       .card { padding: 12px; }
       .piece-info { grid-template-columns: 1fr; }
+      .bank-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+      .bank-slot { min-height: 100px; }
     }
   </style>
 </head>
@@ -316,7 +371,7 @@
           <button id="returnBtn">Return Selected</button>
           <button id="resetBtn">Reset Pieces</button>
         </div>
-        <div class="status" id="status">Pick up a piece and drag it onto the board. Rotate or flip the selected piece as needed.</div>
+        <div class="status" id="status">Pick up a piece and drag it around. Pieces can overlap and cover targets, but cannot be placed on blocked XXXX squares.</div>
         <div class="piece-info">
           <div class="stat">
             <div class="stat-label">Placed</div>
@@ -332,7 +387,7 @@
           </div>
         </div>
         <div class="small">
-          Goal: cover every usable square except the selected month, date, and weekday. Pieces can rotate and flip. Drag near the board to snap into place.
+          Goal: cover every usable square except the selected month, date, and weekday. Select a piece, then use <span class="shortcut">R</span> to rotate or <span class="shortcut">F</span> to flip. You can overlap or cover targets while testing; blocked XXXX squares reject placement.
         </div>
       </div>
     </div>
@@ -346,7 +401,9 @@
           </div>
           <div>
             <h3>Piece Bank</h3>
-            <div class="pieces-bank" id="piecesBank"></div>
+            <div class="pieces-bank" id="piecesBank">
+              <div class="bank-grid" id="bankGrid"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -385,7 +442,7 @@
 
     const boardEl = document.getElementById('board');
     const boardShell = document.getElementById('boardShell');
-    const piecesBank = document.getElementById('piecesBank');
+    const bankGrid = document.getElementById('bankGrid');
     const monthSelect = document.getElementById('monthSelect');
     const daySelect = document.getElementById('daySelect');
     const weekdaySelect = document.getElementById('weekdaySelect');
@@ -397,6 +454,7 @@
     let pieces = [];
     let selectedPieceId = null;
     let drag = null;
+    let zCounter = 20;
 
     function cellSize() {
       return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell'));
@@ -493,12 +551,19 @@
     }
 
     function isTargetCell(r, c) {
-      return targets().has(BOARD[r][c]);
+      return validBoardCell(r, c) && targets().has(BOARD[r][c]);
+    }
+
+    function hitsBlockedCell(piece, baseR, baseC) {
+      return occupiedOffsets(piece.shape).some(([r, c]) => {
+        const rr = baseR + r;
+        const cc = baseC + c;
+        return !validBoardCell(rr, cc);
+      });
     }
 
     function requiredCellCount() {
-
-let count = 0;
+      let count = 0;
       const t = targets();
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 7; c++) {
@@ -511,7 +576,7 @@ let count = 0;
     function renderBoard() {
       boardEl.innerHTML = '';
       const t = targets();
-      const covered = getCoverageMap();
+      const coverageCounts = getCoverageCounts();
 
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 7; c++) {
@@ -526,8 +591,10 @@ let count = 0;
             cell.textContent = value;
             if (t.has(value)) cell.classList.add('target');
             const key = `${r},${c}`;
-            if (covered.has(key) && !t.has(value)) cell.classList.add('covered-ok');
-            if (covered.has(key) && t.has(value)) cell.classList.add('covered-bad');
+            const count = coverageCounts.get(key) || 0;
+            if (count > 0 && !t.has(value)) cell.classList.add('covered-ok');
+            if (count > 0 && t.has(value)) cell.classList.add('covered-bad');
+            if (count > 1) cell.classList.add('covered-bad');
           }
 
           const coord = document.createElement('div');
@@ -548,71 +615,87 @@ let count = 0;
         placed: false,
         boardR: null,
         boardC: null,
-        bankX: 14 + (i % 2) * 155,
-        bankY: 14 + Math.floor(i / 2) * 92,
         x: 0,
-        y: 0
+        y: 0,
+        z: 20 + i
       }));
       selectedPieceId = null;
     }
 
-    function renderPieces() {
-      document.querySelectorAll('.piece').forEach(el => el.remove());
-      pieces.forEach(piece => {
-        const el = document.createElement('div');
-        el.className = 'piece';
-        el.dataset.id = piece.id;
-        if (piece.id === selectedPieceId) el.classList.add('selected');
-        if (piece.placed) el.classList.add('locked');
+    function makePieceElement(piece, mode) {
+      const el = document.createElement('div');
+      el.className = `piece ${mode === 'bank' ? 'in-bank' : 'on-board'}`;
+      el.dataset.id = piece.id;
+      if (piece.id === selectedPieceId) el.classList.add('selected');
+      if (piece.placed) el.classList.add('locked');
 
-        const grid = document.createElement('div');
-        grid.className = 'piece-grid';
-        grid.style.gridTemplateColumns = `repeat(${piece.shape[0].length}, var(--cell))`;
-        grid.style.gridTemplateRows = `repeat(${piece.shape.length}, var(--cell))`;
+      const grid = document.createElement('div');
+      grid.className = 'piece-grid';
+      grid.style.gridTemplateColumns = `repeat(${piece.shape[0].length}, ${mode === 'bank' ? 'var(--bank-cell)' : 'var(--cell)'})`;
+      grid.style.gridTemplateRows = `repeat(${piece.shape.length}, ${mode === 'bank' ? 'var(--bank-cell)' : 'var(--cell)'})`;
 
-        for (let r = 0; r < piece.shape.length; r++) {
-          for (let c = 0; c < piece.shape[r].length; c++) {
-            const b = document.createElement('div');
-            if (piece.shape[r][c]) {
-              b.className = 'block';
-              b.style.background = piece.color;
-              b.textContent = piece.name.replace('P', '');
-            } else {
-              b.className = 'block ghost';
-              b.style.background = 'transparent';
-              b.style.borderColor = 'transparent';
-              b.textContent = '';
-            }
-            grid.appendChild(b);
+      for (let r = 0; r < piece.shape.length; r++) {
+        for (let c = 0; c < piece.shape[r].length; c++) {
+          const b = document.createElement('div');
+          if (piece.shape[r][c]) {
+            b.className = 'block';
+            b.style.background = piece.color;
+            b.textContent = piece.name.replace('P', '');
+          } else {
+            b.className = 'block ghost';
+            b.style.background = 'transparent';
+            b.style.borderColor = 'transparent';
+            b.textContent = '';
           }
+          grid.appendChild(b);
         }
+      }
 
-        el.appendChild(grid);
-        el.addEventListener('pointerdown', pointerDown);
-        el.addEventListener('click', () => selectPiece(piece.id));
+      el.appendChild(grid);
+      el.addEventListener('pointerdown', pointerDown);
+      el.addEventListener('click', () => selectPiece(piece.id));
+      return el;
+    }
 
+    function renderPieces() {
+      document.querySelectorAll('.piece:not(.dragging)').forEach(el => el.remove());
+      bankGrid.innerHTML = '';
+
+      pieces.forEach(piece => {
         if (piece.placed) {
+          const el = makePieceElement(piece, 'board');
           boardShell.appendChild(el);
           const pos = boardPositionFromCell(piece.boardR, piece.boardC);
           piece.x = pos.x;
           piece.y = pos.y;
+          el.style.left = `${piece.x}px`;
+          el.style.top = `${piece.y}px`;
+          el.style.zIndex = piece.z;
         } else {
-          piecesBank.appendChild(el);
-          piece.x = piece.bankX;
-          piece.y = piece.bankY;
-        }
+          const slot = document.createElement('div');
+          slot.className = 'bank-slot';
+          slot.dataset.slotId = piece.id;
 
-        el.style.left = `${piece.x}px`;
-        el.style.top = `${piece.y}px`;
+          const title = document.createElement('div');
+          title.className = 'bank-slot-title';
+          title.innerHTML = `<span>${piece.name}</span><span>${occupiedOffsets(piece.shape).length} cells</span>`;
+
+          const el = makePieceElement(piece, 'bank');
+          slot.appendChild(title);
+          slot.appendChild(el);
+          bankGrid.appendChild(slot);
+        }
       });
+
       updatePieceValidityStyles();
     }
 
     function selectPiece(id) {
       selectedPieceId = id;
-      renderPieces();
       const piece = pieces.find(p => p.id === id);
-      statusEl.textContent = `${piece.name} selected. Use rotate/flip or drag it onto the board.`;
+      if (piece) piece.z = ++zCounter;
+      renderPieces();
+      statusEl.textContent = `${piece.name} selected. Press R to rotate, F to flip, or drag it around.`;
     }
 
     function boardPositionFromCell(r, c) {
@@ -631,107 +714,89 @@ let count = 0;
       const id = Number(e.currentTarget.dataset.id);
       const piece = pieces.find(p => p.id === id);
       selectedPieceId = id;
+      piece.z = ++zCounter;
 
-      const currentParent = e.currentTarget.parentElement;
-      const currentRect = e.currentTarget.getBoundingClientRect();
-      const appRect = document.body.getBoundingClientRect();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pointerOffset = getPointerOffsetInFullSizePiece(e, rect, e.currentTarget.classList.contains('in-bank'));
 
-      e.currentTarget.classList.add('dragging');
-      e.currentTarget.setPointerCapture(e.pointerId);
+      e.preventDefault();
+
+      if (piece.placed) {
+        piece.placed = false;
+        piece.boardR = null;
+        piece.boardC = null;
+      }
+
+      renderPieces();
+      renderBoard();
+      updateStats();
+
+      const dragEl = makePieceElement(piece, 'board');
+      dragEl.classList.add('dragging', 'selected');
+      dragEl.style.left = `${e.clientX - pointerOffset.x}px`;
+      dragEl.style.top = `${e.clientY - pointerOffset.y}px`;
+      dragEl.style.zIndex = 1000;
+      document.body.appendChild(dragEl);
 
       drag = {
         id,
-        pointerId: e.pointerId,
-        startX: e.clientX,
-        startY: e.clientY,
-        offsetX: e.clientX - currentRect.left,
-        offsetY: e.clientY - currentRect.top,
-        el: e.currentTarget,
-        fromPlaced: piece.placed,
-        original: {
-          placed: piece.placed,
-          boardR: piece.boardR,
-          boardC: piece.boardC,
-          bankX: piece.bankX,
-          bankY: piece.bankY,
-          parent: currentParent
-        }
+        offsetX: pointerOffset.x,
+        offsetY: pointerOffset.y,
+        el: dragEl
       };
 
       document.addEventListener('pointermove', pointerMove);
       document.addEventListener('pointerup', pointerUp);
-      renderPieces();
+    }
 
-      const freshEl = document.querySelector(`.piece[data-id="${id}"]`);
-      drag.el = freshEl;
-      drag.el.classList.add('dragging');
+    function getPointerOffsetInFullSizePiece(e, rect, wasBankPiece) {
+      const rawX = e.clientX - rect.left;
+      const rawY = e.clientY - rect.top;
+      if (!wasBankPiece) return { x: rawX, y: rawY };
+
+      const scale = cellSize() / parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bank-cell'));
+      return { x: rawX * scale, y: rawY * scale };
     }
 
     function pointerMove(e) {
       if (!drag) return;
-      const piece = pieces.find(p => p.id === drag.id);
-      const boardRect = boardShell.getBoundingClientRect();
-      const bankRect = piecesBank.getBoundingClientRect();
-      const xInBoard = e.clientX - boardRect.left - drag.offsetX;
-      const yInBoard = e.clientY - boardRect.top - drag.offsetY;
-      const xInBank = e.clientX - bankRect.left - drag.offsetX;
-      const yInBank = e.clientY - bankRect.top - drag.offsetY;
-
-      const nearBoard = e.clientX >= boardRect.left - 80 && e.clientX <= boardRect.right + 120 && e.clientY >= boardRect.top - 80 && e.clientY <= boardRect.bottom + 120;
-
-      if (nearBoard) {
-        if (drag.el.parentElement !== boardShell) {
-          boardShell.appendChild(drag.el);
-        }
-        piece.x = xInBoard;
-        piece.y = yInBoard;
-      } else {
-        if (drag.el.parentElement !== piecesBank) {
-          piecesBank.appendChild(drag.el);
-        }
-        piece.x = xInBank;
-        piece.y = yInBank;
-      }
-
-      drag.el.style.left = `${piece.x}px`;
-      drag.el.style.top = `${piece.y}px`;
+      drag.el.style.left = `${e.clientX - drag.offsetX}px`;
+      drag.el.style.top = `${e.clientY - drag.offsetY}px`;
     }
 
     function pointerUp(e) {
       if (!drag) return;
       const piece = pieces.find(p => p.id === drag.id);
       const boardRect = boardShell.getBoundingClientRect();
-      const pointerInBoardArea = e.clientX >= boardRect.left - 40 && e.clientX <= boardRect.right + 40 && e.clientY >= boardRect.top - 40 && e.clientY <= boardRect.bottom + 40;
+      const pieceLeft = e.clientX - drag.offsetX;
+      const pieceTop = e.clientY - drag.offsetY;
+      const xInBoard = pieceLeft - boardRect.left;
+      const yInBoard = pieceTop - boardRect.top;
+      const pointerNearBoard = e.clientX >= boardRect.left - 80 && e.clientX <= boardRect.right + 160 && e.clientY >= boardRect.top - 80 && e.clientY <= boardRect.bottom + 160;
 
-      if (pointerInBoardArea) {
-        const cell = cellFromBoardPosition(piece.x, piece.y);
-        const valid = canPlacePiece(piece, cell.r, cell.c, piece.id);
-        if (valid.ok) {
-          piece.placed = true;
-          piece.boardR = cell.r;
-          piece.boardC = cell.c;
-          const pos = boardPositionFromCell(cell.r, cell.c);
-          piece.x = pos.x;
-          piece.y = pos.y;
-          statusEl.textContent = `${piece.name} placed at row ${cell.r + 1}, column ${cell.c + 1}.`;
-        } else {
+      if (pointerNearBoard) {
+        const cell = cellFromBoardPosition(xInBoard, yInBoard);
+
+        if (hitsBlockedCell(piece, cell.r, cell.c)) {
           piece.placed = false;
           piece.boardR = null;
           piece.boardC = null;
-          piece.bankX = Math.max(8, Math.min(piece.x, piecesBank.clientWidth - 90));
-          piece.bankY = Math.max(8, Math.min(piece.y, piecesBank.clientHeight - 70));
-          statusEl.textContent = `${piece.name} could not be placed: ${valid.reason}`;
+          statusEl.textContent = `${piece.name} cannot be placed on blocked XXXX squares.`;
+        } else {
+          piece.placed = true;
+          piece.boardR = cell.r;
+          piece.boardC = cell.c;
+          piece.z = ++zCounter;
+          statusEl.textContent = `${piece.name} placed at row ${cell.r + 1}, column ${cell.c + 1}.`;
         }
       } else {
         piece.placed = false;
         piece.boardR = null;
         piece.boardC = null;
-        piece.bankX = Math.max(8, Math.min(piece.x, piecesBank.clientWidth - 90));
-        piece.bankY = Math.max(8, Math.min(piece.y, piecesBank.clientHeight - 70));
         statusEl.textContent = `${piece.name} returned to the piece bank.`;
       }
 
-      drag.el.classList.remove('dragging');
+      drag.el.remove();
       drag = null;
       document.removeEventListener('pointermove', pointerMove);
       document.removeEventListener('pointerup', pointerUp);
@@ -746,37 +811,28 @@ let count = 0;
       return occupiedOffsets(piece.shape).map(([r, c]) => [baseR + r, baseC + c]);
     }
 
-    function canPlacePiece(piece, baseR, baseC, ignoreId = null) {
-      const cells = occupiedBoardCells(piece, baseR, baseC);
-      const occupied = new Map();
-
-      pieces.forEach(p => {
-        if (!p.placed || p.id === ignoreId) return;
-        occupiedBoardCells(p).forEach(([r, c]) => occupied.set(`${r},${c}`, p.name));
-      });
-
-      for (const [r, c] of cells) {
-        if (!validBoardCell(r, c)) return { ok: false, reason: 'piece is outside the usable board' };
-        if (isTargetCell(r, c)) return { ok: false, reason: 'piece covers a target cell' };
-        if (occupied.has(`${r},${c}`)) return { ok: false, reason: `piece overlaps ${occupied.get(`${r},${c}`)}` };
-      }
+    function canPlacePiece(piece, baseR, baseC) {
+      if (hitsBlockedCell(piece, baseR, baseC)) return { ok: false, reason: 'covers blocked square' };
       return { ok: true, reason: '' };
     }
 
-    function getCoverageMap() {
-      const covered = new Set();
+    function getCoverageCounts() {
+      const counts = new Map();
       pieces.forEach(p => {
         if (!p.placed) return;
-        occupiedBoardCells(p).forEach(([r, c]) => covered.add(`${r},${c}`));
+        occupiedBoardCells(p).forEach(([r, c]) => {
+          const key = `${r},${c}`;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        });
       });
-      return covered;
+      return counts;
     }
 
     function updatePieceValidityStyles() {
       pieces.forEach(piece => {
         const el = document.querySelector(`.piece[data-id="${piece.id}"]`);
         if (!el || !piece.placed) return;
-        const valid = canPlacePiece(piece, piece.boardR, piece.boardC, piece.id);
+        const valid = canPlacePiece(piece, piece.boardR, piece.boardC);
         if (!valid.ok) el.classList.add('invalid');
       });
     }
@@ -784,26 +840,18 @@ let count = 0;
     function updateStats() {
       const placed = pieces.filter(p => p.placed).length;
       const required = requiredCellCount();
-      const coverageCounts = new Map();
+      const coverageCounts = getCoverageCounts();
       let mistakes = 0;
-
-      pieces.forEach(p => {
-        if (!p.placed) return;
-        occupiedBoardCells(p).forEach(([r, c]) => {
-          const key = `${r},${c}`;
-          coverageCounts.set(key, (coverageCounts.get(key) || 0) + 1);
-        });
-      });
-
-      for (const [key, count] of coverageCounts.entries()) {
-        const [r, c] = key.split(',').map(Number);
-        if (!validBoardCell(r, c) || isTargetCell(r, c) || count > 1) mistakes++;
-      }
-
       let coveredRequired = 0;
+
       for (const [key, count] of coverageCounts.entries()) {
         const [r, c] = key.split(',').map(Number);
-        if (validBoardCell(r, c) && !isTargetCell(r, c) && count === 1) coveredRequired++;
+        if (!validBoardCell(r, c)) mistakes += count;
+        else if (isTargetCell(r, c)) mistakes += count;
+        else {
+          if (count === 1) coveredRequired++;
+          if (count > 1) mistakes += count - 1;
+        }
       }
 
       placedCountEl.textContent = `${placed}/10`;
@@ -827,14 +875,18 @@ let count = 0;
         statusEl.textContent = 'Select a piece first.';
         return;
       }
+
       const oldShape = cloneShape(piece.shape);
       piece.shape = rotateShape(piece.shape);
-      if (piece.placed && !canPlacePiece(piece, piece.boardR, piece.boardC, piece.id).ok) {
+
+      if (piece.placed && hitsBlockedCell(piece, piece.boardR, piece.boardC)) {
         piece.shape = oldShape;
-        statusEl.textContent = `${piece.name} cannot rotate there.`;
+        statusEl.textContent = `${piece.name} cannot rotate onto blocked XXXX squares.`;
       } else {
+        piece.z = ++zCounter;
         statusEl.textContent = `${piece.name} rotated.`;
       }
+
       renderPieces();
       renderBoard();
       updateStats();
@@ -847,14 +899,18 @@ let count = 0;
         statusEl.textContent = 'Select a piece first.';
         return;
       }
+
       const oldShape = cloneShape(piece.shape);
       piece.shape = flipShape(piece.shape);
-      if (piece.placed && !canPlacePiece(piece, piece.boardR, piece.boardC, piece.id).ok) {
+
+      if (piece.placed && hitsBlockedCell(piece, piece.boardR, piece.boardC)) {
         piece.shape = oldShape;
-        statusEl.textContent = `${piece.name} cannot flip there.`;
+        statusEl.textContent = `${piece.name} cannot flip onto blocked XXXX squares.`;
       } else {
+        piece.z = ++zCounter;
         statusEl.textContent = `${piece.name} flipped.`;
       }
+
       renderPieces();
       renderBoard();
       updateStats();
@@ -870,8 +926,6 @@ let count = 0;
       piece.placed = false;
       piece.boardR = null;
       piece.boardC = null;
-      piece.bankX = 14 + (piece.id % 2) * 155;
-      piece.bankY = 14 + Math.floor(piece.id / 2) * 92;
       statusEl.textContent = `${piece.name} returned to the piece bank.`;
       renderPieces();
       renderBoard();
@@ -902,6 +956,21 @@ let count = 0;
       statusEl.textContent = `New puzzle: leave ${monthSelect.value}, ${daySelect.value}, and ${weekdaySelect.value} uncovered.`;
     }
 
+    function handleKeyboardShortcuts(e) {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'r') {
+        e.preventDefault();
+        rotateSelected();
+      }
+      if (key === 'f') {
+        e.preventDefault();
+        flipSelected();
+      }
+    }
+
     document.getElementById('todayBtn').addEventListener('click', () => useToday(true));
     document.getElementById('newGameBtn').addEventListener('click', newGame);
     document.getElementById('rotateBtn').addEventListener('click', rotateSelected);
@@ -912,6 +981,7 @@ let count = 0;
     monthSelect.addEventListener('change', newGame);
     daySelect.addEventListener('change', newGame);
     weekdaySelect.addEventListener('change', newGame);
+    window.addEventListener('keydown', handleKeyboardShortcuts);
 
     window.addEventListener('resize', () => {
       renderPieces();
