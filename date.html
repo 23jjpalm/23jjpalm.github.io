@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar Puzzle Play Page</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --panel3: #374151;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --line: #4b5563;
+      --blocked: #05070b;
+      --target: #f59e0b;
+      --bad: #ef4444;
+      --good: #22c55e;
+      --cell: 58px;
+      --gap: 6px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top, #1f2937, #0b1020 55%, #05070b);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 18px;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 { margin-top: 0; }
+
+    .app {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.94);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 13px;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel3);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:hover { filter: brightness(1.1); }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .status {
+      min-height: 54px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 11px;
+      color: var(--text);
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .main-area {
+      display: grid;
+      gap: 18px;
+    }
+
+    .board-shell {
+      position: relative;
+      width: calc(7 * var(--cell) + 6 * var(--gap));
+      height: calc(8 * var(--cell) + 7 * var(--gap));
+      touch-action: none;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, var(--cell));
+      grid-template-rows: repeat(8, var(--cell));
+      gap: var(--gap);
+      position: absolute;
+      inset: 0;
+    }
+
+    .cell {
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 800;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .cell.blocked {
+      background: repeating-linear-gradient(45deg, var(--blocked), var(--blocked) 10px, #111 10px, #111 20px);
+      color: #555;
+    }
+
+    .cell.target {
+      outline: 3px solid var(--target);
+      outline-offset: -3px;
+      color: #fff7ed;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.25) inset;
+    }
+
+    .cell.covered-ok {
+      opacity: 0.65;
+    }
+
+    .cell.covered-bad {
+      outline: 3px solid var(--bad);
+      outline-offset: -3px;
+    }
+
+    .coord {
+      position: absolute;
+      right: 5px;
+      bottom: 3px;
+      font-size: 9px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 400;
+    }
+
+    .pieces-bank {
+      min-height: 250px;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 12px;
+      position: relative;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .play-layout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .piece {
+      position: absolute;
+      z-index: 10;
+      touch-action: none;
+      cursor: grab;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,0.28));
+    }
+
+    .piece.dragging {
+      cursor: grabbing;
+      z-index: 100;
+      filter: drop-shadow(0 18px 24px rgba(0,0,0,0.45));
+    }
+
+    .piece.selected {
+      filter: drop-shadow(0 0 0.35rem white) drop-shadow(0 12px 18px rgba(0,0,0,0.35));
+    }
+
+    .piece.invalid .block {
+      outline: 3px solid var(--bad);
+      outline-offset: -3px;
+    }
+
+    .piece.locked .block {
+      outline: 2px solid rgba(255,255,255,0.35);
+      outline-offset: -2px;
+    }
+
+    .piece-grid {
+      display: grid;
+      gap: var(--gap);
+    }
+
+    .block {
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(0,0,0,0.7);
+      font-weight: 900;
+      user-select: none;
+    }
+
+    .ghost {
+      opacity: 0.25;
+    }
+
+    .piece-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .win {
+      color: #86efac;
+      font-weight: 900;
+    }
+
+    .bad-text {
+      color: #fca5a5;
+      font-weight: 900;
+    }
+
+    @media (max-width: 1050px) {
+      :root { --cell: 48px; --gap: 5px; }
+      .app { grid-template-columns: 1fr; }
+      .play-layout { grid-template-columns: 1fr; }
+      .board-shell { margin: 0 auto; }
+    }
+
+    @media (max-width: 430px) {
+      :root { --cell: 42px; --gap: 4px; }
+      body { padding: 10px; }
+      .card { padding: 12px; }
+      .piece-info { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <h1>Calendar Puzzle</h1>
+      <div class="controls">
+        <div>
+          <label for="monthSelect">Month to leave open</label>
+          <select id="monthSelect"></select>
+        </div>
+        <div>
+          <label for="daySelect">Date to leave open</label>
+          <select id="daySelect"></select>
+        </div>
+        <div>
+          <label for="weekdaySelect">Weekday to leave open</label>
+          <select id="weekdaySelect"></select>
+        </div>
+        <div class="button-row">
+          <button id="todayBtn">Use Today</button>
+          <button id="newGameBtn">New Game</button>
+        </div>
+        <div class="button-row">
+          <button id="rotateBtn">Rotate Selected</button>
+          <button id="flipBtn">Flip Selected</button>
+        </div>
+        <div class="button-row">
+          <button id="returnBtn">Return Selected</button>
+          <button id="resetBtn">Reset Pieces</button>
+        </div>
+        <div class="status" id="status">Pick up a piece and drag it onto the board. Rotate or flip the selected piece as needed.</div>
+        <div class="piece-info">
+          <div class="stat">
+            <div class="stat-label">Placed</div>
+            <div class="stat-value" id="placedCount">0/10</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Covered</div>
+            <div class="stat-value" id="coveredCount">0/48</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Mistakes</div>
+            <div class="stat-value" id="mistakeCount">0</div>
+          </div>
+        </div>
+        <div class="small">
+          Goal: cover every usable square except the selected month, date, and weekday. Pieces can rotate and flip. Drag near the board to snap into place.
+        </div>
+      </div>
+    </div>
+
+    <div class="main-area">
+      <div class="card">
+        <h2>Puzzle Board</h2>
+        <div class="play-layout">
+          <div class="board-shell" id="boardShell">
+            <div class="board" id="board"></div>
+          </div>
+          <div>
+            <h3>Piece Bank</h3>
+            <div class="pieces-bank" id="piecesBank"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    const BOARD = [
+      ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', null],
+      ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', null],
+      ['1',   '2',   '3',   '4',   '5',   '6',   '7'],
+      ['8',   '9',   '10',  '11',  '12',  '13',  '14'],
+      ['15',  '16',  '17',  '18',  '19',  '20',  '21'],
+      ['22',  '23',  '24',  '25',  '26',  '27',  '28'],
+      ['29',  '30',  '31',  'Sun', 'Mon', 'Tue', 'Wed'],
+      [null,  null,  null,  null,  'Thu', 'Fri', 'Sat']
+    ];
+
+    const BASE_PIECES = [
+      { name: 'P1',  shape: [[1,1,1,1]] },
+      { name: 'P2',  shape: [[1,1,1],[1,1,0]] },
+      { name: 'P3',  shape: [[1,1,1],[0,1,0],[0,1,0]] },
+      { name: 'P4',  shape: [[1,1,1],[1,0,1]] },
+      { name: 'P5',  shape: [[1,0,0],[1,1,1],[0,0,1]] },
+      { name: 'P6',  shape: [[1,1,1],[1,0,0],[1,0,0]] },
+      { name: 'P7',  shape: [[1,1,1,1],[1,0,0,0]] },
+      { name: 'P8',  shape: [[1,1,1],[1,0,0]] },
+      { name: 'P9',  shape: [[0,0,1,1],[1,1,1,0]] },
+      { name: 'P10', shape: [[1,1,0],[0,1,1]] }
+    ];
+
+    const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#8b5cf6','#ec4899','#84cc16','#f43f5e'];
+
+    const boardEl = document.getElementById('board');
+    const boardShell = document.getElementById('boardShell');
+    const piecesBank = document.getElementById('piecesBank');
+    const monthSelect = document.getElementById('monthSelect');
+    const daySelect = document.getElementById('daySelect');
+    const weekdaySelect = document.getElementById('weekdaySelect');
+    const statusEl = document.getElementById('status');
+    const placedCountEl = document.getElementById('placedCount');
+    const coveredCountEl = document.getElementById('coveredCount');
+    const mistakeCountEl = document.getElementById('mistakeCount');
+
+    let pieces = [];
+    let selectedPieceId = null;
+    let drag = null;
+
+    function cellSize() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell'));
+    }
+
+    function gapSize() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
+    }
+
+    function stepSize() {
+      return cellSize() + gapSize();
+    }
+
+    function cloneShape(shape) {
+      return shape.map(row => [...row]);
+    }
+
+    function trimShape(shape) {
+      let rows = [];
+      for (let r = 0; r < shape.length; r++) {
+        if (shape[r].some(Boolean)) rows.push([...shape[r]]);
+      }
+      if (rows.length === 0) return [[0]];
+
+      let minC = Infinity;
+      let maxC = -Infinity;
+      rows.forEach(row => {
+        row.forEach((v, c) => {
+          if (v) {
+            minC = Math.min(minC, c);
+            maxC = Math.max(maxC, c);
+          }
+        });
+      });
+      return rows.map(row => row.slice(minC, maxC + 1));
+    }
+
+    function rotateShape(shape) {
+      const rows = shape.length;
+      const cols = shape[0].length;
+      const out = [];
+      for (let c = 0; c < cols; c++) {
+        const newRow = [];
+        for (let r = rows - 1; r >= 0; r--) {
+          newRow.push(shape[r][c] ? 1 : 0);
+        }
+        out.push(newRow);
+      }
+      return trimShape(out);
+    }
+
+    function flipShape(shape) {
+      return trimShape(shape.map(row => [...row].reverse()));
+    }
+
+    function occupiedOffsets(shape) {
+      const cells = [];
+      for (let r = 0; r < shape.length; r++) {
+        for (let c = 0; c < shape[r].length; c++) {
+          if (shape[r][c]) cells.push([r, c]);
+        }
+      }
+      return cells;
+    }
+
+    function populateControls() {
+      MONTHS.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        monthSelect.appendChild(opt);
+      });
+      for (let i = 1; i <= 31; i++) {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = i;
+        daySelect.appendChild(opt);
+      }
+      WEEKDAYS.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w;
+        opt.textContent = w;
+        weekdaySelect.appendChild(opt);
+      });
+      useToday(false);
+    }
+
+    function targets() {
+      return new Set([monthSelect.value, daySelect.value, weekdaySelect.value]);
+    }
+
+    function validBoardCell(r, c) {
+      return r >= 0 && r < 8 && c >= 0 && c < 7 && BOARD[r][c] !== null;
+    }
+
+    function isTargetCell(r, c) {
+      return targets().has(BOARD[r][c]);
+    }
+
+    function requiredCellCount() {
+
+let count = 0;
+      const t = targets();
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 7; c++) {
+          if (BOARD[r][c] !== null && !t.has(BOARD[r][c])) count++;
+        }
+      }
+      return count;
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      const t = targets();
+      const covered = getCoverageMap();
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 7; c++) {
+          const value = BOARD[r][c];
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          if (value === null) {
+            cell.classList.add('blocked');
+            cell.textContent = 'XXXX';
+          } else {
+            cell.textContent = value;
+            if (t.has(value)) cell.classList.add('target');
+            const key = `${r},${c}`;
+            if (covered.has(key) && !t.has(value)) cell.classList.add('covered-ok');
+            if (covered.has(key) && t.has(value)) cell.classList.add('covered-bad');
+          }
+
+          const coord = document.createElement('div');
+          coord.className = 'coord';
+          coord.textContent = `${r+1},${c+1}`;
+          cell.appendChild(coord);
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function createPieces() {
+      pieces = BASE_PIECES.map((p, i) => ({
+        id: i,
+        name: p.name,
+        shape: cloneShape(p.shape),
+        color: COLORS[i],
+        placed: false,
+        boardR: null,
+        boardC: null,
+        bankX: 14 + (i % 2) * 155,
+        bankY: 14 + Math.floor(i / 2) * 92,
+        x: 0,
+        y: 0
+      }));
+      selectedPieceId = null;
+    }
+
+    function renderPieces() {
+      document.querySelectorAll('.piece').forEach(el => el.remove());
+      pieces.forEach(piece => {
+        const el = document.createElement('div');
+        el.className = 'piece';
+        el.dataset.id = piece.id;
+        if (piece.id === selectedPieceId) el.classList.add('selected');
+        if (piece.placed) el.classList.add('locked');
+
+        const grid = document.createElement('div');
+        grid.className = 'piece-grid';
+        grid.style.gridTemplateColumns = `repeat(${piece.shape[0].length}, var(--cell))`;
+        grid.style.gridTemplateRows = `repeat(${piece.shape.length}, var(--cell))`;
+
+        for (let r = 0; r < piece.shape.length; r++) {
+          for (let c = 0; c < piece.shape[r].length; c++) {
+            const b = document.createElement('div');
+            if (piece.shape[r][c]) {
+              b.className = 'block';
+              b.style.background = piece.color;
+              b.textContent = piece.name.replace('P', '');
+            } else {
+              b.className = 'block ghost';
+              b.style.background = 'transparent';
+              b.style.borderColor = 'transparent';
+              b.textContent = '';
+            }
+            grid.appendChild(b);
+          }
+        }
+
+        el.appendChild(grid);
+        el.addEventListener('pointerdown', pointerDown);
+        el.addEventListener('click', () => selectPiece(piece.id));
+
+        if (piece.placed) {
+          boardShell.appendChild(el);
+          const pos = boardPositionFromCell(piece.boardR, piece.boardC);
+          piece.x = pos.x;
+          piece.y = pos.y;
+        } else {
+          piecesBank.appendChild(el);
+          piece.x = piece.bankX;
+          piece.y = piece.bankY;
+        }
+
+        el.style.left = `${piece.x}px`;
+        el.style.top = `${piece.y}px`;
+      });
+      updatePieceValidityStyles();
+    }
+
+    function selectPiece(id) {
+      selectedPieceId = id;
+      renderPieces();
+      const piece = pieces.find(p => p.id === id);
+      statusEl.textContent = `${piece.name} selected. Use rotate/flip or drag it onto the board.`;
+    }
+
+    function boardPositionFromCell(r, c) {
+      return { x: c * stepSize(), y: r * stepSize() };
+    }
+
+    function cellFromBoardPosition(x, y) {
+      const s = stepSize();
+      return {
+        r: Math.round(y / s),
+        c: Math.round(x / s)
+      };
+    }
+
+    function pointerDown(e) {
+      const id = Number(e.currentTarget.dataset.id);
+      const piece = pieces.find(p => p.id === id);
+      selectedPieceId = id;
+
+      const currentParent = e.currentTarget.parentElement;
+      const currentRect = e.currentTarget.getBoundingClientRect();
+      const appRect = document.body.getBoundingClientRect();
+
+      e.currentTarget.classList.add('dragging');
+      e.currentTarget.setPointerCapture(e.pointerId);
+
+      drag = {
+        id,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        offsetX: e.clientX - currentRect.left,
+        offsetY: e.clientY - currentRect.top,
+        el: e.currentTarget,
+        fromPlaced: piece.placed,
+        original: {
+          placed: piece.placed,
+          boardR: piece.boardR,
+          boardC: piece.boardC,
+          bankX: piece.bankX,
+          bankY: piece.bankY,
+          parent: currentParent
+        }
+      };
+
+      document.addEventListener('pointermove', pointerMove);
+      document.addEventListener('pointerup', pointerUp);
+      renderPieces();
+
+      const freshEl = document.querySelector(`.piece[data-id="${id}"]`);
+      drag.el = freshEl;
+      drag.el.classList.add('dragging');
+    }
+
+    function pointerMove(e) {
+      if (!drag) return;
+      const piece = pieces.find(p => p.id === drag.id);
+      const boardRect = boardShell.getBoundingClientRect();
+      const bankRect = piecesBank.getBoundingClientRect();
+      const xInBoard = e.clientX - boardRect.left - drag.offsetX;
+      const yInBoard = e.clientY - boardRect.top - drag.offsetY;
+      const xInBank = e.clientX - bankRect.left - drag.offsetX;
+      const yInBank = e.clientY - bankRect.top - drag.offsetY;
+
+      const nearBoard = e.clientX >= boardRect.left - 80 && e.clientX <= boardRect.right + 120 && e.clientY >= boardRect.top - 80 && e.clientY <= boardRect.bottom + 120;
+
+      if (nearBoard) {
+        if (drag.el.parentElement !== boardShell) {
+          boardShell.appendChild(drag.el);
+        }
+        piece.x = xInBoard;
+        piece.y = yInBoard;
+      } else {
+        if (drag.el.parentElement !== piecesBank) {
+          piecesBank.appendChild(drag.el);
+        }
+        piece.x = xInBank;
+        piece.y = yInBank;
+      }
+
+      drag.el.style.left = `${piece.x}px`;
+      drag.el.style.top = `${piece.y}px`;
+    }
+
+    function pointerUp(e) {
+      if (!drag) return;
+      const piece = pieces.find(p => p.id === drag.id);
+      const boardRect = boardShell.getBoundingClientRect();
+      const pointerInBoardArea = e.clientX >= boardRect.left - 40 && e.clientX <= boardRect.right + 40 && e.clientY >= boardRect.top - 40 && e.clientY <= boardRect.bottom + 40;
+
+      if (pointerInBoardArea) {
+        const cell = cellFromBoardPosition(piece.x, piece.y);
+        const valid = canPlacePiece(piece, cell.r, cell.c, piece.id);
+        if (valid.ok) {
+          piece.placed = true;
+          piece.boardR = cell.r;
+          piece.boardC = cell.c;
+          const pos = boardPositionFromCell(cell.r, cell.c);
+          piece.x = pos.x;
+          piece.y = pos.y;
+          statusEl.textContent = `${piece.name} placed at row ${cell.r + 1}, column ${cell.c + 1}.`;
+        } else {
+          piece.placed = false;
+          piece.boardR = null;
+          piece.boardC = null;
+          piece.bankX = Math.max(8, Math.min(piece.x, piecesBank.clientWidth - 90));
+          piece.bankY = Math.max(8, Math.min(piece.y, piecesBank.clientHeight - 70));
+          statusEl.textContent = `${piece.name} could not be placed: ${valid.reason}`;
+        }
+      } else {
+        piece.placed = false;
+        piece.boardR = null;
+        piece.boardC = null;
+        piece.bankX = Math.max(8, Math.min(piece.x, piecesBank.clientWidth - 90));
+        piece.bankY = Math.max(8, Math.min(piece.y, piecesBank.clientHeight - 70));
+        statusEl.textContent = `${piece.name} returned to the piece bank.`;
+      }
+
+      drag.el.classList.remove('dragging');
+      drag = null;
+      document.removeEventListener('pointermove', pointerMove);
+      document.removeEventListener('pointerup', pointerUp);
+      renderPieces();
+      renderBoard();
+      updateStats();
+      checkWin();
+    }
+
+    function occupiedBoardCells(piece, baseR = piece.boardR, baseC = piece.boardC) {
+      if (baseR === null || baseC === null) return [];
+      return occupiedOffsets(piece.shape).map(([r, c]) => [baseR + r, baseC + c]);
+    }
+
+    function canPlacePiece(piece, baseR, baseC, ignoreId = null) {
+      const cells = occupiedBoardCells(piece, baseR, baseC);
+      const occupied = new Map();
+
+      pieces.forEach(p => {
+        if (!p.placed || p.id === ignoreId) return;
+        occupiedBoardCells(p).forEach(([r, c]) => occupied.set(`${r},${c}`, p.name));
+      });
+
+      for (const [r, c] of cells) {
+        if (!validBoardCell(r, c)) return { ok: false, reason: 'piece is outside the usable board' };
+        if (isTargetCell(r, c)) return { ok: false, reason: 'piece covers a target cell' };
+        if (occupied.has(`${r},${c}`)) return { ok: false, reason: `piece overlaps ${occupied.get(`${r},${c}`)}` };
+      }
+      return { ok: true, reason: '' };
+    }
+
+    function getCoverageMap() {
+      const covered = new Set();
+      pieces.forEach(p => {
+        if (!p.placed) return;
+        occupiedBoardCells(p).forEach(([r, c]) => covered.add(`${r},${c}`));
+      });
+      return covered;
+    }
+
+    function updatePieceValidityStyles() {
+      pieces.forEach(piece => {
+        const el = document.querySelector(`.piece[data-id="${piece.id}"]`);
+        if (!el || !piece.placed) return;
+        const valid = canPlacePiece(piece, piece.boardR, piece.boardC, piece.id);
+        if (!valid.ok) el.classList.add('invalid');
+      });
+    }
+
+    function updateStats() {
+      const placed = pieces.filter(p => p.placed).length;
+      const required = requiredCellCount();
+      const coverageCounts = new Map();
+      let mistakes = 0;
+
+      pieces.forEach(p => {
+        if (!p.placed) return;
+        occupiedBoardCells(p).forEach(([r, c]) => {
+          const key = `${r},${c}`;
+          coverageCounts.set(key, (coverageCounts.get(key) || 0) + 1);
+        });
+      });
+
+      for (const [key, count] of coverageCounts.entries()) {
+        const [r, c] = key.split(',').map(Number);
+        if (!validBoardCell(r, c) || isTargetCell(r, c) || count > 1) mistakes++;
+      }
+
+      let coveredRequired = 0;
+      for (const [key, count] of coverageCounts.entries()) {
+        const [r, c] = key.split(',').map(Number);
+        if (validBoardCell(r, c) && !isTargetCell(r, c) && count === 1) coveredRequired++;
+      }
+
+      placedCountEl.textContent = `${placed}/10`;
+      coveredCountEl.textContent = `${coveredRequired}/${required}`;
+      mistakeCountEl.textContent = String(mistakes);
+      mistakeCountEl.className = mistakes ? 'stat-value bad-text' : 'stat-value';
+
+      return { placed, coveredRequired, required, mistakes };
+    }
+
+    function checkWin() {
+      const s = updateStats();
+      if (s.placed === 10 && s.coveredRequired === s.required && s.mistakes === 0) {
+        statusEl.innerHTML = `<span class="win">Solved!</span> You covered everything except ${monthSelect.value}, ${daySelect.value}, and ${weekdaySelect.value}.`;
+      }
+    }
+
+    function rotateSelected() {
+      const piece = pieces.find(p => p.id === selectedPieceId);
+      if (!piece) {
+        statusEl.textContent = 'Select a piece first.';
+        return;
+      }
+      const oldShape = cloneShape(piece.shape);
+      piece.shape = rotateShape(piece.shape);
+      if (piece.placed && !canPlacePiece(piece, piece.boardR, piece.boardC, piece.id).ok) {
+        piece.shape = oldShape;
+        statusEl.textContent = `${piece.name} cannot rotate there.`;
+      } else {
+        statusEl.textContent = `${piece.name} rotated.`;
+      }
+      renderPieces();
+      renderBoard();
+      updateStats();
+      checkWin();
+    }
+
+    function flipSelected() {
+      const piece = pieces.find(p => p.id === selectedPieceId);
+      if (!piece) {
+        statusEl.textContent = 'Select a piece first.';
+        return;
+      }
+      const oldShape = cloneShape(piece.shape);
+      piece.shape = flipShape(piece.shape);
+      if (piece.placed && !canPlacePiece(piece, piece.boardR, piece.boardC, piece.id).ok) {
+        piece.shape = oldShape;
+        statusEl.textContent = `${piece.name} cannot flip there.`;
+      } else {
+        statusEl.textContent = `${piece.name} flipped.`;
+      }
+      renderPieces();
+      renderBoard();
+      updateStats();
+      checkWin();
+    }
+
+    function returnSelected() {
+      const piece = pieces.find(p => p.id === selectedPieceId);
+      if (!piece) {
+        statusEl.textContent = 'Select a piece first.';
+        return;
+      }
+      piece.placed = false;
+      piece.boardR = null;
+      piece.boardC = null;
+      piece.bankX = 14 + (piece.id % 2) * 155;
+      piece.bankY = 14 + Math.floor(piece.id / 2) * 92;
+      statusEl.textContent = `${piece.name} returned to the piece bank.`;
+      renderPieces();
+      renderBoard();
+      updateStats();
+    }
+
+    function resetPieces() {
+      createPieces();
+      statusEl.textContent = 'Pieces reset.';
+      renderPieces();
+      renderBoard();
+      updateStats();
+    }
+
+    function useToday(shouldRender = true) {
+      const now = new Date();
+      monthSelect.value = MONTHS[now.getMonth()];
+      daySelect.value = String(now.getDate());
+      weekdaySelect.value = WEEKDAYS[now.getDay()];
+      if (shouldRender) newGame();
+    }
+
+    function newGame() {
+      createPieces();
+      renderBoard();
+      renderPieces();
+      updateStats();
+      statusEl.textContent = `New puzzle: leave ${monthSelect.value}, ${daySelect.value}, and ${weekdaySelect.value} uncovered.`;
+    }
+
+    document.getElementById('todayBtn').addEventListener('click', () => useToday(true));
+    document.getElementById('newGameBtn').addEventListener('click', newGame);
+    document.getElementById('rotateBtn').addEventListener('click', rotateSelected);
+    document.getElementById('flipBtn').addEventListener('click', flipSelected);
+    document.getElementById('returnBtn').addEventListener('click', returnSelected);
+    document.getElementById('resetBtn').addEventListener('click', resetPieces);
+
+    monthSelect.addEventListener('change', newGame);
+    daySelect.addEventListener('change', newGame);
+    weekdaySelect.addEventListener('change', newGame);
+
+    window.addEventListener('resize', () => {
+      renderPieces();
+      renderBoard();
+    });
+
+    populateControls();
+    createPieces();
+    renderBoard();
+    renderPieces();
+    updateStats();
+  </script>
+</body>
+</html>
