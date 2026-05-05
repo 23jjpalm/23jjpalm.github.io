@@ -43,13 +43,15 @@ main {
   padding: 16px;
 }
 
-.controls {
-  background: #0f172a;
+.controls, .module {
+  background: #111827;
   border: 2px solid #334155;
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 16px;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.35);
 }
+
+.controls { margin-bottom: 16px; }
 
 button {
   border: none;
@@ -63,24 +65,10 @@ button {
 
 button:hover { opacity: 0.9; }
 
-button:disabled {
-  background: #475569;
-  cursor: not-allowed;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
-}
-
-.module {
-  background: #111827;
-  border: 2px solid #334155;
-  border-radius: 16px;
-  padding: 16px;
-  min-height: 260px;
-  box-shadow: 0 12px 25px rgba(0,0,0,0.35);
 }
 
 .module.solved {
@@ -96,6 +84,7 @@ button:disabled {
 .small {
   color: #cbd5e1;
   font-size: 14px;
+  line-height: 1.45;
 }
 
 .wire {
@@ -195,6 +184,15 @@ button:disabled {
 
 .win { color: #22c55e; }
 .lose { color: #ef4444; }
+
+.manual-box {
+  display: none;
+  margin-top: 12px;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 14px;
+}
 </style>
 </head>
 <body>
@@ -210,7 +208,26 @@ button:disabled {
 <main>
   <div class="controls">
     <button onclick="startGame()">Start New Bomb</button>
-    <button onclick="showManual()">Show Manual</button>
+    <button onclick="toggleManual()">Toggle Manual</button>
+
+    <div class="manual-box small" id="manualBox">
+      <b>KEYPAD MANUAL</b><br><br>
+      Use bomb data to calculate an 8-digit code.<br><br>
+      D1 = first serial digit + batteries<br>
+      D2 = second serial digit + ports + 3<br>
+      D3 = absolute difference between third serial digit and batteries<br>
+      D4 = sum of all serial digits + ports<br>
+      D5 = number of letters in indicator<br>
+      D6 = fourth serial digit × 2<br>
+      D7 = fifth serial digit + D1 + D2<br>
+      D8 = D3 + D4 + D5<br><br>
+      If any result has multiple digits, repeatedly add digits until one digit remains.<br>
+      Example: 38 → 3 + 8 = 11 → 1 + 1 = 2.
+      <br><br>
+      <b>LOGIC MANUAL</b><br><br>
+      All listed switch rules must be true before submitting.
+    </div>
+
     <div class="message" id="gameMessage">
       Start the bomb. Solve every module before time runs out.
     </div>
@@ -225,9 +242,9 @@ button:disabled {
 
     <section class="module" id="keypadModule">
       <h2>Keypad Module</h2>
-      <p class="small">Use the clue to enter the correct 4-digit code.</p>
+      <p class="small">Calculate the hidden 8-digit code using the manual.</p>
       <p class="small" id="keypadClue"></p>
-      <div class="input-display" id="keypadInput">----</div>
+      <div class="input-display" id="keypadInput">--------</div>
       <div class="keypad" id="keypad"></div>
     </section>
 
@@ -247,7 +264,7 @@ button:disabled {
 
     <section class="module" id="logicModule">
       <h2>Logic Switches</h2>
-      <p class="small">Set the switches to satisfy the rule.</p>
+      <p class="small">Set the switches to satisfy every rule.</p>
       <p class="small" id="logicRule"></p>
       <div id="switches"></div>
       <button onclick="checkLogic()">Submit Logic</button>
@@ -273,9 +290,16 @@ let keypadCode = "";
 let keypadEntry = "";
 let memorySequence = [];
 let memoryEntry = [];
-let logicTarget = [];
+let logicAnswers = [];
 
 const wireColors = ["red", "blue", "yellow", "green", "black", "white"];
+
+function reduceToDigit(n) {
+  while (n >= 10) {
+    n = n.toString().split("").reduce((sum, digit) => sum + Number(digit), 0);
+  }
+  return n;
+}
 
 function startGame() {
   gameStarted = true;
@@ -305,13 +329,10 @@ function startGame() {
 
 function tickTimer() {
   if (!gameStarted) return;
-
   timeLeft--;
   updateStatus();
 
-  if (timeLeft <= 0) {
-    loseGame("Time ran out.");
-  }
+  if (timeLeft <= 0) loseGame("Time ran out.");
 }
 
 function updateStatus() {
@@ -327,9 +348,7 @@ function strike(reason) {
   setMessage("Strike! " + reason, "lose");
   updateStatus();
 
-  if (strikes >= 3) {
-    loseGame("Too many mistakes.");
-  }
+  if (strikes >= 3) loseGame("Too many mistakes.");
 }
 
 function checkWin() {
@@ -357,6 +376,11 @@ function solveModule(name, elementId) {
   document.getElementById(elementId).classList.add("solved");
   setMessage(`${name.toUpperCase()} module solved.`, "win");
   checkWin();
+}
+
+function toggleManual() {
+  const box = document.getElementById("manualBox");
+  box.style.display = box.style.display === "block" ? "none" : "block";
 }
 
 /* WIRE MODULE */
@@ -409,17 +433,35 @@ function cutWire(index) {
 function generateKeypad() {
   keypadEntry = "";
 
-  const a = Math.floor(Math.random() * 9) + 1;
-  const b = Math.floor(Math.random() * 9) + 1;
-  const c = Math.floor(Math.random() * 9) + 1;
-  const d = Math.floor(Math.random() * 9) + 1;
+  const serial = Math.floor(10000 + Math.random() * 90000).toString();
+  const battery = Math.floor(Math.random() * 5) + 1;
+  const ports = Math.floor(Math.random() * 4);
+  const indicator = ["CAR", "NSA", "FRQ", "SIG", "TRN", "BOB"][Math.floor(Math.random() * 6)];
 
-  keypadCode = `${a}${b}${c}${d}`;
+  const s = serial.split("").map(Number);
+  const sum = s.reduce((a, b) => a + b, 0);
 
-  document.getElementById("keypadClue").textContent =
-    `Clue: The code is ${a}, then ${b}, then ${c}, then ${d}.`;
+  const d1 = reduceToDigit(s[0] + battery);
+  const d2 = reduceToDigit(s[1] + ports + 3);
+  const d3 = reduceToDigit(Math.abs(s[2] - battery));
+  const d4 = reduceToDigit(sum + ports);
+  const d5 = reduceToDigit(indicator.length);
+  const d6 = reduceToDigit(s[3] * 2);
+  const d7 = reduceToDigit(s[4] + d1 + d2);
+  const d8 = reduceToDigit(d3 + d4 + d5);
 
-  document.getElementById("keypadInput").textContent = "----";
+  keypadCode = `${d1}${d2}${d3}${d4}${d5}${d6}${d7}${d8}`;
+
+  document.getElementById("keypadClue").innerHTML = `
+    Bomb Data:<br>
+    Serial: <b>${serial}</b><br>
+    Batteries: <b>${battery}</b><br>
+    Ports: <b>${ports}</b><br>
+    Indicator: <b>${indicator}</b><br><br>
+    Use the manual to calculate the code.
+  `;
+
+  document.getElementById("keypadInput").textContent = "--------";
 
   const keypad = document.getElementById("keypad");
   keypad.innerHTML = "";
@@ -438,32 +480,43 @@ function generateKeypad() {
 
   const clear = document.createElement("button");
   clear.textContent = "Clear";
-  clear.onclick = () => {
-    keypadEntry = "";
-    document.getElementById("keypadInput").textContent = "----";
-  };
+  clear.onclick = clearKeypad;
   keypad.appendChild(clear);
+
+  const back = document.createElement("button");
+  back.textContent = "Back";
+  back.onclick = backspaceKeypad;
+  keypad.appendChild(back);
 }
 
 function pressKeypad(num) {
   if (!gameStarted || solved.keypad) return;
-
-  if (keypadEntry.length >= 4) return;
+  if (keypadEntry.length >= 8) return;
 
   keypadEntry += num;
-  document.getElementById("keypadInput").textContent = keypadEntry.padEnd(4, "-");
+  document.getElementById("keypadInput").textContent = keypadEntry.padEnd(8, "-");
 
-  if (keypadEntry.length === 4) {
+  if (keypadEntry.length === 8) {
     if (keypadEntry === keypadCode) {
       solveModule("keypad", "keypadModule");
     } else {
-      strike("Incorrect keypad code.");
+      strike("Incorrect 8-digit keypad code.");
       keypadEntry = "";
       setTimeout(() => {
-        document.getElementById("keypadInput").textContent = "----";
+        document.getElementById("keypadInput").textContent = "--------";
       }, 500);
     }
   }
+}
+
+function clearKeypad() {
+  keypadEntry = "";
+  document.getElementById("keypadInput").textContent = "--------";
+}
+
+function backspaceKeypad() {
+  keypadEntry = keypadEntry.slice(0, -1);
+  document.getElementById("keypadInput").textContent = keypadEntry.padEnd(8, "-");
 }
 
 /* MEMORY MODULE */
@@ -472,7 +525,7 @@ function generateMemory() {
   memorySequence = [];
   memoryEntry = [];
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     memorySequence.push(Math.floor(Math.random() * 4));
   }
 
@@ -498,7 +551,7 @@ function playMemorySequence() {
         document.getElementById("memoryDisplay").textContent = "Repeat";
       }, 700);
     }
-  }, 800);
+  }, 700);
 }
 
 function pressMemory(num) {
@@ -524,18 +577,63 @@ function pressMemory(num) {
 /* LOGIC MODULE */
 
 function generateLogic() {
-  logicTarget = [
-    Math.random() > 0.5,
-    Math.random() > 0.5,
-    Math.random() > 0.5,
-    Math.random() > 0.5
-  ];
+  const names = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"];
+  const puzzleType = Math.floor(Math.random() * 5);
 
-  const names = ["Alpha", "Bravo", "Charlie", "Delta"];
+  if (puzzleType === 0) {
+    logicAnswers = [true, false, true, false, false, true];
+    document.getElementById("logicRule").innerHTML = `
+      Alpha must be ON.<br>
+      Charlie must match Alpha.<br>
+      Delta must be OFF.<br>
+      Foxtrot must be ON.<br>
+      Exactly 3 switches must be ON.
+    `;
+  }
 
-  document.getElementById("logicRule").textContent =
-    "Rule: Turn ON exactly these switches: " +
-    logicTarget.map((on, i) => on ? names[i] : null).filter(Boolean).join(", ");
+  if (puzzleType === 1) {
+    logicAnswers = [false, true, false, true, true, false];
+    document.getElementById("logicRule").innerHTML = `
+      Bravo and Delta must be ON.<br>
+      Alpha must be OFF.<br>
+      Echo must be ON only if Bravo is ON.<br>
+      Foxtrot must be OFF.<br>
+      Exactly 3 switches must be ON.
+    `;
+  }
+
+  if (puzzleType === 2) {
+    logicAnswers = [true, true, false, false, true, false];
+    document.getElementById("logicRule").innerHTML = `
+      Alpha and Bravo must be the same.<br>
+      Charlie and Delta must be the same.<br>
+      Echo must be ON.<br>
+      Foxtrot must be OFF.<br>
+      More switches ON than OFF must be false.
+    `;
+  }
+
+  if (puzzleType === 3) {
+    logicAnswers = [false, false, true, true, false, true];
+    document.getElementById("logicRule").innerHTML = `
+      Alpha must be OFF.<br>
+      Charlie and Delta must both be ON.<br>
+      Echo must be OFF.<br>
+      Foxtrot must be ON.<br>
+      Bravo must match Alpha.
+    `;
+  }
+
+  if (puzzleType === 4) {
+    logicAnswers = [true, false, false, true, true, false];
+    document.getElementById("logicRule").innerHTML = `
+      Alpha and Delta must be opposites.<br>
+      Echo must match Alpha.<br>
+      Bravo must be OFF.<br>
+      Charlie must be OFF.<br>
+      Exactly 3 switches must be ON.
+    `;
+  }
 
   const container = document.getElementById("switches");
   container.innerHTML = "";
@@ -561,45 +659,23 @@ function toggleSwitch(i) {
 function checkLogic() {
   if (!gameStarted || solved.logic) return;
 
+  const states = [];
+
+  for (let i = 0; i < 6; i++) {
+    states.push(document.getElementById(`switch-${i}`).classList.contains("on"));
+  }
+
   let correct = true;
 
-  for (let i = 0; i < 4; i++) {
-    const isOn = document.getElementById(`switch-${i}`).classList.contains("on");
-    if (isOn !== logicTarget[i]) {
-      correct = false;
-    }
+  for (let i = 0; i < 6; i++) {
+    if (states[i] !== logicAnswers[i]) correct = false;
   }
 
   if (correct) {
     solveModule("logic", "logicModule");
   } else {
-    strike("Logic switches are incorrect.");
+    strike("Logic switch rules are not satisfied.");
   }
-}
-
-/* MANUAL */
-
-function showManual() {
-  alert(
-`DEFUSE PROTOCOL MANUAL
-
-Goal:
-Solve all modules before timer reaches zero.
-
-Wires:
-Read the displayed rule and cut the correct wire.
-
-Keypad:
-Enter the four-digit code from the clue.
-
-Memory:
-Press Play Sequence, watch the letters, then repeat them.
-
-Logic:
-Turn on only the required switches, then submit.
-
-Three strikes or zero time means failure.`
-  );
 }
 
 updateStatus();
