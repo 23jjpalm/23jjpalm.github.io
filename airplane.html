@@ -3,10 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mini 2D Airplane Simulator</title>
+  <title>Airport Hop - 2D Airplane Upgrade Game</title>
   <style>
     * {
       box-sizing: border-box;
+    }
+
+    :root {
+      --panel: rgba(6, 13, 30, 0.78);
+      --panel-strong: rgba(6, 13, 30, 0.92);
+      --border: rgba(255, 255, 255, 0.16);
+      --accent: #60d394;
+      --warning: #ffdc5e;
+      --danger: #ff6b6b;
+      --sky1: #65bff6;
+      --sky2: #d8f5ff;
+      --ground: #3e9d38;
+      --runway: #3b3b3b;
     }
 
     body {
@@ -17,35 +30,93 @@
       color: white;
     }
 
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: #1f6feb;
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      filter: grayscale(0.4);
+    }
+
     canvas {
       display: block;
-      background: linear-gradient(#78c7ff 0%, #c7edff 62%, #6ec45f 62%, #2e7d32 100%);
+      background: linear-gradient(var(--sky1) 0%, var(--sky2) 62%, #6ec45f 62%, #2e7d32 100%);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(8px);
+    }
+
+    #topBar {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px;
+      pointer-events: none;
+    }
+
+    #topBar > * {
+      pointer-events: auto;
+    }
+
+    #navButtons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #statsStrip {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-size: 14px;
+      opacity: 0.95;
     }
 
     #hud {
       position: fixed;
-      top: 12px;
+      top: 92px;
       left: 12px;
       padding: 12px 14px;
-      border-radius: 12px;
-      background: rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.18);
       line-height: 1.45;
-      min-width: 230px;
+      min-width: 250px;
       user-select: none;
+      z-index: 4;
     }
 
     #help {
       position: fixed;
       right: 12px;
-      top: 12px;
+      top: 92px;
       padding: 12px 14px;
-      border-radius: 12px;
-      background: rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.18);
       line-height: 1.55;
       user-select: none;
-      max-width: 310px;
+      max-width: 330px;
+      z-index: 4;
     }
 
     #message {
@@ -54,43 +125,265 @@
       top: 50%;
       transform: translate(-50%, -50%);
       padding: 22px 28px;
-      border-radius: 18px;
-      background: rgba(0, 0, 0, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.2);
       text-align: center;
       font-size: 22px;
       display: none;
       user-select: none;
+      z-index: 10;
+      min-width: min(520px, calc(100vw - 32px));
+    }
+
+    #airspeedBox {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      width: 170px;
+      height: 170px;
+      z-index: 4;
+      user-select: none;
+    }
+
+    #hangarScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      padding: 88px 18px 18px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(96, 211, 148, 0.14), transparent 28%),
+        radial-gradient(circle at 90% 25%, rgba(31, 111, 235, 0.18), transparent 30%),
+        #09101f;
+      overflow-y: auto;
+    }
+
+    .hangarWrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .hangarCard {
+      padding: 18px;
+    }
+
+    .hangarTitle {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .subtitle {
+      margin: 0 0 16px;
+      opacity: 0.78;
+      line-height: 1.45;
+    }
+
+    .upgradeGrid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .upgradeCard {
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .upgradeCard h3 {
+      margin: 0 0 6px;
+    }
+
+    .upgradeCard p {
+      margin: 0;
+      opacity: 0.82;
+      line-height: 1.35;
+      font-size: 14px;
+    }
+
+    .levelPips {
+      display: flex;
+      gap: 4px;
+      margin-top: 9px;
+    }
+
+    .pip {
+      width: 18px;
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .pip.on {
+      background: var(--accent);
+    }
+
+    .planePreview {
+      height: 250px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(120, 199, 255, 0.18), rgba(255, 255, 255, 0.06));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      margin-top: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .planePreview::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 52px;
+      height: 18px;
+      background: #393939;
+    }
+
+    .bigStatGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .bigStat {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bigStat strong {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 2px;
     }
 
     .small {
       font-size: 14px;
       opacity: 0.85;
     }
+
+    .money {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .warn {
+      color: var(--warning);
+      font-weight: 800;
+    }
+
+    .danger {
+      color: var(--danger);
+      font-weight: 800;
+    }
+
+    @media (max-width: 860px) {
+      .hangarWrap {
+        grid-template-columns: 1fr;
+      }
+
+      #help {
+        display: none;
+      }
+
+      #statsStrip {
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
 
-  <div id="hud"></div>
+  <div id="topBar" class="panel">
+    <div id="navButtons">
+      <button id="runwayBtn">Runway</button>
+      <button id="hangarBtn">Hangar / Upgrades</button>
+      <button id="newFlightBtn">New Flight</button>
+    </div>
+    <div id="statsStrip"></div>
+  </div>
 
-  <div id="help">
+  <div id="hud" class="panel"></div>
+
+  <div id="help" class="panel">
     <strong>Controls</strong><br />
     Shift: Increase throttle<br />
     Ctrl: Decrease throttle<br />
     S: Pitch nose up<br />
     W: Pitch nose down<br />
-    R: Restart<br />
-    <span class="small">Goal: take off, fly around, and avoid stalling or crashing.</span>
+    R: Restart flight<br />
+    <span class="small">Start with a bad airplane, earn money from each flight, upgrade it, and reach the far airport.</span>
   </div>
 
-  <div id="message"></div>
+  <canvas id="airspeedBox" width="170" height="170"></canvas>
+
+  <div id="message" class="panel"></div>
+
+  <section id="hangarScreen">
+    <div class="hangarWrap">
+      <div class="hangarCard panel">
+        <h1 class="hangarTitle">Hangar</h1>
+        <p class="subtitle">
+          Upgrade your airplane to fly farther. The other airport is far away, so early flights are mostly about surviving long enough to earn cash.
+        </p>
+        <div class="bigStatGrid">
+          <div class="bigStat">
+            <strong id="hangarMoney">$0</strong>
+            <span class="small">Available money</span>
+          </div>
+          <div class="bigStat">
+            <strong id="hangarBest">0 mi</strong>
+            <span class="small">Best distance</span>
+          </div>
+          <div class="bigStat">
+            <strong id="hangarTarget">0 mi</strong>
+            <span class="small">Airport distance</span>
+          </div>
+          <div class="bigStat">
+            <strong>68 kt</strong>
+            <span class="small">Best glide speed</span>
+          </div>
+        </div>
+        <div class="planePreview">
+          <canvas id="previewCanvas" width="460" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="hangarCard panel">
+        <h2 style="margin-top: 0;">Upgrades</h2>
+        <div id="upgradeGrid" class="upgradeGrid"></div>
+      </div>
+    </div>
+  </section>
 
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
     const hud = document.getElementById("hud");
     const message = document.getElementById("message");
+    const statsStrip = document.getElementById("statsStrip");
+    const runwayBtn = document.getElementById("runwayBtn");
+    const hangarBtn = document.getElementById("hangarBtn");
+    const newFlightBtn = document.getElementById("newFlightBtn");
+    const hangarScreen = document.getElementById("hangarScreen");
+    const upgradeGrid = document.getElementById("upgradeGrid");
+    const hangarMoney = document.getElementById("hangarMoney");
+    const hangarBest = document.getElementById("hangarBest");
+    const hangarTarget = document.getElementById("hangarTarget");
+    const airspeedCanvas = document.getElementById("airspeedBox");
+    const airCtx = airspeedCanvas.getContext("2d");
+    const previewCanvas = document.getElementById("previewCanvas");
+    const previewCtx = previewCanvas.getContext("2d");
 
     function resize() {
       canvas.width = window.innerWidth;
@@ -102,14 +395,15 @@
     const keys = new Set();
 
     window.addEventListener("keydown", (e) => {
-      keys.add(e.key.toLowerCase());
+      const key = e.key.toLowerCase();
+      keys.add(key);
 
-      if (["shift", "control", "w", "s"].includes(e.key.toLowerCase())) {
+      if (["shift", "control", "w", "s"].includes(key)) {
         e.preventDefault();
       }
 
-      if (e.key.toLowerCase() === "r") {
-        resetPlane();
+      if (key === "r") {
+        startFlight();
       }
     });
 
@@ -117,139 +411,316 @@
       keys.delete(e.key.toLowerCase());
     });
 
+    const SAVE_KEY = "airportHopUpgradeGame_v1";
+
+    const game = {
+      screen: "runway",
+      money: 0,
+      totalEarned: 0,
+      bestDistance: 0,
+      lastDistance: 0,
+      flights: 0,
+      reachedAirport: false,
+      airportDistance: 36000,
+      upgrades: {
+        wings: 0,
+        fuel: 0,
+        engine: 0,
+      },
+    };
+
+    const upgradeData = {
+      wings: {
+        name: "Wings",
+        max: 8,
+        baseCost: 120,
+        costScale: 1.72,
+        description: "Improves lift, glide distance, stall margin, and control authority.",
+      },
+      fuel: {
+        name: "Fuel Capacity",
+        max: 8,
+        baseCost: 100,
+        costScale: 1.65,
+        description: "Adds more fuel so you can run the engine longer before gliding.",
+      },
+      engine: {
+        name: "Engine",
+        max: 8,
+        baseCost: 140,
+        costScale: 1.78,
+        description: "Adds thrust and climb ability, letting the airplane accelerate and climb better.",
+      },
+    };
+
     const world = {
       cameraX: 0,
       cameraY: 0,
       groundY: 900,
-      gravity: 0.145,
-      airDensity: 1,
+      gravity: 0.148,
     };
 
     const plane = {};
 
-    function resetPlane() {
-      plane.x = 160;
-      plane.y = world.groundY - 30;
-      plane.vx = 0;
-      plane.vy = 0;
-      plane.angle = -0.05;
-      plane.throttle = 0;
-      plane.crashed = false;
-      plane.stallWarning = false;
-      plane.maxSpeedReached = 0;
-      message.style.display = "none";
+    function saveGame() {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        money: game.money,
+        totalEarned: game.totalEarned,
+        bestDistance: game.bestDistance,
+        lastDistance: game.lastDistance,
+        flights: game.flights,
+        reachedAirport: game.reachedAirport,
+        upgrades: game.upgrades,
+      }));
     }
 
-    resetPlane();
+    function loadGame() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
+        if (!saved) return;
+        game.money = saved.money ?? 0;
+        game.totalEarned = saved.totalEarned ?? 0;
+        game.bestDistance = saved.bestDistance ?? 0;
+        game.lastDistance = saved.lastDistance ?? 0;
+        game.flights = saved.flights ?? 0;
+        game.reachedAirport = saved.reachedAirport ?? false;
+        game.upgrades = { ...game.upgrades, ...(saved.upgrades || {}) };
+      } catch (err) {
+        console.warn("Could not load save.", err);
+      }
+    }
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
+    }
+
+    function money(n) {
+      return "$" + Math.round(n).toLocaleString();
+    }
+
+    function mi(feet) {
+      return (feet / 5280).toFixed(2) + " mi";
     }
 
     function radToDeg(rad) {
       return rad * 180 / Math.PI;
     }
 
-    function getSpeed() {
-      return Math.hypot(plane.vx, plane.vy);
+    function getSpeedUnits() {
+      return Math.hypot(plane.vx || 0, plane.vy || 0);
+    }
+
+    function getAirspeedKt() {
+      return getSpeedUnits() * 18;
+    }
+
+    function getAltitudeFt() {
+      return Math.max(0, Math.round(world.groundY - plane.y - 24));
+    }
+
+    function getUpgradeStats() {
+      const wings = game.upgrades.wings;
+      const fuel = game.upgrades.fuel;
+      const engine = game.upgrades.engine;
+
+      return {
+        liftMultiplier: 0.62 + wings * 0.135,
+        dragMultiplier: 1.28 - wings * 0.055,
+        controlMultiplier: 0.62 + wings * 0.075,
+        fuelCapacity: 52 + fuel * 28,
+        thrustMultiplier: 0.56 + engine * 0.12,
+        fuelBurnMultiplier: 1.12 - engine * 0.035,
+        maxLevelSum: upgradeData.wings.max + upgradeData.fuel.max + upgradeData.engine.max,
+      };
+    }
+
+    function getUpgradeCost(type) {
+      const data = upgradeData[type];
+      const level = game.upgrades[type];
+      if (level >= data.max) return Infinity;
+      return Math.round(data.baseCost * Math.pow(data.costScale, level));
+    }
+
+    function startFlight() {
+      const stats = getUpgradeStats();
+      plane.x = 160;
+      plane.y = world.groundY - 30;
+      plane.vx = 0;
+      plane.vy = 0;
+      plane.angle = -0.04;
+      plane.throttle = 0;
+      plane.fuel = stats.fuelCapacity;
+      plane.maxFuel = stats.fuelCapacity;
+      plane.crashed = false;
+      plane.flightOver = false;
+      plane.landed = false;
+      plane.stallWarning = false;
+      plane.bestGlideHint = false;
+      plane.distance = 0;
+      plane.maxAltitude = 0;
+      plane.maxAirspeed = 0;
+      plane.earned = 0;
+      plane.reachedAirportThisFlight = false;
+      world.cameraX = 0;
+      world.cameraY = world.groundY - canvas.height * 0.65;
+      message.style.display = "none";
+      showRunway();
+    }
+
+    function showRunway() {
+      game.screen = "runway";
+      hangarScreen.style.display = "none";
+      hud.style.display = "block";
+      document.getElementById("help").style.display = "block";
+      airspeedCanvas.style.display = "block";
+    }
+
+    function showHangar() {
+      game.screen = "hangar";
+      hangarScreen.style.display = "block";
+      hud.style.display = "none";
+      document.getElementById("help").style.display = "none";
+      airspeedCanvas.style.display = "none";
+      renderHangar();
+    }
+
+    runwayBtn.addEventListener("click", showRunway);
+    hangarBtn.addEventListener("click", showHangar);
+    newFlightBtn.addEventListener("click", startFlight);
+
+    function finishFlight(reason) {
+      if (plane.flightOver) return;
+
+      plane.flightOver = true;
+      plane.crashed = true;
+      plane.throttle = 0;
+
+      const distance = Math.max(0, plane.x - 160);
+      plane.distance = distance;
+      game.lastDistance = distance;
+      game.bestDistance = Math.max(game.bestDistance, distance);
+      game.flights += 1;
+
+      const distanceMiles = distance / 5280;
+      const basePay = distanceMiles * 95;
+      const altitudeBonus = Math.min(plane.maxAltitude * 0.035, 140);
+      const landingBonus = plane.landed ? 75 : 0;
+      const airportBonus = plane.reachedAirportThisFlight ? 2500 : 0;
+      const earned = Math.round(basePay + altitudeBonus + landingBonus + airportBonus);
+
+      plane.earned = earned;
+      game.money += earned;
+      game.totalEarned += earned;
+      if (plane.reachedAirportThisFlight) game.reachedAirport = true;
+
+      saveGame();
+      updateTopStats();
+
+      message.innerHTML = `
+        <strong>${reason}</strong><br>
+        <span class="small">Distance: ${mi(distance)} | Earned: <span class="money">${money(earned)}</span></span><br><br>
+        <button onclick="startFlight()">Fly Again</button>
+        <button onclick="showHangar()" style="margin-left:8px;background:#2ea043;">Go To Hangar</button>
+      `;
+      message.style.display = "block";
     }
 
     function updatePlane() {
-      if (plane.crashed) return;
+      if (game.screen !== "runway" || plane.flightOver) return;
 
+      const stats = getUpgradeStats();
       const throttleRate = 0.006;
-      const pitchRate = 0.034;
+      const pitchRate = 0.026 * stats.controlMultiplier;
 
-      if (keys.has("shift")) plane.throttle += throttleRate;
+      if (keys.has("shift") && plane.fuel > 0) plane.throttle += throttleRate;
       if (keys.has("control")) plane.throttle -= throttleRate;
+      if (plane.fuel <= 0) plane.throttle -= throttleRate * 1.8;
       plane.throttle = clamp(plane.throttle, 0, 1);
 
       if (keys.has("s")) plane.angle -= pitchRate;
       if (keys.has("w")) plane.angle += pitchRate;
+      plane.angle = clamp(plane.angle, -Math.PI * 0.78, Math.PI * 0.78);
 
-      plane.angle = clamp(plane.angle, -Math.PI * 0.82, Math.PI * 0.82);
-
-      const speed = getSpeed();
+      const speed = getSpeedUnits();
+      const airspeedKt = getAirspeedKt();
       const forwardX = Math.cos(plane.angle);
       const forwardY = Math.sin(plane.angle);
       const upX = -Math.sin(plane.angle);
       const upY = Math.cos(plane.angle);
 
-      // Engine thrust points along the nose.
-      const thrust = plane.throttle * 0.255;
+      const thrust = plane.throttle * 0.202 * stats.thrustMultiplier;
       plane.vx += forwardX * thrust;
       plane.vy += forwardY * thrust;
 
-      // Gravity.
+      if (plane.throttle > 0 && plane.fuel > 0) {
+        plane.fuel -= plane.throttle * 0.055 * stats.fuelBurnMultiplier;
+        plane.fuel = Math.max(0, plane.fuel);
+      }
+
       plane.vy += world.gravity;
 
-      // Simple 2D lift model.
-      // More speed + decent pitch = more lift.
-      const liftStrength = clamp(speed * speed * 0.0048, 0, 0.72);
-      const pitchLiftBonus = clamp(-Math.sin(plane.angle) + 0.35, 0.15, 1.2);
-      const lift = liftStrength * pitchLiftBonus;
-      plane.vx += upX * lift * 0.15;
+      const bestGlideKt = 68;
+      const glideEfficiency = clamp(1 - Math.abs(airspeedKt - bestGlideKt) / 70, 0.35, 1.05);
+      const liftStrength = clamp(speed * speed * 0.00455 * stats.liftMultiplier, 0, 0.82 + game.upgrades.wings * 0.035);
+      const pitchLiftBonus = clamp(-Math.sin(plane.angle) + 0.34, 0.12, 1.22);
+      const lift = liftStrength * pitchLiftBonus * (plane.fuel <= 0 ? glideEfficiency : 1);
+
+      plane.vx += upX * lift * 0.13;
       plane.vy -= lift;
 
-      // Drag increases with speed and angle.
-      const drag = 0.992 - clamp(speed * 0.00055, 0, 0.018);
+      const angleDrag = 1 + Math.abs(Math.sin(plane.angle)) * 0.018;
+      const drag = 0.9925 - clamp(speed * 0.0005 * stats.dragMultiplier * angleDrag, 0, 0.021);
       plane.vx *= drag;
       plane.vy *= drag;
 
-      // Ground rolling friction.
       if (plane.y >= world.groundY - 28) {
-        plane.vx *= 0.993;
+        plane.vx *= 0.992;
       }
 
       plane.x += plane.vx;
       plane.y += plane.vy;
 
-      plane.maxSpeedReached = Math.max(plane.maxSpeedReached, speed);
+      plane.distance = Math.max(0, plane.x - 160);
+      plane.maxAltitude = Math.max(plane.maxAltitude, getAltitudeFt());
+      plane.maxAirspeed = Math.max(plane.maxAirspeed, airspeedKt);
+      plane.stallWarning = airspeedKt < 38 && getAltitudeFt() > 80;
+      plane.bestGlideHint = plane.fuel <= 0 && Math.abs(airspeedKt - 68) <= 7 && getAltitudeFt() > 50;
 
-      // Stall warning. This is intentionally arcade-style, not real aerodynamics.
-      plane.stallWarning = speed < 3.2 && plane.y < world.groundY - 80;
+      if (plane.x >= game.airportDistance) {
+        plane.reachedAirportThisFlight = true;
+        finishFlight("You reached the other airport!");
+        return;
+      }
 
-      // Ground collision.
       if (plane.y > world.groundY - 24) {
         const impactSpeed = Math.abs(plane.vy);
-        const badAngle = Math.abs(plane.angle) > 0.42;
-        const tooFastDown = impactSpeed > 2.8;
+        const badAngle = Math.abs(plane.angle) > 0.43;
+        const tooFastDown = impactSpeed > 2.75;
 
         plane.y = world.groundY - 24;
 
-        if (tooFastDown || badAngle) {
-          crash("Crashed! Press R to restart.");
+        if (tooFastDown || badAngle || plane.x < 900) {
+          finishFlight("Flight over!");
         } else {
-          // Safe-ish landing / rolling on ground.
-          plane.vy = 0;
-          plane.angle *= 0.94;
+          plane.landed = true;
+          finishFlight("Safe landing!");
         }
       }
 
-      // Prevent flying too far above the visible world floor calculations.
-      if (plane.y < -5000) {
-        plane.y = -5000;
+      if (plane.y < -5200) {
+        plane.y = -5200;
         plane.vy = Math.max(plane.vy, 0);
       }
     }
 
-    function crash(text) {
-      plane.crashed = true;
-      plane.vx = 0;
-      plane.vy = 0;
-      plane.throttle = 0;
-      message.innerHTML = `<strong>${text}</strong><br><span class="small">Try rotating gently before touchdown.</span>`;
-      message.style.display = "block";
-    }
-
     function updateCamera() {
-      world.cameraX += (plane.x - canvas.width * 0.35 - world.cameraX) * 0.05;
-      world.cameraY += (plane.y - canvas.height * 0.45 - world.cameraY) * 0.05;
+      if (game.screen !== "runway") return;
+      world.cameraX += (plane.x - canvas.width * 0.35 - world.cameraX) * 0.055;
+      world.cameraY += (plane.y - canvas.height * 0.45 - world.cameraY) * 0.055;
     }
 
     function drawBackground() {
       const groundScreenY = world.groundY - world.cameraY;
-
       const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
       skyGradient.addColorStop(0, "#62bdf5");
       skyGradient.addColorStop(0.65, "#d8f5ff");
@@ -257,14 +728,12 @@
       ctx.fillStyle = skyGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Distant clouds.
-      for (let i = -3; i < 12; i++) {
+      for (let i = -4; i < 14; i++) {
         const cloudX = i * 420 - (world.cameraX * 0.18 % 420);
         const cloudY = 100 + ((i * 73) % 180) - world.cameraY * 0.05;
         drawCloud(cloudX, cloudY, 1 + (i % 3) * 0.18);
       }
 
-      // Ground.
       ctx.fillStyle = "#3e9d38";
       ctx.fillRect(0, groundScreenY, canvas.width, canvas.height - groundScreenY);
 
@@ -275,15 +744,46 @@
         ctx.fillRect(x, groundScreenY + hill, 45, 8);
       }
 
-      // Runway strip near start.
-      const runwayX = -80 - world.cameraX;
-      const runwayY = groundScreenY - 4;
+      drawRunway(-80, groundScreenY, 1120, "HOME");
+      drawRunway(game.airportDistance - 260, groundScreenY, 1240, "DESTINATION");
+
+      drawDistanceMarkers(groundScreenY);
+    }
+
+    function drawRunway(worldX, groundScreenY, length, label) {
+      const x = worldX - world.cameraX;
+      const y = groundScreenY - 4;
       ctx.fillStyle = "#3b3b3b";
-      ctx.fillRect(runwayX, runwayY, 1100, 28);
+      ctx.fillRect(x, y, length, 28);
       ctx.fillStyle = "#f4f4f4";
-      for (let x = runwayX + 40; x < runwayX + 1040; x += 90) {
-        ctx.fillRect(x, runwayY + 11, 45, 4);
+      for (let stripeX = x + 40; stripeX < x + length - 40; stripeX += 90) {
+        ctx.fillRect(stripeX, y + 11, 45, 4);
       }
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(x + 18, y - 30, 128, 22);
+      ctx.fillStyle = "white";
+      ctx.font = "bold 13px Arial";
+      ctx.fillText(label, x + 28, y - 14);
+    }
+
+    function drawDistanceMarkers(groundScreenY) {
+      ctx.save();
+      ctx.font = "bold 12px Arial";
+      ctx.textAlign = "center";
+      for (let d = 5280; d <= game.airportDistance; d += 5280) {
+        const x = 160 + d - world.cameraX;
+        if (x < -80 || x > canvas.width + 80) continue;
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.beginPath();
+        ctx.moveTo(x, groundScreenY - 70);
+        ctx.lineTo(x, groundScreenY);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(x - 34, groundScreenY - 92, 68, 20);
+        ctx.fillStyle = "white";
+        ctx.fillText(`${Math.round(d / 5280)} mi`, x, groundScreenY - 77);
+      }
+      ctx.restore();
     }
 
     function drawCloud(x, y, scale) {
@@ -299,117 +799,195 @@
       ctx.restore();
     }
 
+    function drawPlaneOnContext(targetCtx, px, py, angle, scale, crashed = false) {
+      targetCtx.save();
+      targetCtx.translate(px, py);
+      targetCtx.scale(scale, scale);
+      targetCtx.rotate(angle);
+
+      targetCtx.fillStyle = crashed ? "#555" : "#f5f5f5";
+      targetCtx.strokeStyle = "#222";
+      targetCtx.lineWidth = 2;
+      targetCtx.beginPath();
+      targetCtx.moveTo(46, 0);
+      targetCtx.lineTo(12, -12);
+      targetCtx.lineTo(-42, -9);
+      targetCtx.lineTo(-54, 0);
+      targetCtx.lineTo(-42, 9);
+      targetCtx.lineTo(12, 12);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      targetCtx.fillStyle = game.upgrades.engine >= 4 ? "#ff8f1f" : "#d92222";
+      targetCtx.beginPath();
+      targetCtx.moveTo(46, 0);
+      targetCtx.lineTo(24, -8);
+      targetCtx.lineTo(24, 8);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      const wingSpan = 36 + game.upgrades.wings * 4.3;
+      targetCtx.fillStyle = game.upgrades.wings >= 4 ? "#d9edf7" : "#cfd8dc";
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, -4);
+      targetCtx.lineTo(-20, -wingSpan);
+      targetCtx.lineTo(12, -10);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, 4);
+      targetCtx.lineTo(-20, wingSpan);
+      targetCtx.lineTo(12, 10);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      targetCtx.fillStyle = "#b0bec5";
+      targetCtx.beginPath();
+      targetCtx.moveTo(-38, -8);
+      targetCtx.lineTo(-56, -30);
+      targetCtx.lineTo(-48, -5);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      targetCtx.fillStyle = "#4fc3f7";
+      targetCtx.beginPath();
+      targetCtx.ellipse(14, -5, 10, 6, 0, 0, Math.PI * 2);
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      if (!crashed && plane.throttle > 0.05) {
+        targetCtx.save();
+        targetCtx.globalAlpha = 0.25 + plane.throttle * 0.35;
+        targetCtx.strokeStyle = "#111";
+        targetCtx.lineWidth = 3;
+        targetCtx.beginPath();
+        targetCtx.ellipse(51, 0, 5, 28, 0, 0, Math.PI * 2);
+        targetCtx.stroke();
+        targetCtx.restore();
+      }
+
+      targetCtx.restore();
+    }
+
     function drawPlane() {
       const px = plane.x - world.cameraX;
       const py = plane.y - world.cameraY;
-
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(plane.angle);
-
-      // Shadow when close to ground.
       const altitude = world.groundY - plane.y;
+
       if (altitude < 220) {
         ctx.save();
-        ctx.rotate(-plane.angle);
         ctx.globalAlpha = clamp(1 - altitude / 220, 0, 0.35);
         ctx.fillStyle = "black";
         ctx.beginPath();
-        ctx.ellipse(0, 35 + altitude * 0.2, 42, 7, 0, 0, Math.PI * 2);
+        ctx.ellipse(px, py + 35 + altitude * 0.2, 42, 7, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
 
-      // Fuselage.
-      ctx.fillStyle = plane.crashed ? "#555" : "#f5f5f5";
-      ctx.strokeStyle = "#222";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(46, 0);
-      ctx.lineTo(12, -12);
-      ctx.lineTo(-42, -9);
-      ctx.lineTo(-54, 0);
-      ctx.lineTo(-42, 9);
-      ctx.lineTo(12, 12);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Nose.
-      ctx.fillStyle = "#d92222";
-      ctx.beginPath();
-      ctx.moveTo(46, 0);
-      ctx.lineTo(24, -8);
-      ctx.lineTo(24, 8);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Wing.
-      ctx.fillStyle = "#cfd8dc";
-      ctx.beginPath();
-      ctx.moveTo(0, -4);
-      ctx.lineTo(-20, -45);
-      ctx.lineTo(12, -10);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(0, 4);
-      ctx.lineTo(-20, 45);
-      ctx.lineTo(12, 10);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Tail.
-      ctx.fillStyle = "#b0bec5";
-      ctx.beginPath();
-      ctx.moveTo(-38, -8);
-      ctx.lineTo(-56, -30);
-      ctx.lineTo(-48, -5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Cockpit.
-      ctx.fillStyle = "#4fc3f7";
-      ctx.beginPath();
-      ctx.ellipse(14, -5, 10, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Propeller blur.
-      if (!plane.crashed && plane.throttle > 0.05) {
-        ctx.save();
-        ctx.globalAlpha = 0.25 + plane.throttle * 0.35;
-        ctx.strokeStyle = "#111";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(51, 0, 5, 28, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      ctx.restore();
+      drawPlaneOnContext(ctx, px, py, plane.angle, 1, plane.crashed);
     }
 
     function drawHud() {
-      const speed = getSpeed();
-      const altitude = Math.max(0, Math.round(world.groundY - plane.y - 24));
+      const speedKt = getAirspeedKt();
+      const altitude = getAltitudeFt();
       const verticalSpeed = -plane.vy;
       const pitch = -radToDeg(plane.angle);
+      const fuelPercent = plane.maxFuel ? plane.fuel / plane.maxFuel * 100 : 0;
+      const remaining = Math.max(0, game.airportDistance - plane.distance);
 
       hud.innerHTML = `
-        <strong>Mini Airplane Simulator</strong><br>
+        <strong>Airport Hop</strong><br>
+        Distance: ${mi(plane.distance)} / ${mi(game.airportDistance)}<br>
+        Remaining: ${mi(remaining)}<br>
         Throttle: ${(plane.throttle * 100).toFixed(0)}%<br>
-        Speed: ${(speed * 18).toFixed(0)} kt<br>
+        Fuel: ${fuelPercent.toFixed(0)}%<br>
+        Airspeed: ${speedKt.toFixed(0)} kt<br>
         Altitude: ${altitude} ft<br>
         Vertical Speed: ${(verticalSpeed * 90).toFixed(0)} ft/min<br>
         Pitch: ${pitch.toFixed(1)}°<br>
-        ${plane.stallWarning ? '<span style="color:#ffdd55;font-weight:bold;">STALL WARNING</span>' : ''}
+        Best Glide: 68 kt<br>
+        ${plane.stallWarning ? '<span class="danger">STALL WARNING</span><br>' : ''}
+        ${plane.bestGlideHint ? '<span class="warn">GOOD GLIDE SPEED</span>' : ''}
       `;
+    }
+
+    function drawAirspeedIndicator() {
+      const cx = 85;
+      const cy = 85;
+      const r = 70;
+      const speed = clamp(getAirspeedKt(), 0, 140);
+      const startAngle = Math.PI * 0.78;
+      const endAngle = Math.PI * 2.22;
+      const t = speed / 140;
+      const needleAngle = startAngle + (endAngle - startAngle) * t;
+
+      airCtx.clearRect(0, 0, 170, 170);
+      airCtx.save();
+      airCtx.translate(cx, cy);
+
+      airCtx.fillStyle = "rgba(6, 13, 30, 0.82)";
+      airCtx.beginPath();
+      airCtx.arc(0, 0, r + 8, 0, Math.PI * 2);
+      airCtx.fill();
+      airCtx.strokeStyle = "rgba(255,255,255,0.28)";
+      airCtx.lineWidth = 2;
+      airCtx.stroke();
+
+      for (let kt = 0; kt <= 140; kt += 10) {
+        const tt = kt / 140;
+        const a = startAngle + (endAngle - startAngle) * tt;
+        const major = kt % 20 === 0;
+        const inner = major ? r - 16 : r - 9;
+        airCtx.strokeStyle = kt === 70 ? "#60d394" : "white";
+        airCtx.lineWidth = major ? 2 : 1;
+        airCtx.beginPath();
+        airCtx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+        airCtx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        airCtx.stroke();
+
+        if (major) {
+          airCtx.fillStyle = "white";
+          airCtx.font = "10px Arial";
+          airCtx.textAlign = "center";
+          airCtx.textBaseline = "middle";
+          airCtx.fillText(kt, Math.cos(a) * (r - 27), Math.sin(a) * (r - 27));
+        }
+      }
+
+      const bestT = 68 / 140;
+      const bestA = startAngle + (endAngle - startAngle) * bestT;
+      airCtx.strokeStyle = "#60d394";
+      airCtx.lineWidth = 4;
+      airCtx.beginPath();
+      airCtx.moveTo(Math.cos(bestA) * (r - 20), Math.sin(bestA) * (r - 20));
+      airCtx.lineTo(Math.cos(bestA) * (r + 2), Math.sin(bestA) * (r + 2));
+      airCtx.stroke();
+
+      airCtx.rotate(needleAngle);
+      airCtx.strokeStyle = "#ff4d4d";
+      airCtx.lineWidth = 4;
+      airCtx.beginPath();
+      airCtx.moveTo(-10, 0);
+      airCtx.lineTo(r - 18, 0);
+      airCtx.stroke();
+      airCtx.rotate(-needleAngle);
+
+      airCtx.fillStyle = "white";
+      airCtx.font = "bold 22px Arial";
+      airCtx.textAlign = "center";
+      airCtx.fillText(Math.round(getAirspeedKt()), 0, 28);
+      airCtx.font = "bold 12px Arial";
+      airCtx.fillText("KTS", 0, 45);
+      airCtx.fillStyle = "#60d394";
+      airCtx.font = "10px Arial";
+      airCtx.fillText("68 best glide", 0, 62);
+      airCtx.restore();
     }
 
     function drawPitchIndicator() {
@@ -444,18 +1022,104 @@
       ctx.restore();
     }
 
-    function gameLoop() {
-      updatePlane();
-      updateCamera();
+    function updateTopStats() {
+      const progress = clamp(game.bestDistance / game.airportDistance * 100, 0, 100);
+      statsStrip.innerHTML = `
+        <span>Money: <span class="money">${money(game.money)}</span></span>
+        <span>Best: ${mi(game.bestDistance)}</span>
+        <span>Goal: ${progress.toFixed(1)}%</span>
+        <span>Flights: ${game.flights}</span>
+      `;
+    }
 
+    function renderHangar() {
+      hangarMoney.textContent = money(game.money);
+      hangarBest.textContent = mi(game.bestDistance);
+      hangarTarget.textContent = mi(game.airportDistance);
+
+      upgradeGrid.innerHTML = "";
+      Object.keys(upgradeData).forEach((type) => {
+        const data = upgradeData[type];
+        const level = game.upgrades[type];
+        const cost = getUpgradeCost(type);
+        const isMax = level >= data.max;
+        const canBuy = game.money >= cost && !isMax;
+
+        const card = document.createElement("div");
+        card.className = "upgradeCard";
+        card.innerHTML = `
+          <div>
+            <h3>${data.name} <span class="small">Level ${level}/${data.max}</span></h3>
+            <p>${data.description}</p>
+            <div class="levelPips">
+              ${Array.from({ length: data.max }, (_, i) => `<span class="pip ${i < level ? "on" : ""}"></span>`).join("")}
+            </div>
+          </div>
+          <div style="text-align:right;min-width:132px;">
+            <div style="margin-bottom:8px;font-weight:800;">${isMax ? "MAX" : money(cost)}</div>
+            <button ${canBuy ? "" : "disabled"} data-upgrade="${type}">${isMax ? "Maxed" : "Upgrade"}</button>
+          </div>
+        `;
+        upgradeGrid.appendChild(card);
+      });
+
+      upgradeGrid.querySelectorAll("button[data-upgrade]").forEach((button) => {
+        button.addEventListener("click", () => buyUpgrade(button.dataset.upgrade));
+      });
+
+      drawPreviewPlane();
+      updateTopStats();
+    }
+
+    function buyUpgrade(type) {
+      const cost = getUpgradeCost(type);
+      if (game.money < cost || game.upgrades[type] >= upgradeData[type].max) return;
+      game.money -= cost;
+      game.upgrades[type] += 1;
+      saveGame();
+      renderHangar();
+    }
+
+    function drawPreviewPlane() {
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      const gradient = previewCtx.createLinearGradient(0, 0, 0, previewCanvas.height);
+      gradient.addColorStop(0, "rgba(120,199,255,0.4)");
+      gradient.addColorStop(1, "rgba(255,255,255,0.05)");
+      previewCtx.fillStyle = gradient;
+      previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+      previewCtx.fillStyle = "#3b3b3b";
+      previewCtx.fillRect(0, 166, previewCanvas.width, 18);
+      previewCtx.fillStyle = "white";
+      for (let x = 18; x < previewCanvas.width; x += 60) {
+        previewCtx.fillRect(x, 174, 30, 3);
+      }
+      drawPlaneOnContext(previewCtx, 230, 112, -0.04, 1.65, false);
+    }
+
+    function drawScene() {
       drawBackground();
       drawPlane();
       drawPitchIndicator();
       drawHud();
+      drawAirspeedIndicator();
+    }
 
+    function gameLoop() {
+      updatePlane();
+      updateCamera();
+
+      if (game.screen === "runway") {
+        drawScene();
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      updateTopStats();
       requestAnimationFrame(gameLoop);
     }
 
+    loadGame();
+    startFlight();
     gameLoop();
   </script>
 </body>
