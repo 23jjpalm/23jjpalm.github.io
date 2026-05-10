@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini 2D Airplane Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: white;
+    }
+
+    canvas {
+      display: block;
+      background: linear-gradient(#78c7ff 0%, #c7edff 62%, #6ec45f 62%, #2e7d32 100%);
+    }
+
+    #hud {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      line-height: 1.45;
+      min-width: 230px;
+      user-select: none;
+    }
+
+    #help {
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      line-height: 1.55;
+      user-select: none;
+      max-width: 310px;
+    }
+
+    #message {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 22px 28px;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: center;
+      font-size: 22px;
+      display: none;
+      user-select: none;
+    }
+
+    .small {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud"></div>
+
+  <div id="help">
+    <strong>Controls</strong><br />
+    Shift: Increase throttle<br />
+    Ctrl: Decrease throttle<br />
+    S: Pitch nose up<br />
+    W: Pitch nose down<br />
+    R: Restart<br />
+    <span class="small">Goal: take off, fly around, and avoid stalling or crashing.</span>
+  </div>
+
+  <div id="message"></div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const hud = document.getElementById("hud");
+    const message = document.getElementById("message");
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const keys = new Set();
+
+    window.addEventListener("keydown", (e) => {
+      keys.add(e.key.toLowerCase());
+
+      if (["shift", "control", "w", "s"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+
+      if (e.key.toLowerCase() === "r") {
+        resetPlane();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      keys.delete(e.key.toLowerCase());
+    });
+
+    const world = {
+      cameraX: 0,
+      cameraY: 0,
+      groundY: 900,
+      gravity: 0.145,
+      airDensity: 1,
+    };
+
+    const plane = {};
+
+    function resetPlane() {
+      plane.x = 160;
+      plane.y = world.groundY - 30;
+      plane.vx = 0;
+      plane.vy = 0;
+      plane.angle = -0.05;
+      plane.throttle = 0;
+      plane.crashed = false;
+      plane.stallWarning = false;
+      plane.maxSpeedReached = 0;
+      message.style.display = "none";
+    }
+
+    resetPlane();
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function radToDeg(rad) {
+      return rad * 180 / Math.PI;
+    }
+
+    function getSpeed() {
+      return Math.hypot(plane.vx, plane.vy);
+    }
+
+    function updatePlane() {
+      if (plane.crashed) return;
+
+      const throttleRate = 0.006;
+      const pitchRate = 0.034;
+
+      if (keys.has("shift")) plane.throttle += throttleRate;
+      if (keys.has("control")) plane.throttle -= throttleRate;
+      plane.throttle = clamp(plane.throttle, 0, 1);
+
+      if (keys.has("s")) plane.angle -= pitchRate;
+      if (keys.has("w")) plane.angle += pitchRate;
+
+      plane.angle = clamp(plane.angle, -Math.PI * 0.82, Math.PI * 0.82);
+
+      const speed = getSpeed();
+      const forwardX = Math.cos(plane.angle);
+      const forwardY = Math.sin(plane.angle);
+      const upX = -Math.sin(plane.angle);
+      const upY = Math.cos(plane.angle);
+
+      // Engine thrust points along the nose.
+      const thrust = plane.throttle * 0.255;
+      plane.vx += forwardX * thrust;
+      plane.vy += forwardY * thrust;
+
+      // Gravity.
+      plane.vy += world.gravity;
+
+      // Simple 2D lift model.
+      // More speed + decent pitch = more lift.
+      const liftStrength = clamp(speed * speed * 0.0048, 0, 0.72);
+      const pitchLiftBonus = clamp(-Math.sin(plane.angle) + 0.35, 0.15, 1.2);
+      const lift = liftStrength * pitchLiftBonus;
+      plane.vx += upX * lift * 0.15;
+      plane.vy -= lift;
+
+      // Drag increases with speed and angle.
+      const drag = 0.992 - clamp(speed * 0.00055, 0, 0.018);
+      plane.vx *= drag;
+      plane.vy *= drag;
+
+      // Ground rolling friction.
+      if (plane.y >= world.groundY - 28) {
+        plane.vx *= 0.993;
+      }
+
+      plane.x += plane.vx;
+      plane.y += plane.vy;
+
+      plane.maxSpeedReached = Math.max(plane.maxSpeedReached, speed);
+
+      // Stall warning. This is intentionally arcade-style, not real aerodynamics.
+      plane.stallWarning = speed < 3.2 && plane.y < world.groundY - 80;
+
+      // Ground collision.
+      if (plane.y > world.groundY - 24) {
+        const impactSpeed = Math.abs(plane.vy);
+        const badAngle = Math.abs(plane.angle) > 0.42;
+        const tooFastDown = impactSpeed > 2.8;
+
+        plane.y = world.groundY - 24;
+
+        if (tooFastDown || badAngle) {
+          crash("Crashed! Press R to restart.");
+        } else {
+          // Safe-ish landing / rolling on ground.
+          plane.vy = 0;
+          plane.angle *= 0.94;
+        }
+      }
+
+      // Prevent flying too far above the visible world floor calculations.
+      if (plane.y < -5000) {
+        plane.y = -5000;
+        plane.vy = Math.max(plane.vy, 0);
+      }
+    }
+
+    function crash(text) {
+      plane.crashed = true;
+      plane.vx = 0;
+      plane.vy = 0;
+      plane.throttle = 0;
+      message.innerHTML = `<strong>${text}</strong><br><span class="small">Try rotating gently before touchdown.</span>`;
+      message.style.display = "block";
+    }
+
+    function updateCamera() {
+      world.cameraX += (plane.x - canvas.width * 0.35 - world.cameraX) * 0.05;
+      world.cameraY += (plane.y - canvas.height * 0.45 - world.cameraY) * 0.05;
+    }
+
+    function drawBackground() {
+      const groundScreenY = world.groundY - world.cameraY;
+
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      skyGradient.addColorStop(0, "#62bdf5");
+      skyGradient.addColorStop(0.65, "#d8f5ff");
+      skyGradient.addColorStop(1, "#f3e0a0");
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Distant clouds.
+      for (let i = -3; i < 12; i++) {
+        const cloudX = i * 420 - (world.cameraX * 0.18 % 420);
+        const cloudY = 100 + ((i * 73) % 180) - world.cameraY * 0.05;
+        drawCloud(cloudX, cloudY, 1 + (i % 3) * 0.18);
+      }
+
+      // Ground.
+      ctx.fillStyle = "#3e9d38";
+      ctx.fillRect(0, groundScreenY, canvas.width, canvas.height - groundScreenY);
+
+      ctx.fillStyle = "#2c7a2f";
+      for (let x = -200; x < canvas.width + 300; x += 80) {
+        const worldX = x + world.cameraX;
+        const hill = Math.sin(worldX * 0.008) * 8;
+        ctx.fillRect(x, groundScreenY + hill, 45, 8);
+      }
+
+      // Runway strip near start.
+      const runwayX = -80 - world.cameraX;
+      const runwayY = groundScreenY - 4;
+      ctx.fillStyle = "#3b3b3b";
+      ctx.fillRect(runwayX, runwayY, 1100, 28);
+      ctx.fillStyle = "#f4f4f4";
+      for (let x = runwayX + 40; x < runwayX + 1040; x += 90) {
+        ctx.fillRect(x, runwayY + 11, 45, 4);
+      }
+    }
+
+    function drawCloud(x, y, scale) {
+      ctx.save();
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(x, y, 22 * scale, 0, Math.PI * 2);
+      ctx.arc(x + 25 * scale, y - 12 * scale, 28 * scale, 0, Math.PI * 2);
+      ctx.arc(x + 58 * scale, y, 24 * scale, 0, Math.PI * 2);
+      ctx.arc(x + 30 * scale, y + 10 * scale, 30 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPlane() {
+      const px = plane.x - world.cameraX;
+      const py = plane.y - world.cameraY;
+
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(plane.angle);
+
+      // Shadow when close to ground.
+      const altitude = world.groundY - plane.y;
+      if (altitude < 220) {
+        ctx.save();
+        ctx.rotate(-plane.angle);
+        ctx.globalAlpha = clamp(1 - altitude / 220, 0, 0.35);
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.ellipse(0, 35 + altitude * 0.2, 42, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Fuselage.
+      ctx.fillStyle = plane.crashed ? "#555" : "#f5f5f5";
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(46, 0);
+      ctx.lineTo(12, -12);
+      ctx.lineTo(-42, -9);
+      ctx.lineTo(-54, 0);
+      ctx.lineTo(-42, 9);
+      ctx.lineTo(12, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Nose.
+      ctx.fillStyle = "#d92222";
+      ctx.beginPath();
+      ctx.moveTo(46, 0);
+      ctx.lineTo(24, -8);
+      ctx.lineTo(24, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Wing.
+      ctx.fillStyle = "#cfd8dc";
+      ctx.beginPath();
+      ctx.moveTo(0, -4);
+      ctx.lineTo(-20, -45);
+      ctx.lineTo(12, -10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, 4);
+      ctx.lineTo(-20, 45);
+      ctx.lineTo(12, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Tail.
+      ctx.fillStyle = "#b0bec5";
+      ctx.beginPath();
+      ctx.moveTo(-38, -8);
+      ctx.lineTo(-56, -30);
+      ctx.lineTo(-48, -5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Cockpit.
+      ctx.fillStyle = "#4fc3f7";
+      ctx.beginPath();
+      ctx.ellipse(14, -5, 10, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Propeller blur.
+      if (!plane.crashed && plane.throttle > 0.05) {
+        ctx.save();
+        ctx.globalAlpha = 0.25 + plane.throttle * 0.35;
+        ctx.strokeStyle = "#111";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(51, 0, 5, 28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawHud() {
+      const speed = getSpeed();
+      const altitude = Math.max(0, Math.round(world.groundY - plane.y - 24));
+      const verticalSpeed = -plane.vy;
+      const pitch = -radToDeg(plane.angle);
+
+      hud.innerHTML = `
+        <strong>Mini Airplane Simulator</strong><br>
+        Throttle: ${(plane.throttle * 100).toFixed(0)}%<br>
+        Speed: ${(speed * 18).toFixed(0)} kt<br>
+        Altitude: ${altitude} ft<br>
+        Vertical Speed: ${(verticalSpeed * 90).toFixed(0)} ft/min<br>
+        Pitch: ${pitch.toFixed(1)}°<br>
+        ${plane.stallWarning ? '<span style="color:#ffdd55;font-weight:bold;">STALL WARNING</span>' : ''}
+      `;
+    }
+
+    function drawPitchIndicator() {
+      const cx = canvas.width - 92;
+      const cy = canvas.height - 92;
+      const radius = 52;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.fillStyle = "rgba(0,0,0,0.48)";
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.65)";
+      ctx.stroke();
+
+      ctx.rotate(plane.angle);
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-35, 0);
+      ctx.lineTo(35, 0);
+      ctx.stroke();
+
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.moveTo(0, -28);
+      ctx.lineTo(8, -12);
+      ctx.lineTo(-8, -12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function gameLoop() {
+      updatePlane();
+      updateCamera();
+
+      drawBackground();
+      drawPlane();
+      drawPitchIndicator();
+      drawHud();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
