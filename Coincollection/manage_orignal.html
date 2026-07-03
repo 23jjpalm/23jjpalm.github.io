@@ -1,0 +1,112 @@
+<div class="section">
+  <h2>Backup / Export</h2>
+  <p class="sub">Save a copy of the collection currently stored on this device.</p>
+
+  <div class="tabs" style="margin-top:16px;">
+    <button id="exportCsvBtn" class="small-btn">Export CSV</button>
+    <button id="exportJsonBtn" class="small-btn">Full Backup JSON</button>
+  </div>
+</div>
+
+<script>
+document.getElementById("exportCsvBtn").addEventListener("click", exportCollectionCsv);
+document.getElementById("exportJsonBtn").addEventListener("click", exportCollectionJson);
+
+function getExportItems() {
+  if (window.InventoryStore && typeof InventoryStore.getItems === "function") {
+    return InventoryStore.getItems();
+  }
+
+  if (window.CoinDataStore) {
+    const coins = typeof CoinDataStore.getCoins === "function" ? CoinDataStore.getCoins() : [];
+    const bullion = typeof CoinDataStore.getBullionEntries === "function" ? CoinDataStore.getBullionEntries() : [];
+    const bills = typeof CoinDataStore.getBills === "function" ? CoinDataStore.getBills() : [];
+    return [...coins, ...bullion, ...bills];
+  }
+
+  return [];
+}
+
+function exportCollectionCsv() {
+  const items = getExportItems();
+
+  const headers = [
+    "Serial Number",
+    "Type",
+    "Year",
+    "Denomination",
+    "Quantity",
+    "Silver Content %",
+    "Weight Grams",
+    "Purchase Price",
+    "Acquired By",
+    "Notes",
+    "Story"
+  ];
+
+  const rows = items.map(item => [
+    item.serialNumber || item.inventoryId || "",
+    item.type || "coin",
+    item.year || "",
+    item.denomination || "",
+    item.quantity || 1,
+    item.silverContent || "",
+    item.weightGrams || "",
+    item.purchasePrice || "",
+    item.acquiredBy || "",
+    item.notes || "",
+    item.story || item.personalStory || ""
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row =>
+      row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")
+    )
+    .join("\n");
+
+  downloadFile(csv, `coin_collection_backup_${getTodayString()}.csv`, "text/csv;charset=utf-8;");
+}
+
+function exportCollectionJson() {
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    items: getExportItems(),
+    coinStories: safeJsonParse(localStorage.getItem("coinStories"), {}),
+    rawLocalStorage: {}
+  };
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    backup.rawLocalStorage[key] = localStorage.getItem(key);
+  }
+
+  const json = JSON.stringify(backup, null, 2);
+  downloadFile(json, `coin_collection_full_backup_${getTodayString()}.json`, "application/json;charset=utf-8;");
+}
+
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function getTodayString() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function safeJsonParse(value, fallback) {
+  try {
+    return JSON.parse(value || "");
+  } catch {
+    return fallback;
+  }
+}
+</script>

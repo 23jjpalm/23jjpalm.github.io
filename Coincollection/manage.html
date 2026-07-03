@@ -19,7 +19,7 @@
     </div>
 
     <h1>Add / Manage</h1>
-    <p class="sub">Add coins, add fine silver by weight, and adjust your bullion total.</p>
+    <p class="sub">Add coins, add fine silver by weight, adjust bullion, and export your collection.</p>
   </div>
 
   <div class="section">
@@ -76,12 +76,26 @@
           This adjusts your separate bullion total in ounces.
         </div>
       </div>
+
+      <div class="subcard">
+        <h3>Backup / Export</h3>
+        <p class="sub">Save your collection to your phone or computer.</p>
+
+        <div class="tabs" style="margin-top:12px;">
+          <button id="exportCsvBtn" class="small-btn">Export CSV</button>
+          <button id="exportJsonBtn" class="small-btn">Full Backup JSON</button>
+        </div>
+
+        <div class="footer-note" style="margin-top:12px;">
+          CSV is useful for spreadsheets. JSON keeps a fuller backup for future restore/import features.
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="section">
     <h2>Current Entries</h2>
-    <p class="sub">You can edit quantity and notes here, or remove custom Fine Silver entries.</p>
+    <p class="sub">You can edit quantity and notes here, or remove entries from your collection.</p>
 
     <div class="controls three" style="margin-top:16px;">
       <input id="search" placeholder="Search by year or denomination" />
@@ -99,6 +113,7 @@
       <table>
         <thead>
           <tr>
+            <th>ID</th>
             <th>Year</th>
             <th>Denomination</th>
             <th>Qty</th>
@@ -120,10 +135,6 @@
 const FALLBACK_SILVER_SPOT_PER_TROY_OUNCE = 76.61;
 let currentSilverSpotPerTroyOunce = FALLBACK_SILVER_SPOT_PER_TROY_OUNCE;
 const TROY_OUNCE_IN_GRAMS = 31.1035;
-
-function computeMeltValue(weightGrams, silverPercent) {
-  return weightGrams * (silverPercent / 100) * (currentSilverSpotPerTroyOunce / TROY_OUNCE_IN_GRAMS);
-}
 
 function escapeHtml(text) {
   return String(text ?? "")
@@ -152,6 +163,36 @@ function getCoins() {
 
 function saveCoins(coins) {
   CoinDataStore.saveCoins(coins);
+}
+
+function getBullionOzSafe() {
+  if (typeof CoinDataStore.getBullionOz === "function") {
+    return CoinDataStore.getBullionOz();
+  }
+
+  const value = Number(localStorage.getItem("bullionOz"));
+  return Number.isFinite(value) ? value : 13;
+}
+
+function saveBullionOzSafe(value) {
+  if (typeof CoinDataStore.saveBullionOz === "function") {
+    CoinDataStore.saveBullionOz(value);
+    return;
+  }
+
+  localStorage.setItem("bullionOz", String(value));
+}
+
+function getStoriesSafe() {
+  if (typeof CoinDataStore.getStories === "function") {
+    return CoinDataStore.getStories();
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem("coinStories") || "{}");
+  } catch {
+    return {};
+  }
 }
 
 function populateDenominationDropdown() {
@@ -192,7 +233,7 @@ function populateFilter() {
 }
 
 function renderBullion() {
-  const oz = CoinDataStore.getBullionOz();
+  const oz = getBullionOzSafe();
   document.getElementById("bullionDisplay").textContent = `${oz.toFixed(2)} oz`;
   document.getElementById("bullionValueDisplay").textContent = `$${(oz * currentSilverSpotPerTroyOunce).toFixed(2)}`;
 }
@@ -206,6 +247,8 @@ function renderTable() {
 
   let coins = getCoins().filter(coin => {
     const matchesQuery =
+      String(coin.id || "").includes(query) ||
+      String(coin.inventoryId || "").toLowerCase().includes(query) ||
       String(coin.year).includes(query) ||
       coin.denomination.toLowerCase().includes(query) ||
       (coin.notes || "").toLowerCase().includes(query);
@@ -226,26 +269,26 @@ function renderTable() {
   tbody.innerHTML = "";
 
   if (!coins.length) {
-    tbody.innerHTML = '<tr><td colspan="7">No entries match your current search.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8">No entries match your current search.</td></tr>';
     return;
   }
 
   coins.forEach(coin => {
-    const canRemove = coin.denomination === "Fine Silver";
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td>${escapeHtml(coin.inventoryId || coin.id || "")}</td>
       <td>${coin.year}</td>
       <td><span class="badge ${denomClass(coin.denomination)}">${escapeHtml(coin.denomination)}</span></td>
       <td>
         <input class="small-input qty-input" data-id="${coin.id}" type="number" min="1" value="${coin.quantity}">
       </td>
-      <td>${coin.weightGrams.toFixed(2)}</td>
-      <td>${coin.silverContent}%</td>
+      <td>${Number(coin.weightGrams || 0).toFixed(2)}</td>
+      <td>${Number(coin.silverContent || 0)}%</td>
       <td>
         <input class="small-input note-input" data-id="${coin.id}" value="${escapeHtml(coin.notes || "")}" placeholder="Notes">
       </td>
       <td>
-        ${canRemove ? `<button class="small-btn remove-btn" data-id="${coin.id}">Remove</button>` : '<span class="sub">-</span>'}
+        <button class="small-btn remove-btn" data-id="${coin.id}">Remove</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -284,6 +327,11 @@ function renderTable() {
   tbody.querySelectorAll(".remove-btn").forEach(button => {
     button.addEventListener("click", (event) => {
       const id = Number(event.target.dataset.id);
+
+      if (!confirm("Are you sure you want to remove this entry from your collection?")) {
+        return;
+      }
+
       const coins = getCoins().filter(c => Number(c.id) !== id);
       saveCoins(coins);
       renderAll();
@@ -316,6 +364,9 @@ function addEntry() {
 
     coins.push({
       id: CoinDataStore.nextCoinId(coins),
+      inventoryId: typeof CoinDataStore.nextInventoryId === "function"
+        ? CoinDataStore.nextInventoryId("C", coins)
+        : "",
       year: yearRaw ? Number(yearRaw) : new Date().getFullYear(),
       denomination: "Fine Silver",
       quantity: 1,
@@ -337,11 +388,17 @@ function addEntry() {
 
     coins.push({
       id: CoinDataStore.nextCoinId(coins),
+      inventoryId: typeof CoinDataStore.nextInventoryId === "function"
+        ? CoinDataStore.nextInventoryId("C", coins)
+        : "",
       year,
       denomination,
       quantity,
       weightGrams: spec.weightGrams,
       silverContent: spec.silverContent,
+      purchasePrice: typeof CoinDataStore.getFaceValue === "function"
+        ? CoinDataStore.getFaceValue(denomination) * quantity
+        : 0,
       notes: "",
       weightUnit: "g"
     });
@@ -360,13 +417,126 @@ function addEntry() {
 
 function adjustBullion(direction) {
   const step = Math.max(0.01, Number(document.getElementById("bullionStep").value) || 1);
-  const current = CoinDataStore.getBullionOz();
+  const current = getBullionOzSafe();
   const next = direction === "plus"
     ? current + step
     : Math.max(0, current - step);
 
-  CoinDataStore.saveBullionOz(Number(next.toFixed(2)));
+  saveBullionOzSafe(Number(next.toFixed(2)));
   renderBullion();
+}
+
+function getExportItems() {
+  const coins = typeof CoinDataStore.getCoins === "function" ? CoinDataStore.getCoins() : [];
+  const bullion = typeof CoinDataStore.getBullionEntries === "function" ? CoinDataStore.getBullionEntries() : [];
+  const bills = typeof CoinDataStore.getBills === "function" ? CoinDataStore.getBills() : [];
+
+  const bullionOz = getBullionOzSafe();
+
+  const quickBullionEntry = {
+    serialNumber: "",
+    inventoryId: "BULLION-TOTAL",
+    type: "bullion-total",
+    year: "",
+    denomination: "Fine Silver Bullion Total",
+    quantity: bullionOz,
+    silverContent: 100,
+    weightGrams: bullionOz * TROY_OUNCE_IN_GRAMS,
+    purchasePrice: "",
+    acquiredBy: "",
+    notes: "Quick bullion tracker total",
+    story: ""
+  };
+
+  return [...coins, ...bullion, ...bills, quickBullionEntry];
+}
+
+function exportCollectionCsv() {
+  const items = getExportItems();
+
+  const headers = [
+    "Serial Number",
+    "ID",
+    "Type",
+    "Year",
+    "Denomination",
+    "Quantity",
+    "Silver Content %",
+    "Weight Grams",
+    "Purchase Price",
+    "Acquired By",
+    "Notes",
+    "Story"
+  ];
+
+  const rows = items.map(item => [
+    item.serialNumber || "",
+    item.inventoryId || item.id || "",
+    item.type || "coin",
+    item.year || "",
+    item.denomination || "",
+    item.quantity || 1,
+    item.silverContent || "",
+    item.weightGrams || "",
+    item.purchasePrice || "",
+    item.acquiredBy || "",
+    item.notes || "",
+    item.story || item.personalStory || ""
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row =>
+      row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")
+    )
+    .join("\n");
+
+  downloadFile(
+    csv,
+    `coin_collection_${getTodayString()}.csv`,
+    "text/csv;charset=utf-8;"
+  );
+}
+
+function exportCollectionJson() {
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    items: getExportItems(),
+    coinStories: getStoriesSafe(),
+    silverSpotPrice: currentSilverSpotPerTroyOunce,
+    rawLocalStorage: {}
+  };
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    backup.rawLocalStorage[key] = localStorage.getItem(key);
+  }
+
+  const json = JSON.stringify(backup, null, 2);
+
+  downloadFile(
+    json,
+    `coin_collection_full_backup_${getTodayString()}.json`,
+    "application/json;charset=utf-8;"
+  );
+}
+
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+function getTodayString() {
+  return new Date().toISOString().split("T")[0];
 }
 
 async function fetchLiveSilverSpotPrice() {
@@ -397,6 +567,8 @@ document.getElementById("minusBullionBtn").addEventListener("click", () => adjus
 document.getElementById("search").addEventListener("input", renderTable);
 document.getElementById("filter").addEventListener("change", renderTable);
 document.getElementById("sort").addEventListener("change", renderTable);
+document.getElementById("exportCsvBtn").addEventListener("click", exportCollectionCsv);
+document.getElementById("exportJsonBtn").addEventListener("click", exportCollectionJson);
 
 CoinDataStore.initializeIfNeeded();
 renderAll();

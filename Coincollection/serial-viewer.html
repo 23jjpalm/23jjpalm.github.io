@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Serial Item Viewer</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tabs">
+      <a class="tab-btn" href="index.html">Home</a>
+      <a class="tab-btn" href="collection.html">Collection</a>
+      <a class="tab-btn" href="coin-info.html">Coin Info</a>
+      <a class="tab-btn" href="special.html">Special</a>
+      <a class="tab-btn" href="manage.html">Add / Manage</a>
+      <a class="tab-btn active" href="serial-viewer.html">Serial Viewer</a>
+    </div>
+
+    <h1>Serial Item Viewer</h1>
+    <p class="sub">One page that displays any item based on the selected 5-digit serial number.</p>
+  </div>
+
+  <div class="section">
+    <div class="controls three">
+      <input id="serialSearch" placeholder="Enter serial number, ex. 00041" />
+      <select id="serialDropdown">
+        <option value="">Select serial number</option>
+      </select>
+      <button id="openBtn" class="small-btn">Open Item</button>
+    </div>
+
+    <div id="viewerContent"></div>
+  </div>
+
+</div>
+
+<script src="inventory-values.js"></script>
+<script>
+const TROY_OUNCE_IN_GRAMS = 31.1035;
+
+function escapeHtml(text){
+  return String(text ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+function normalizeSerial(serial){
+  const raw = String(serial || "").trim();
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  return digits.padStart(5, "0").slice(-5);
+}
+
+function getAllItems(){
+  const coins = window.INVENTORY_VALUES?.coinItems || window.INDIVIDUAL_COIN_ITEMS || [];
+  const bullion = window.INVENTORY_VALUES?.bullionItems || window.BULLION_ITEMS || [];
+  const bills = window.INVENTORY_VALUES?.billItems || window.BILL_ITEMS || [];
+  return [...coins, ...bullion, ...bills];
+}
+
+function getSerial(item){
+  return normalizeSerial(item.serialNumber || item.inventoryId);
+}
+
+function findItem(serial){
+  const clean = normalizeSerial(serial);
+  return getAllItems().find(item => getSerial(item) === clean);
+}
+
+function formatPurchasePrice(value){
+  if (value === "add-later") return "Add later";
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "Unknown";
+  return `$${num.toFixed(2)}`;
+}
+
+function formatWeight(item){
+  const grams = Number(item.weightGrams || 0);
+  if (item.weightUnit === "oz" || item.displayWeight){
+    const oz = Number(item.displayWeight || grams / TROY_OUNCE_IN_GRAMS);
+    return `${oz.toFixed(3)} oz (${grams.toFixed(2)} g)`;
+  }
+  return `${grams.toFixed(2)} g`;
+}
+
+function imageCard(item, side){
+  const serial = getSerial(item);
+  const label = side === "obverse" ? "Obverse / Front" : "Reverse / Back";
+  const preferred = side === "obverse"
+    ? `Images/${serial}-obverse.png`
+    : `Images/${serial}-reverse.png`;
+  const storedPath = side === "obverse" ? item.imageObverse : item.imageReverse;
+  const fallbackSingle = `Images/${serial}.png`;
+  const src = storedPath || preferred;
+
+  return `
+    <div class="subcard">
+      <h3>${label}</h3>
+      <img
+        src="${escapeHtml(src)}"
+        alt="${label} image for serial ${serial}"
+        style="width:100%;max-height:420px;object-fit:contain;border-radius:14px;border:1px solid var(--border);background:var(--bg);"
+        onerror="
+          if (!this.dataset.singleTried) {
+            this.dataset.singleTried = 'true';
+            this.src = '${fallbackSingle}';
+          } else {
+            this.style.display = 'none';
+            this.insertAdjacentHTML('afterend', '<div class=&quot;empty&quot;>No image found. Use Images/${serial}-${side}.png or Images/${serial}.png.</div>');
+          }
+        "
+      />
+    </div>
+  `;
+}
+
+function renderItem(item){
+  const content = document.getElementById("viewerContent");
+
+  if (!item){
+    content.innerHTML = `
+      <div class="empty">
+        No item selected yet. Enter a serial number like <strong>00041</strong>, or choose one from the dropdown.
+      </div>
+    `;
+    return;
+  }
+
+  const serial = getSerial(item);
+
+  content.innerHTML = `
+    <div class="summary-grid">
+      <div class="stat"><div class="stat-label">Serial Number</div><div class="stat-value">${serial}</div></div>
+      <div class="stat"><div class="stat-label">Type</div><div class="stat-value">${escapeHtml(item.type || "coin")}</div></div>
+      <div class="stat"><div class="stat-label">Year</div><div class="stat-value">${escapeHtml(item.year || "-")}</div></div>
+      <div class="stat"><div class="stat-label">Denomination</div><div class="stat-value">${escapeHtml(item.denomination || "-")}</div></div>
+      <div class="stat"><div class="stat-label">Silver Content</div><div class="stat-value">${Number(item.silverContent || 0)}%</div></div>
+      <div class="stat"><div class="stat-label">Weight</div><div class="stat-value">${formatWeight(item)}</div></div>
+      <div class="stat"><div class="stat-label">Purchase Price</div><div class="stat-value">${formatPurchasePrice(item.purchasePrice)}</div></div>
+      <div class="stat"><div class="stat-label">Acquired By</div><div class="stat-value">${escapeHtml(item.acquiredBy || "-")}</div></div>
+    </div>
+
+    <div class="action-grid" style="margin-top:18px;">
+      ${imageCard(item, "obverse")}
+      ${imageCard(item, "reverse")}
+    </div>
+
+    <div class="subcard">
+      <h3>Notes</h3>
+      <p class="info-history">${escapeHtml(item.notes || "No notes added yet.")}</p>
+
+      <h3>Story</h3>
+      <p class="info-history">${escapeHtml(item.personalStory || item.story || "No story added yet.")}</p>
+    </div>
+  `;
+}
+
+function populateDropdown(){
+  const dropdown = document.getElementById("serialDropdown");
+  const items = getAllItems().sort((a,b) => Number(getSerial(a)) - Number(getSerial(b)));
+
+  dropdown.innerHTML = '<option value="">Select serial number</option>';
+
+  items.forEach(item => {
+    const serial = getSerial(item);
+    const option = document.createElement("option");
+    option.value = serial;
+    option.textContent = `${serial} — ${item.year || ""} ${item.denomination || item.type || ""}`;
+    dropdown.appendChild(option);
+  });
+}
+
+function openSerial(){
+  const searchValue = document.getElementById("serialSearch").value;
+  const dropdownValue = document.getElementById("serialDropdown").value;
+  const serial = normalizeSerial(searchValue || dropdownValue);
+
+  if (!serial){
+    renderItem(null);
+    return;
+  }
+
+  document.getElementById("serialSearch").value = serial;
+  document.getElementById("serialDropdown").value = serial;
+
+  const item = findItem(serial);
+  renderItem(item);
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("serial", serial);
+  window.history.replaceState({}, "", url);
+}
+
+document.getElementById("openBtn").addEventListener("click", openSerial);
+
+document.getElementById("serialSearch").addEventListener("keydown", event => {
+  if (event.key === "Enter") openSerial();
+});
+
+document.getElementById("serialDropdown").addEventListener("change", event => {
+  document.getElementById("serialSearch").value = event.target.value;
+  openSerial();
+});
+
+populateDropdown();
+
+const startingSerial = new URLSearchParams(window.location.search).get("serial");
+if (startingSerial){
+  document.getElementById("serialSearch").value = normalizeSerial(startingSerial);
+  openSerial();
+} else {
+  renderItem(null);
+}
+</script>
+</body>
+</html>
