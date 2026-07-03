@@ -66,7 +66,7 @@
       color: var(--muted);
       font-size: 12px;
     }
-    input {
+    input, select, textarea {
       width: 100%;
       border: 1px solid #b8ccda;
       border-radius: 8px;
@@ -75,7 +75,13 @@
       color: var(--text);
       background: #fff;
     }
-    input:focus {
+    select { cursor: pointer; }
+    textarea {
+      min-height: 74px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+    input:focus, select:focus, textarea:focus {
       outline: 3px solid rgba(0, 150, 214, 0.18);
       border-color: var(--shoreline-blue);
     }
@@ -182,7 +188,7 @@
   <main class="app">
     <section class="panel">
       <h1>Gift Certificate Generator</h1>
-      <p class="sub">Fill this out from the Flight Schedule Pro transaction. The Transaction ID becomes the certificate number.</p>
+      <p class="sub">Fill this out from the Flight Schedule Pro transaction. The Transaction ID becomes the certificate number, and the selected package sets the price.</p>
 
       <form id="certificateForm" autocomplete="off">
         <label>
@@ -192,19 +198,35 @@
         </label>
 
         <label>
-          Certificate Value
-          <span class="note">Example: 310 or 310.00</span>
-          <input id="price" required inputmode="decimal" placeholder="310.00" />
+          Flight Package
+          <span class="note">Select the intro flight type. The price fills automatically.</span>
+          <select id="flightPackage" required>
+            <option value="170" selected>Regular Intro Flight — $170</option>
+            <option value="310">Extended Intro Flight — $310</option>
+          </select>
         </label>
 
         <label>
-          To / Presented To
+          To
+          <span class="note">This is the main name shown in the blue certificate area and used for the file name.</span>
           <input id="recipient" required placeholder="Recipient name" />
+        </label>
+
+        <label>
+          Received By / Presented To
+          <span class="note">This fills the Presented to line near the bottom.</span>
+          <input id="receivedBy" required placeholder="Name shown after Presented to" />
         </label>
 
         <label>
           From
           <input id="purchaser" required placeholder="Purchaser name" />
+        </label>
+
+        <label>
+          Optional Message
+          <span class="note">Example: Happy Birthday! Leave blank if you do not want a message.</span>
+          <textarea id="customMessage" maxlength="120" placeholder="Happy Birthday!"></textarea>
         </label>
 
         <label>
@@ -285,9 +307,11 @@ const BACKGROUND_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEB
   const $ = (id) => document.getElementById(id);
   const form = $('certificateForm');
   const transactionIdEl = $('transactionId');
-  const priceEl = $('price');
+  const flightPackageEl = $('flightPackage');
   const recipientEl = $('recipient');
+  const receivedByEl = $('receivedBy');
   const purchaserEl = $('purchaser');
+  const customMessageEl = $('customMessage');
   const issueDateEl = $('issueDate');
   const issuedByEl = $('issuedBy');
   const computedCertificateEl = $('computedCertificate');
@@ -355,9 +379,12 @@ const BACKGROUND_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEB
     const issueDate = parseInputDate(issueDateEl.value);
     return {
       certificateNumber: transactionIdEl.value.trim(),
-      price: formatPrice(priceEl.value),
+      price: formatPrice(flightPackageEl.value),
+      flightPackage: flightPackageEl.options[flightPackageEl.selectedIndex]?.text || '',
       recipient: recipientEl.value.trim(),
+      receivedBy: receivedByEl.value.trim(),
       purchaser: purchaserEl.value.trim(),
+      customMessage: customMessageEl.value.trim(),
       issueDate: formatDate(issueDate),
       expirationDate: formatDate(expirationEndOfMonth(issueDate)),
       issuedBy: issuedByEl.value.trim()
@@ -367,8 +394,9 @@ const BACKGROUND_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEB
   function validateData(data) {
     const missing = [];
     if (!data.certificateNumber) missing.push('Transaction ID');
-    if (!data.price) missing.push('Certificate Value');
-    if (!data.recipient) missing.push('To / Presented To');
+    if (!data.price) missing.push('Flight Package');
+    if (!data.recipient) missing.push('To');
+    if (!data.receivedBy) missing.push('Received By / Presented To');
     if (!data.purchaser) missing.push('From');
     if (!data.issueDate) missing.push('Date of Issue');
     if (!data.issuedBy) missing.push('Issued By');
@@ -411,6 +439,68 @@ const BACKGROUND_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEB
     backgroundImage.onerror = () => reject(new Error('Certificate background failed to load.'));
   });
   backgroundImage.src = `data:image/jpeg;base64,${BACKGROUND_BASE64}`;
+
+  function drawWrappedCenteredText({ text, centerX, y, maxWidth, maxLines = 2, size = 44, lineHeight = 1.22, color = '#ffffff', weight = '700' }) {
+    const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+    if (!words.length) return;
+
+    let fontSize = size;
+    let lines = [];
+    while (fontSize >= 24) {
+      ctx.save();
+      ctx.font = `${weight} ${fontSize}px Arial, Helvetica, sans-serif`;
+      lines = [];
+      let current = '';
+      for (const word of words) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (ctx.measureText(candidate).width <= maxWidth) {
+          current = candidate;
+        } else {
+          if (current) lines.push(current);
+          current = word;
+        }
+      }
+      if (current) lines.push(current);
+      const longestTooWide = lines.some(line => ctx.measureText(line).width > maxWidth);
+      ctx.restore();
+      if (lines.length <= maxLines && !longestTooWide) break;
+      fontSize -= 2;
+    }
+
+    ctx.save();
+    ctx.font = `${weight} ${fontSize}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const actualLines = lines.slice(0, maxLines);
+    if (lines.length > maxLines) {
+      actualLines[maxLines - 1] = actualLines[maxLines - 1].replace(/\s*\S+$/, '...');
+    }
+    const lh = fontSize * lineHeight;
+    const startY = y - ((actualLines.length - 1) * lh) / 2;
+    actualLines.forEach((line, index) => ctx.fillText(line, centerX, startY + (index * lh)));
+    ctx.restore();
+  }
+
+  function drawUnderlinedFittedText({ text, x, y, maxWidth, size = 37, color = '#003a5d', weight = '700' }) {
+    const safeText = String(text || '');
+    if (!safeText) return;
+    const finalSize = fitFontSize(safeText, size, maxWidth, weight);
+    ctx.save();
+    ctx.font = `${weight} ${finalSize}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(safeText, x, y);
+    const width = Math.min(ctx.measureText(safeText).width, maxWidth);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, Math.round(finalSize / 18));
+    ctx.beginPath();
+    ctx.moveTo(x, y + 6);
+    ctx.lineTo(x + width, y + 6);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   function drawBlankCertificate() {
     ctx.save();
@@ -461,8 +551,22 @@ const BACKGROUND_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEB
     drawFittedText({ text: data.certificateNumber || '', x: 535, y: 2211, maxWidth: 360, size: 37, color: '#000000', weight: '700' });
     drawFittedText({ text: data.issueDate || '', x: 535, y: 2266, maxWidth: 500, size: 37, color: '#000000', weight: '700' });
     drawFittedText({ text: data.expirationDate || '', x: 535, y: 2329, maxWidth: 520, size: 37, color: '#000000', weight: '700' });
-    drawFittedText({ text: data.recipient || '', x: 535, y: 2376, maxWidth: 560, size: 37, color: '#000000', weight: '700' });
-    drawFittedText({ text: data.issuedBy || '', x: 360, y: 2500, maxWidth: 540, size: 37, color: '#003a5d', weight: '700' });
+    drawFittedText({ text: data.receivedBy || '', x: 535, y: 2376, maxWidth: 560, size: 37, color: '#000000', weight: '700' });
+
+    if (data.customMessage) {
+      drawWrappedCenteredText({
+        text: data.customMessage,
+        centerX: 1350,
+        y: 1460,
+        maxWidth: 1120,
+        maxLines: 2,
+        size: 48,
+        color: '#ffffff',
+        weight: '700'
+      });
+    }
+
+    drawUnderlinedFittedText({ text: data.issuedBy || '', x: 360, y: 2495, maxWidth: 540, size: 37, color: '#003a5d', weight: '700' });
   }
 
   function updateComputedAndPreview() {
@@ -622,7 +726,7 @@ const BACKGROUND_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEB
   }
 
   function getFilenameBase(data) {
-    return `Shoreline_Intro_Flight_Certificate_${sanitizeFilenamePart(data.certificateNumber)}`;
+    return sanitizeFilenamePart(data.recipient || data.receivedBy || data.certificateNumber || 'certificate');
   }
 
   async function handleDownload(kind) {
